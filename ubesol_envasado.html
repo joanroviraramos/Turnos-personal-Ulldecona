@@ -535,7 +535,7 @@ td.name-cell { overflow: visible !important; }
 
   <div class="doc-meta">
     <div class="meta-row"><label>AÑO:</label>
-      <select id="meta-ano" onchange="updateWeekFromSelector()" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;border:1px solid var(--border-l);border-radius:3px;padding:2px 6px;background:white;color:var(--text);cursor:pointer;width:80px">
+      <select id="meta-ano" onchange="autoSave(); updateWeekFromSelector()" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;border:1px solid var(--border-l);border-radius:3px;padding:2px 6px;background:white;color:var(--text);cursor:pointer;width:80px">
         <option>2025</option>
         <option selected>2026</option>
         <option>2027</option>
@@ -546,6 +546,7 @@ td.name-cell { overflow: visible !important; }
       <div style="display:flex;align-items:center;gap:6px">
         <button onclick="changeWeek(-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">‹</button>
         <input type="number" id="meta-sem" value="12" min="1" max="53"
+          onchange="(function(){ var k=weekKey(); autoSaveToKey(k); loadWeekFromStorage(); })()"
           oninput="updateWeekFromSelector()"
           style="width:48px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;border:1px solid var(--border-l);border-radius:3px;padding:2px 4px">
         <button onclick="changeWeek(1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">›</button>
@@ -1269,6 +1270,10 @@ function updateWeekFromSelector() {
 }
 
 function changeWeek(delta) {
+  // Guardar la semana ACTUAL con su clave correcta ANTES de tocar el selector
+  const oldKey = weekKey();
+  autoSaveToKey(oldKey);
+
   const sem = document.getElementById('meta-sem');
   let w = parseInt(sem.value) + delta;
   const year = parseInt(document.getElementById('meta-ano').value) || 2026;
@@ -1281,8 +1286,7 @@ function changeWeek(delta) {
   }
   sem.value = w;
   updateWeekFromSelector();
-  // auto-save new week slot and load existing data for that week if available
-  loadWeekFromStorage(year + '-' + String(w).padStart(2,'0'));
+  loadWeekFromStorage();
 }
 
 // legacy compat — keep for any old references
@@ -1922,14 +1926,16 @@ function buildPayload() {
   };
 }
 
-function autoSave() {
+function autoSaveToKey(key) {
   try {
-    const key = weekKey();
-    const data = JSON.stringify(buildPayload());
-    localStorage.setItem(key, data);
+    localStorage.setItem(key, JSON.stringify(buildPayload()));
   } catch(e) {
     console.error('autoSave error:', e);
   }
+}
+
+function autoSave() {
+  autoSaveToKey(weekKey());
 }
 
 function applyPayload(d) {
