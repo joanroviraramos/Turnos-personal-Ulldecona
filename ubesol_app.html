@@ -292,14 +292,14 @@ body {
 .turno-card {
   background: var(--green);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 16px 18px;
   color: white;
 }
 
 .tc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
-.tc-turno { font-size: 28px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -0.02em; }
-.tc-puesto { font-size: 26px; font-weight: 700; opacity: 0.9; letter-spacing: -0.01em; margin-top: 0; }
-.tc-fechas { font-size: 13px; opacity: 0.7; margin-top: 8px; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
+.tc-turno { font-size: 24px; font-weight: 700; margin: 3px 0 1px; letter-spacing: -0.02em; }
+.tc-puesto { font-size: 22px; font-weight: 700; opacity: 0.9; letter-spacing: -0.01em; margin-top: 0; }
+.tc-fechas { font-size: 12px; opacity: 0.7; margin-top: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
 
 .dias-card {
   background: var(--surface);
@@ -328,20 +328,20 @@ body {
 .turno-card-actual {
   background: #1a6eb5;
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 16px 18px;
   color: white;
 }
 
 .turno-card-actual .tc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
-.turno-card-actual .tc-turno { font-size: 28px; font-weight: 700; margin: 4px 0 0; letter-spacing: -0.02em; }
-.turno-card-actual .tc-puesto { font-size: 26px; font-weight: 700; opacity: 0.9; letter-spacing: -0.01em; }
-.turno-card-actual .tc-fechas { font-size: 13px; opacity: 0.7; margin-top: 8px; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
+.turno-card-actual .tc-turno { font-size: 24px; font-weight: 700; margin: 3px 0 0; letter-spacing: -0.02em; }
+.turno-card-actual .tc-puesto { font-size: 22px; font-weight: 700; opacity: 0.9; letter-spacing: -0.01em; }
+.turno-card-actual .tc-fechas { font-size: 12px; opacity: 0.7; margin-top: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
 
 .turno-card-hist {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px 18px;
+  padding: 10px 14px;
   border-left: 5px solid var(--border-2);
 }
 
@@ -953,7 +953,7 @@ function showTurnos() {
   const c = document.getElementById('turnos-content');
   c.style.display = 'flex';
   c.style.flexDirection = 'column';
-  c.style.gap = '10px';
+  c.style.gap = '7px';
 
   if (!historico.length) {
     c.innerHTML = '<div class="no-turno">No hay cuadrantes publicados.<br>Consulta con tu encargado.</div>';
@@ -1008,10 +1008,10 @@ function showTurnos() {
         <span class="sem-label ${tipo}">${labelTxt}</span>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
           <div>
-            <div style="font-size:26px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.1">${turnoNombre}</div>
-            <div style="font-size:24px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2">${puestoNombre}</div>
+            <div style="font-size:18px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.2">${turnoNombre}</div>
+            <div style="font-size:16px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2">${puestoNombre}</div>
           </div>
-          <div style="text-align:right;font-size:13px;color:#999;font-family:'DM Mono',monospace;line-height:1.7;flex-shrink:0;padding-top:4px">
+          <div style="text-align:right;font-size:12px;color:#999;font-family:'DM Mono',monospace;line-height:1.7;flex-shrink:0;padding-top:2px">
             ${fmtDate(monday)}<br>${fmtDate(sunday)}
           </div>
         </div>
