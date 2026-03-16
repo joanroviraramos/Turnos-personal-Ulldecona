@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turnos — Grupo Ubesol</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --m-bg: #bbdefb; --m-tx: #0d47a1; --m-hdr: #e3f2fd;
+    --t-bg: #fff9c4; --t-tx: #e65100; --t-hdr: #fffde7;
+    --n-bg: #e8eaf6; --n-tx: #283593; --n-hdr: #f3e5f5;
+    --p-bg: #fce4ec; --p-tx: #880e4f; --p-hdr: #fce4ec;
+    --bg: #f4f2ec;
+    --surface: #ffffff;
+    --border: #d0cdc5;
+    --border-l: #e8e5de;
+    --text: #1a1a1a;
+    --muted: #666;
+    --faint: #aaa;
+    --green: #6a8a3a;
+    --line-green: #e8f5e4;
+    --line-yellow: #fffde7;
+    --line-green-hdr: #c8e6c1;
+    --line-yellow-hdr: #fff9c4;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── GLOBAL LAYOUT ── */
+  .screen {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  .hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 36px 12px;
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--green);
+    letter-spacing: -0.01em;
+  }
+
+  .dept-name {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    flex: 1;
+    color: var(--text);
+  }
+
+  .hdr-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    min-width: 160px;
+  }
+
+  .week-info {
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .week-info strong { color: var(--text); font-weight: 600; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 5px;
+    background: #e0ddd6;
+    flex-shrink: 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    transition: width 1s linear;
+    width: 100%;
+  }
+
+  /* ── TURNO HEADERS ── */
+  .turno-hdr {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr 1fr 1fr;
+    flex-shrink: 0;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .th-cell {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+
+  .th-cell:last-child { border-right: none; }
+  .th-puesto { text-align: left; color: var(--muted); background: #f5f5f5; }
+  .th-m { background: var(--m-hdr); color: var(--m-tx); }
+  .th-t { background: var(--t-hdr); color: var(--t-tx); }
+  .th-n { background: var(--n-hdr); color: var(--n-tx); }
+  .th-p { background: var(--p-hdr); color: var(--p-tx); }
+
+  /* ── TABLE BODY ── */
+  .table-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+  }
+
+  .table-scroll {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .table-scroll::-webkit-scrollbar { display: none; }
+
+  /* Section divider */
+  .sect-row {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr 1fr 1fr;
+    background: #e8e5de;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sect-label {
+    grid-column: 1 / -1;
+    padding: 5px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Data row */
+  .data-row {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr 1fr 1fr;
+    border-top: 1px solid var(--border-l);
+    min-height: 48px;
+  }
+
+  .data-row.alt { background: #faf9f6; }
+
+  .td-puesto {
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-right: 2px solid var(--border);
+    background: #f8f7f4;
+  }
+
+  .td-name {
+    padding: 6px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    border-right: 1px solid var(--border-l);
+    text-align: center;
+  }
+
+  .td-name:last-child { border-right: none; }
+
+  .worker-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text);
+  }
+
+  .worker-name.empty { color: #ccc; font-weight: 400; font-size: 13px; }
+
+  /* Turno column tints */
+  .col-m { background: var(--m-bg); }
+  .col-m .worker-name { color: var(--m-tx); }
+  .col-t { background: var(--t-bg); }
+  .col-t .worker-name { color: var(--t-tx); }
+  .col-n { background: var(--n-bg); }
+  .col-n .worker-name { color: var(--n-tx); }
+  .col-p { background: var(--p-bg); }
+  .col-p .worker-name { color: var(--p-tx); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 36px;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .dept-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .dept-dot {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+    white-space: nowrap;
+    cursor: pointer;
+    background: var(--surface);
+  }
+
+  .dept-dot:hover { background: #f0ede6; color: var(--text); }
+
+  .dept-dot.active {
+    background: var(--green);
+    color: #fff;
+    border-color: var(--green);
+  }
+
+  .countdown-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .countdown-label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .countdown-num {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--green);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .next-dept {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .next-dept strong { color: var(--text); }
+
+  /* ── TRANSITION ── */
+  .slide-enter {
+    animation: slideIn 0.4s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .leg-chip {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="logo">GRUPOUBESOL</div>
+    <div class="dept-name" id="dept-name">Envasado</div>
+    <div class="hdr-right">
+      <div class="week-info">Semana <strong id="week-num">—</strong></div>
+      <div class="week-info" id="week-dates">—</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- TURNO HEADERS -->
+  <div class="turno-hdr" id="turno-hdr">
+    <div class="th-cell th-puesto">Puesto</div>
+    <div class="th-cell th-m">Turno Mañana</div>
+    <div class="th-cell th-t">Turno Tarde</div>
+    <div class="th-cell th-n">Turno Noche</div>
+    <div class="th-cell th-p">Partido / Especial</div>
+  </div>
+
+  <!-- TABLE BODY -->
+  <div class="table-body">
+    <div class="table-scroll" id="table-scroll"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="dept-dots" id="dept-dots"></div>
+    <div class="legend">
+      <div class="leg"><div class="leg-chip" style="background:var(--m-bg)"></div>Mañana</div>
+      <div class="leg"><div class="leg-chip" style="background:var(--t-bg)"></div>Tarde</div>
+      <div class="leg"><div class="leg-chip" style="background:var(--n-bg)"></div>Noche</div>
+      <div class="leg"><div class="leg-chip" style="background:var(--p-bg)"></div>Partido</div>
+    </div>
+    <div class="countdown-wrap">
+      <div>
+        <div class="next-dept" id="next-dept-label">Siguiente: <strong id="next-dept-name">—</strong></div>
+        <div class="countdown-label">Cambia en</div>
+      </div>
+      <div class="countdown-num" id="countdown">2:00</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA — se rellena desde el cuadrante HTML o desde la base de datos
+// Estructura: cada departamento tiene puestos, cada puesto tiene
+// un array de workers con sus celdas M/T/N/P
+// ═══════════════════════════════════════════════════════════════════
+
+const TURNOS = ['M','T','N','P'];
+const TURNO_LABELS = { M:'Turno Mañana', T:'Turno Tarde', N:'Turno Noche', P:'Partido / Especial' };
+const COLS = ['col-m','col-t','col-n','col-p'];
+
+// helper — N empty workers
+const ew = (n=1) => Array.from({length:n}, ()=>({M:'',T:'',N:'',P:''}));
+
+const DEPARTMENTS = [
+  {
+    id:'envasado', name:'Envasado', type:'machine',
+    special:[
+      {puesto:'Supervisor/A Turno',  workers:ew(1)},
+      {puesto:'Tracking Nave 1',     workers:ew(1)},
+      {puesto:'Suministro',          workers:ew(1)},
+    ],
+    sections:[
+      {label:'Línea 1', groups:[
+        {puesto:'O. Máquina',  workers:[{M:'XAVI REVERTÉ',T:'',N:'',P:''}]},
+        {puesto:'Operaria/O',  workers:[{M:'DAVID TOMÁS',T:'',N:'',P:''},{M:'RAFA POLO',T:'',N:'',P:''},{M:'RAFA ESPINOLA',T:'',N:'',P:''},{M:'ANA M. BELTRÁN',T:'',N:'',P:''}]},
+        {puesto:'Tracking NM', workers:ew(1)},
+      ]},
+      {label:'Línea 2', groups:[
+        {puesto:'O. Máquina',  workers:[{M:'',T:'',N:'FLORIN CHIS',P:''}]},
+        {puesto:'Operaria/O',  workers:[{M:'ARANTXA VIDAL',T:'',N:'',P:''},{M:'ISABEL FERNÁNDEZ',T:'',N:'',P:''},{M:'',T:'',N:'NEREA ROJAS',P:''},{M:'ALI DUMITRASCU',T:'',N:'',P:''},{M:'ASTRID CARREÑO',T:'',N:'',P:''},{M:'JENIFER PÉREZ',T:'',N:'',P:''}]},
+        {puesto:'Tracking NM', workers:[{M:'ADRIAN GONZÁLEZ',T:'',N:'',P:''}]},
+      ]},
+      {label:'Línea 3',  groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(2)}]},
+      {label:'Línea 4',  groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(2)}]},
+      {label:'Línea 5.1',groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(2)}]},
+      {label:'Línea 7',  groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(2)}]},
+      {label:'Línea 14', groups:[
+        {puesto:'O. Máquina',  workers:[{M:'ALBERTO ESCUDERO',T:'RUBÉN REVERTER',N:'',P:''}]},
+        {puesto:'Operaria/O',  workers:[{M:'ROSA PASALAMAR',T:'ÁNGELS CASTELL',N:'',P:''},{M:'VANESA QUIROL',T:'',N:'',P:''}]},
+        {puesto:'Tracking NM', workers:[{M:'',T:'A. DAVID PÉREZ',N:'',P:''}]},
+      ]},
+      {label:'Línea 2.1', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.2', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.3', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.5', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.6', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(2)}]},
+      {label:'Línea 2.7', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.8', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.9', groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+      {label:'Línea 2.10',groups:[{puesto:'O. Máquina',workers:ew(1)},{puesto:'Operaria/O',workers:ew(1)}]},
+    ]
+  },
+  {
+    id:'elaboracion', name:'Elaboración', type:'post',
+    puestos:[
+      {puesto:'Supervisor/A Turno', workers:ew(1)},
+      {puesto:'Elaborador/A',       workers:ew(10)},
+      {puesto:'Pesadas',            workers:ew(2)},
+      {puesto:'Higiene',            workers:ew(3)},
+      {puesto:'Descarga Cisternas', workers:ew(2)},
+    ]
+  },
+  {
+    id:'almacen', name:'Almacén', type:'post',
+    puestos:[
+      {puesto:'Supervisor/A Turno',       workers:ew(1)},
+      {puesto:'Descarga / Ubicar',        workers:ew(2)},
+      {puesto:'Soplado / Ubicar',         workers:ew(1)},
+      {puesto:'Abast. Nave 3 / Ubicar',   workers:ew(2)},
+      {puesto:'Abast. Nave 1 / Ubicar',   workers:ew(1)},
+      {puesto:'Residuos / Destrucciones', workers:ew(1)},
+      {puesto:'Ubicar',                   workers:ew(3)},
+      {puesto:'MMPP',                     workers:ew(1)},
+      {puesto:'Sala Blanca',              workers:ew(1)},
+      {puesto:'Cargas',                   workers:ew(2)},
+      {puesto:'Silo',                     workers:ew(1)},
+      {puesto:'Destrucciones',            workers:ew(1)},
+    ]
+  },
+  {
+    id:'mantenimiento', name:'Mantenimiento', type:'post',
+    puestos:[
+      {puesto:'Coordinador',           workers:ew(1)},
+      {puesto:'Backoffice',            workers:ew(1)},
+      {puesto:'Supervisor/A De Turno', workers:ew(1)},
+      {puesto:'Técnico Mto.',          workers:ew(6)},
+    ]
+  },
+  {
+    id:'calidad-lineas', name:'Calidad Líneas', type:'post',
+    puestos:[
+      {puesto:'Nave 1-MK1',    workers:ew(2)},
+      {puesto:'Nave 3-Nave 4', workers:ew(2)},
+      {puesto:'Técnico',       workers:ew(2)},
+    ]
+  },
+  {
+    id:'calidad-fq', name:'Calidad Fís-Quím', type:'post',
+    puestos:[{puesto:'Técnico Laboratorio',  workers:ew(4)}]
+  },
+  {
+    id:'calidad-micro', name:'Calidad Microbiología', type:'post',
+    puestos:[{puesto:'Técnico Microbiología', workers:ew(4)}]
+  },
+  {
+    id:'calidad-mat', name:'Calidad Materiales', type:'post',
+    puestos:[{puesto:'Técnico Materiales', workers:ew(4)}]
+  },
+  {
+    id:'mejora', name:'Mejora Continua', type:'post',
+    puestos:[{puesto:'Técnico Procesos', workers:ew(4)}]
+  },
+  {
+    id:'soplado', name:'Soplado', type:'post',
+    puestos:[
+      {puesto:'Supervisor/A De Turno',  workers:ew(1)},
+      {puesto:'Sopladora 1 Y 2',        workers:ew(1)},
+      {puesto:'Sopladora 3',            workers:ew(1)},
+      {puesto:'Sopladora 4 Y 6',        workers:ew(1)},
+      {puesto:'Sopladora 5 Y Tracking', workers:ew(1)},
+      {puesto:'Paletizadores',          workers:ew(2)},
+      {puesto:'Refuerzo Turno',         workers:ew(2)},
+    ]
+  },
+];
+
+// ── WEEK INFO ────────────────────────────────────────────────────────
+function getWeekInfo() {
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+  const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  const fmt = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  const soy = new Date(now.getFullYear(),0,1);
+  const wk  = Math.ceil(((now-soy)/86400000+soy.getDay()+1)/7);
+  return { wk, dates: `${fmt(mon)} — ${fmt(fri)}` };
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────
+function renderDept(dept) {
+  document.getElementById('dept-name').textContent = dept.name;
+  const scroll = document.getElementById('table-scroll');
+  scroll.innerHTML = '';
+  scroll.classList.remove('slide-enter');
+  void scroll.offsetWidth;
+  scroll.classList.add('slide-enter');
+
+  if (dept.type === 'machine') {
+    renderMachine(scroll, dept);
+  } else {
+    renderPost(scroll, dept);
+  }
+}
+
+function renderMachine(container, dept) {
+  // Special rows first
+  if (dept.special) {
+    dept.special.forEach((g, gi) => appendRow(container, g.puesto, g.workers, gi));
+  }
+
+  // Sections (lines)
+  dept.sections.forEach(sec => {
+    const sect = document.createElement('div');
+    sect.className = 'sect-row';
+    sect.innerHTML = `<div class="sect-label">${sec.label}</div>`;
+    container.appendChild(sect);
+
+    let rowIdx = 0;
+    sec.groups.forEach(grp => {
+      grp.workers.forEach((w, wi) => {
+        appendRow(container, wi===0 ? grp.puesto : '', [w], rowIdx++);
+      });
+    });
+  });
+}
+
+function renderPost(container, dept) {
+  dept.puestos.forEach((g, gi) => appendRow(container, g.puesto, g.workers, gi));
+}
+
+function appendRow(container, puesto, workers, idx) {
+  workers.forEach((w, wi) => {
+    const row = document.createElement('div');
+    row.className = `data-row${idx%2===1?' alt':''}`;
+
+    const tdP = document.createElement('div');
+    tdP.className = 'td-puesto';
+    tdP.textContent = wi===0 ? puesto : '';
+    row.appendChild(tdP);
+
+    TURNOS.forEach((t, ti) => {
+      const td = document.createElement('div');
+      td.className = `td-name ${COLS[ti]}`;
+      const names = (w[t]||'').split('\n').filter(Boolean);
+      if (names.length) {
+        names.forEach(n => {
+          const span = document.createElement('div');
+          span.className = 'worker-name';
+          span.textContent = n;
+          td.appendChild(span);
+        });
+      } else {
+        const span = document.createElement('div');
+        span.className = 'worker-name empty';
+        span.textContent = '—';
+        td.appendChild(span);
+      }
+      row.appendChild(td);
+    });
+
+    container.appendChild(row);
+  });
+}
+
+// ── DOTS ─────────────────────────────────────────────────────────────
+function buildDots(currentIdx) {
+  const wrap = document.getElementById('dept-dots');
+  wrap.innerHTML = '';
+  DEPARTMENTS.forEach((d, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dept-dot' + (i===currentIdx?' active':'');
+    dot.textContent = d.name;
+    wrap.appendChild(dot);
+  });
+}
+
+// ── COUNTDOWN ────────────────────────────────────────────────────────
+const DURATION = 120; // seconds
+let currentIdx = 0;
+let remaining = DURATION;
+let timer = null;
+
+function fmt(s) {
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function updateProgress() {
+  const pct = (remaining / DURATION) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function tick() {
+  remaining--;
+  document.getElementById('countdown').textContent = fmt(remaining);
+  updateProgress();
+  if (remaining <= 0) nextDept();
+}
+
+function nextDept() {
+  currentIdx = (currentIdx + 1) % DEPARTMENTS.length;
+  remaining = DURATION;
+  showDept(currentIdx);
+}
+
+function showDept(idx) {
+  const dept = DEPARTMENTS[idx];
+  const next = DEPARTMENTS[(idx+1) % DEPARTMENTS.length];
+  renderDept(dept);
+  buildDots(idx);
+  document.getElementById('next-dept-name').textContent = next.name;
+  document.getElementById('countdown').textContent = fmt(remaining);
+  updateProgress();
+}
+
+// ── WEEK ─────────────────────────────────────────────────────────────
+function initWeek() {
+  const {wk, dates} = getWeekInfo();
+  document.getElementById('week-num').textContent = wk;
+  document.getElementById('week-dates').textContent = dates;
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
+initWeek();
+showDept(0);
+timer = setInterval(tick, 1000);
+
+// Click on dot to jump
+document.getElementById('dept-dots').addEventListener('click', e => {
+  const dot = e.target.closest('.dept-dot');
+  if (!dot) return;
+  const idx = Array.from(dot.parentNode.children).indexOf(dot);
+  if (idx >= 0 && idx < DEPARTMENTS.length) {
+    currentIdx = idx;
+    remaining = DURATION;
+    showDept(idx);
+  }
+});
+</script>
+</body>
+</html>
