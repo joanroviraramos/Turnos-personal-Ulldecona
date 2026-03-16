@@ -1535,65 +1535,33 @@ function publicar() {
 
   autoSave();
 
-  // ── Publicar en GitHub — sube cuadrante.json al repositorio ──────────
+  // ── Publicar: descarga cuadrante.json y da instrucciones ─────────────
   const payload = buildPayload();
-  const GITHUB_TOKEN = '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';
-  const REPO_OWNER   = 'joanroviraramos';
-  const REPO_NAME    = 'Turnos-personal-Ulldecona';
-  const FILE_PATH    = 'cuadrante.json';
-  const API_URL      = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-  const TV_URL       = `https://${REPO_OWNER}.github.io/${REPO_NAME}/ubesol_tv.html`;
 
-  toast('⏳ Publicando cuadrante...');
+  try {
+    const json = JSON.stringify(payload, null, 2);
+    localStorage.setItem('ubesol_publicado', json);
 
-  async function subirAGitHub() {
-    try {
-      // Obtener SHA del fichero si ya existe (necesario para actualizarlo)
-      let sha = null;
-      const check = await fetch(API_URL, {
-        headers: { 'Authorization': 'token ' + GITHUB_TOKEN, 'Accept': 'application/vnd.github.v3+json' }
-      });
-      if (check.ok) {
-        const existing = await check.json();
-        sha = existing.sha;
-      }
+    // Descargar el fichero automáticamente
+    const blob = new Blob([json], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'cuadrante.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
 
-      // Subir el JSON codificado en base64
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
-      const body = {
-        message: `Cuadrante semana ${payload.semana}/${payload.ano}`,
-        content,
-        ...(sha ? { sha } : {})
-      };
+    const msg = (duplicados.length > 0
+      ? `⚠️ Hay ${duplicados.length} trabajador(es) duplicado(s).\n\n`
+      : `✓ Cuadrante semana ${payload.semana} listo.\n\n`)
+      + `Se ha descargado "cuadrante.json".\n\n`
+      + `Sube ese fichero a GitHub (arrastrándolo al repositorio) y las TVs se actualizarán en 1-2 minutos.\n\n`
+      + `URL de las TVs:\nhttps://joanroviraramos.github.io/Turnos-personal-Ulldecona/ubesol_tv.html`;
 
-      const res = await fetch(API_URL, {
-        method: 'PUT',
-        headers: {
-          'Authorization': 'token ' + GITHUB_TOKEN,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (res.ok) {
-        localStorage.setItem('ubesol_publicado', JSON.stringify(payload));
-        const msg = duplicados.length > 0
-          ? `⚠️ Publicado con ${duplicados.length} duplicado(s)\n\nLas TVs se actualizarán en 1-2 minutos con la semana ${payload.semana}.`
-          : `✓ Cuadrante semana ${payload.semana} publicado correctamente.\n\nLas TVs se actualizarán en 1-2 minutos automáticamente.`;
-        toast('✓ Cuadrante publicado — TVs se actualizan en 1-2 min');
-        alert(msg + '\n\nURL de las TVs:\n' + TV_URL);
-      } else {
-        const err = await res.json();
-        throw new Error(err.message || res.status);
-      }
-    } catch(e) {
-      console.error('Error publicando en GitHub:', e);
-      toast('⚠️ Error al publicar: ' + e.message);
-    }
+    toast('✓ cuadrante.json descargado — súbelo a GitHub');
+    setTimeout(() => alert(msg), 500);
+  } catch(e) {
+    toast('⚠️ Error al publicar: ' + e.message);
   }
-
-  subirAGitHub();
 }
 
 function showPublishModal(url, semana, numDups) {
