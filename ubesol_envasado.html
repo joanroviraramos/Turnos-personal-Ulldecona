@@ -180,6 +180,9 @@ body {
 /* ── MAIN TABLE AREA ── */
 .table-area {
   padding: 20px 24px;
+  overflow: visible;
+}
+.table-scroll-x {
   overflow-x: auto;
 }
 
@@ -475,25 +478,25 @@ td.cell-p { background: var(--p-bg) !important; }
 .toast.show { transform: translateY(0); opacity: 1; }
 
 /* ── AUTOCOMPLETE ── */
-.ac-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+.ac-wrap { position: relative; flex: 1; display: flex; align-items: center; min-width: 0; }
 .ac-wrap input { width: 100%; }
 .ac-list {
   position: absolute;
   top: calc(100% + 2px);
   left: 0;
-  min-width: 240px;
+  min-width: 260px;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.12);
-  z-index: 999;
-  max-height: 200px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  z-index: 9999;
+  max-height: 220px;
   overflow-y: auto;
   display: none;
 }
 .ac-list.open { display: block; }
 .ac-item {
-  padding: 6px 12px;
+  padding: 7px 12px;
   font-size: 12px;
   cursor: pointer;
   display: flex;
@@ -504,10 +507,14 @@ td.cell-p { background: var(--p-bg) !important; }
 }
 .ac-item:last-child { border-bottom: none; }
 .ac-item:hover { background: #f0ede6; }
-.ac-item.used { opacity: .4; pointer-events: none; }
+.ac-item.used { opacity: .35; pointer-events: none; background: #fafafa; }
 .ac-item .ac-name { font-weight: 500; color: var(--text); }
 .ac-item .ac-dni { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--faint); }
 .ac-empty { padding: 8px 12px; font-size: 12px; color: var(--faint); font-style: italic; }
+
+/* Permitir que el dropdown salga fuera de la celda */
+.name-cell { overflow: visible !important; }
+td.name-cell { overflow: visible !important; }
 
 </style>
 </head>
@@ -566,7 +573,9 @@ td.cell-p { background: var(--p-bg) !important; }
 
 <!-- TABLE AREA -->
 <div class="table-area">
-  <div id="table-root"></div>
+  <div class="table-scroll-x">
+    <div id="table-root"></div>
+  </div>
   <div class="add-line-area" id="add-line-area">
     <button class="add-line-btn" onclick="addLine()">+ Añadir línea</button>
     <button class="add-line-btn" onclick="addLine('L2')">+ Añadir línea L2.x</button>
@@ -721,34 +730,50 @@ const WORKERS_DATA = [
 let allWorkers = WORKERS_DATA;
 let usedNames  = new Set();
 
+// Declaraciones globales de todos los arrays de bajas/vacaciones
+// (se inicializan en los init* pero necesitan existir antes para rebuildUsedNames)
+bajas = [], vacaciones = [];
+elabBajas = [], elabVacaciones = [];
+almBajas = [], almVacaciones = [];
+mtoBajas = [], mtoVacaciones = [];
+calBajas = [], calVacaciones = [];
+calfqBajas = [], calfqVacaciones = [];
+calmicroBajas = [], calmicroVacaciones = [];
+calmatBajas = [], calmatVacaciones = [];
+mcBajas = [], mcVacaciones = [];
+soplBajas = [], soplVacaciones = [];
+elabWorkers = {}, almWorkers = {}, mtoWorkers = {};
+calWorkers = {}, calfqWorkers = {}, calmicroWorkers = {};
+calmatWorkers = {}, mcWorkers = {}, soplWorkers = {};
+
 function getWorkersForDept(dept) {
   return allWorkers.filter(w => w.departamento === dept);
 }
 
 function rebuildUsedNames() {
   usedNames = new Set();
-  // Recolecta todos los nombres ya asignados en el cuadrante completo
   const add = (v) => { if(v && v.trim()) usedNames.add(v.trim().toUpperCase()); };
+  const safeArr = (a) => Array.isArray(a) ? a : [];
+
   // Envasado — lines
-  lines.forEach(l => l.groups.forEach(g => g.workers.forEach(w => add(w.n))));
+  safeArr(lines).forEach(l => safeArr(l.groups).forEach(g => safeArr(g.workers).forEach(w => add(w.n))));
   // Servicios transversales Envasado
-  Object.values(specialWorkers).forEach(arr => arr && arr.forEach(w => {
-    if(w && w.cells) Object.values(w.cells).forEach(add);
-  }));
+  if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
+    safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); }));
   // Todos los depts tipo post
   [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers,
    calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers].forEach(obj => {
     if (!obj) return;
-    Object.values(obj).forEach(arr => arr && arr.forEach(w => {
+    Object.values(obj).forEach(arr => safeArr(arr).forEach(w => {
       if(w && w.cells) Object.values(w.cells).forEach(add);
     }));
   });
-  // Bajas / vacaciones
+  // Bajas / vacaciones de todos los depts
   [bajas, vacaciones, elabBajas, elabVacaciones, almBajas, almVacaciones,
    mtoBajas, mtoVacaciones, calBajas, calVacaciones, calfqBajas, calfqVacaciones,
    calmicroBajas, calmicroVacaciones, calmatBajas, calmatVacaciones,
    mcBajas, mcVacaciones, soplBajas, soplVacaciones].forEach(arr => {
-    arr && arr.forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); });
+    safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); });
   });
 }
 
@@ -772,7 +797,8 @@ function makeAcInput(currentVal, dept, onSelect) {
   function showList(query) {
     rebuildUsedNames();
     const q = query.trim().toUpperCase();
-    const currentUpper = (currentVal || '').trim().toUpperCase();
+    // Siempre leer el valor ACTUAL del input, no el del momento de creación
+    const ownUpper = inp.value.trim().toUpperCase();
     const workers = getWorkersForDept(dept);
     const filtered = workers.filter(w =>
       !q || w.nombre.toUpperCase().includes(q)
@@ -780,21 +806,20 @@ function makeAcInput(currentVal, dept, onSelect) {
 
     list.innerHTML = '';
     if (!filtered.length) {
-      list.innerHTML = `<div class="ac-empty">Sin resultados para "${query}"</div>`;
+      list.innerHTML = `<div class="ac-empty">Sin resultados</div>`;
     } else {
       filtered.slice(0, 30).forEach(w => {
         const item = document.createElement('div');
         item.className = 'ac-item';
         const nameUpper = w.nombre.toUpperCase();
-        // Marcado como usado si está en otro campo (no el propio)
-        const isUsed = usedNames.has(nameUpper) && nameUpper !== currentUpper;
+        // Es duplicado solo si está usado EN OTRO campo distinto al propio
+        const isUsed = usedNames.has(nameUpper) && nameUpper !== ownUpper;
         if (isUsed) item.classList.add('used');
         item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
         if (!isUsed) {
           item.onmousedown = (e) => {
             e.preventDefault();
             inp.value = w.nombre;
-            currentVal = w.nombre;
             onSelect(w.nombre);
             list.classList.remove('open');
           };
@@ -806,8 +831,8 @@ function makeAcInput(currentVal, dept, onSelect) {
   }
 
   inp.addEventListener('focus', () => showList(inp.value));
+  inp.addEventListener('click', () => showList(inp.value));
   inp.addEventListener('input', () => {
-    currentVal = inp.value;
     onSelect(inp.value);
     showList(inp.value);
   });
@@ -850,8 +875,6 @@ function initSpecialWorkers() {
 }
 
 // Bajas y vacaciones son arrays expandibles
-let bajas = [mkWorker('baja_0')];
-let vacaciones = [mkWorker('vac_0')];
 
 // default line structure — all lines start with 1 maq + 1 op
 function defaultLines() {
@@ -1445,7 +1468,6 @@ const SOPL_PUESTOS = [
   { id:'sopl_pal',   label:'PALETIZADORES',            type:'green'  },
   { id:'sopl_ref',   label:'REFUERZO TURNO',           type:'yellow' },
 ];
-let soplWorkers = {}, soplBajas = [], soplVacaciones = [];
 function initSoplado() {
   soplWorkers = {};
   const counts = { sopl_sup:1, sopl_s12:1, sopl_s3:1, sopl_s46:1, sopl_s5t:1, sopl_pal:2, sopl_ref:2 };
@@ -1460,7 +1482,6 @@ function initSoplado() {
 const MC_PUESTOS = [
   { id:'mc_tec', label:'TÉCNICO PROCESOS', type:'yellow' },
 ];
-let mcWorkers = {}, mcBajas = [], mcVacaciones = [];
 function initMejoraContinua() {
   mcWorkers = {};
   MC_PUESTOS.forEach(p => { mcWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
@@ -1472,7 +1493,6 @@ function initMejoraContinua() {
 const CALMAT_PUESTOS = [
   { id:'calmat_tec', label:'TÉCNICO MATERIALES', type:'green' },
 ];
-let calmatWorkers = {}, calmatBajas = [], calmatVacaciones = [];
 function initCalidadMat() {
   calmatWorkers = {};
   CALMAT_PUESTOS.forEach(p => { calmatWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
@@ -1484,7 +1504,6 @@ function initCalidadMat() {
 const CALFQ_PUESTOS = [
   { id:'calfq_tec', label:'TÉCNICO LABORATORIO', type:'green' },
 ];
-let calfqWorkers = {}, calfqBajas = [], calfqVacaciones = [];
 function initCalidadFQ() {
   calfqWorkers = {};
   CALFQ_PUESTOS.forEach(p => { calfqWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
@@ -1496,7 +1515,6 @@ function initCalidadFQ() {
 const CALMICRO_PUESTOS = [
   { id:'calmicro_tec', label:'TÉCNICO MICROBIOLOGIA', type:'yellow' },
 ];
-let calmicroWorkers = {}, calmicroBajas = [], calmicroVacaciones = [];
 function initCalidadMicro() {
   calmicroWorkers = {};
   CALMICRO_PUESTOS.forEach(p => { calmicroWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
@@ -1511,9 +1529,6 @@ const CAL_PUESTOS = [
   { id:'cal_tec',   label:'TÉCNICO',       type:'green'  },
 ];
 
-let calWorkers = {};
-let calBajas = [];
-let calVacaciones = [];
 
 function initCalidad() {
   calWorkers = {};
@@ -1533,9 +1548,6 @@ const ELAB_PUESTOS = [
   { id:'elab_desc', label:'DESCARGA CISTERNAS',  type:'green'  },
 ];
 
-let elabWorkers = {};
-let elabBajas = [];
-let elabVacaciones = [];
 
 function initElaboracion() {
   elabWorkers = {};
@@ -1555,9 +1567,6 @@ const MTO_PUESTOS = [
   { id:'mto_tec',   label:'TÉCNICO MTO.',        type:'yellow' },
 ];
 
-let mtoWorkers = {};
-let mtoBajas = [];
-let mtoVacaciones = [];
 
 function initMantenimiento() {
   mtoWorkers = {};
@@ -1585,9 +1594,6 @@ const ALMC_PUESTOS = [
   { id:'alm_destr',  label:'DESTRUCCIONES',             type:'green'   },
 ];
 
-let almWorkers = {};    // keyed by puesto id, each is an array of workers
-let almBajas = [];
-let almVacaciones = [];
 
 function initAlmacen() {
   almWorkers = {};
