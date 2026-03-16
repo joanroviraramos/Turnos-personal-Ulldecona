@@ -1533,9 +1533,13 @@ function publicar() {
   }
 
   autoSave();
+  // Guardar también como cuadrante publicado — la TV siempre lee esta clave
+  try {
+    localStorage.setItem('ubesol_publicado', JSON.stringify(buildPayload()));
+  } catch(e) {}
   toast(duplicados.length > 0
     ? '⚠️ Cuadrante publicado con ' + duplicados.length + ' duplicado(s)'
-    : '✓ Cuadrante publicado y guardado correctamente');
+    : '✓ Cuadrante publicado — la pantalla TV se actualizará automáticamente');
 }
 
 function clearStorage() {
@@ -2005,15 +2009,18 @@ function toast(msg) {
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────
-// Set current week number automatically
+// Arrancar en la semana SIGUIENTE a la actual (es lo que interesa planificar)
 (function() {
   const now = new Date();
   const jan4 = new Date(now.getFullYear(), 0, 4);
   const startW1 = new Date(jan4);
   startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-  const wk = Math.ceil((now - startW1) / 604800000) + 1;
-  document.getElementById('meta-sem').value = Math.min(wk, 52);
-  document.getElementById('meta-ano').value = now.getFullYear();
+  const wkActual = Math.ceil((now - startW1) / 604800000) + 1;
+  let wkSig = wkActual + 1;
+  let ano = now.getFullYear();
+  if (wkSig > 52) { wkSig = 1; ano++; }
+  document.getElementById('meta-sem').value = wkSig;
+  document.getElementById('meta-ano').value = ano;
 })();
 
 lines = defaultLines();

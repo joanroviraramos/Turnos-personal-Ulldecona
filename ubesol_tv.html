@@ -640,6 +640,18 @@ function showDept(idx) {
 
 // ── WEEK ─────────────────────────────────────────────────────────────
 function getWeekKey() {
+  // Buscar la semana más reciente guardada en localStorage
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('ubesol_')) keys.push(k);
+  }
+  if (keys.length) {
+    // Ordenar y coger la más reciente
+    keys.sort();
+    return keys[keys.length - 1];
+  }
+  // Fallback: calcular semana actual
   const now = new Date();
   const jan4 = new Date(now.getFullYear(), 0, 4);
   const startW1 = new Date(jan4);
@@ -649,13 +661,49 @@ function getWeekKey() {
   return 'ubesol_' + now.getFullYear() + '_s' + sem;
 }
 
+function getNextWeekKey() {
+  const now = new Date();
+  const jan4 = new Date(now.getFullYear(), 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const wk = Math.ceil((now - startW1) / 604800000) + 1;
+  let wkSig = wk + 1;
+  let ano = now.getFullYear();
+  if (wkSig > 52) { wkSig = 1; ano++; }
+  return 'ubesol_' + ano + '_s' + String(wkSig).padStart(2,'0');
+}
+
 function loadFromStorage() {
-  const key = getWeekKey();
   try {
-    const saved = localStorage.getItem(key);
+    // Primero intentar leer el cuadrante publicado
+    let saved = localStorage.getItem('ubesol_publicado');
+    // Si no hay publicado, buscar la semana siguiente
+    if (!saved) saved = localStorage.getItem(getNextWeekKey());
     if (!saved) return null;
-    return JSON.parse(saved);
+    const data = JSON.parse(saved);
+    if (data.semana) {
+      document.getElementById('week-num').textContent = data.semana;
+      const { monday, sunday } = getWeekDatesTV(parseInt(data.ano||2026), parseInt(data.semana));
+      document.getElementById('week-dates').textContent = fmtDateTV(monday) + ' — ' + fmtDateTV(sunday);
+    }
+    return data;
   } catch(e) { return null; }
+}
+
+function getWeekDatesTV(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const monday = new Date(startOfW1);
+  monday.setDate(startOfW1.getDate() + (week-1)*7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return {monday, sunday};
+}
+
+function fmtDateTV(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
 }
 
 const PUESTO_LABELS = {
@@ -753,7 +801,7 @@ setInterval(() => {
   if (fresh) {
     const newDepts = buildDepartmentsFromStorage(fresh);
     ACTIVE_DEPARTMENTS.splice(0, ACTIVE_DEPARTMENTS.length, ...newDepts);
-    showDept(currentIdx);
+    showDept(currentIdx < ACTIVE_DEPARTMENTS.length ? currentIdx : 0);
   }
 }, 60000);
 
