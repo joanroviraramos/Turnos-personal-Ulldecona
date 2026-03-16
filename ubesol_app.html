@@ -325,7 +325,17 @@ body {
 .dia-chip.off   { background: #f0f0f0; color: #aaa; }
 .dia-chip.today { background: var(--green); color: white; }
 
-.tc-turno-sm { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.turno-card-actual {
+  background: #1a6eb5;
+  border-radius: var(--radius);
+  padding: 20px;
+  color: white;
+}
+
+.turno-card-actual .tc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+.turno-card-actual .tc-turno { font-size: 28px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -0.02em; }
+.turno-card-actual .tc-puesto { font-size: 13px; opacity: 0.85; }
+.turno-card-actual .tc-fechas { font-size: 11px; opacity: 0.65; margin-top: 6px; font-family: 'DM Mono', monospace; }
 
 .turno-card-hist {
   background: var(--surface);
@@ -334,6 +344,21 @@ body {
   padding: 14px 16px;
   border-left: 4px solid var(--border-2);
 }
+
+.sem-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.sem-label.proxima { background: #e8f5e4; color: #27500a; }
+.sem-label.actual   { background: #dbeafe; color: #1e40af; }
+.sem-label.pasada   { background: #f3f4f6; color: #6b7280; }
+.sem-label.futura   { background: #f3f4f6; color: #6b7280; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -896,7 +921,15 @@ function showTurnos() {
   const c = document.getElementById('turnos-content');
   const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
 
-  // Recoger todos los cuadrantes del histórico
+  // Calcular semana y año actuales
+  const now = new Date();
+  const jan4 = new Date(now.getFullYear(), 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const semActual = Math.ceil((now - startW1) / 604800000) + 1;
+  const anoActual = now.getFullYear();
+
+  // Recoger todas las semanas del histórico
   const historico = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -907,18 +940,11 @@ function showTurnos() {
     } catch(e) {}
   }
 
-  // Añadir el publicado actual si no está ya en el histórico
+  // Añadir el publicado actual si no está ya
   if (cuadrante) {
-    const yaEsta = historico.some(h => h.semana === cuadrante.semana && h.ano === cuadrante.ano);
+    const yaEsta = historico.some(h => h.semana == cuadrante.semana && h.ano == cuadrante.ano);
     if (!yaEsta) historico.push(cuadrante);
   }
-
-  // Ordenar de más reciente a más antiguo
-  historico.sort((a, b) => {
-    const ka = parseInt(a.ano) * 100 + parseInt(a.semana);
-    const kb = parseInt(b.ano) * 100 + parseInt(b.semana);
-    return kb - ka;
-  });
 
   if (!historico.length) {
     c.innerHTML = '<div class="no-turno">No hay cuadrantes publicados.<br>Consulta con tu encargado.</div>';
@@ -926,42 +952,72 @@ function showTurnos() {
     return;
   }
 
-  // Semana más reciente en el header
-  const ultimo = historico[0];
-  const { monday: m0, sunday: s0 } = getWeekDates(parseInt(ultimo.ano), parseInt(ultimo.semana));
-  document.getElementById('turnos-semana').textContent = 'Semana ' + ultimo.semana + ' · ' + fmtDate(m0) + ' al ' + fmtDate(s0);
-
-  // Renderizar cada semana
-  let html = '';
-  historico.forEach((data, idx) => {
-    const turnoInfo = findTurnoWorkerInData(currentUser.nombre, data);
-    const { monday, sunday } = getWeekDates(parseInt(data.ano), parseInt(data.semana));
-    const esActual = idx === 0;
-
-    if (!turnoInfo) {
-      if (esActual) {
-        html += `<div class="no-turno">No estás asignado en el cuadrante de la semana ${data.semana}.</div>`;
-      }
-      return;
-    }
-
-    html += `
-      <div class="${esActual ? 'turno-card' : 'turno-card-hist'}">
-        ${esActual ? `<div class="tc-label">Hola, ${currentUser.nombre}</div>` : ''}
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${esActual?'4px':'0'}">
-          <div>
-            <div class="${esActual ? 'tc-turno' : 'tc-turno-sm'}">${TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno}</div>
-            <div class="tc-puesto">${turnoInfo.puesto}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:${esActual?'13px':'12px'};${esActual?'opacity:0.85':'color:#888'}">Semana ${data.semana}</div>
-            <div style="font-size:11px;${esActual?'opacity:0.65':'color:#aaa'};font-family:'DM Mono',monospace">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
-          </div>
-        </div>
-      </div>`;
+  // Ordenar: semana siguiente primero, luego resto por orden
+  historico.sort((a, b) => {
+    const ka = parseInt(a.ano) * 100 + parseInt(a.semana);
+    const kb = parseInt(b.ano) * 100 + parseInt(b.semana);
+    return kb - ka;
   });
 
-  c.innerHTML = html || '<div class="no-turno">No hay asignaciones registradas.</div>';
+  // Header con la semana más reciente publicada
+  const primero = historico[0];
+  const { monday: m0, sunday: s0 } = getWeekDates(parseInt(primero.ano), parseInt(primero.semana));
+  document.getElementById('turnos-semana').textContent = 'Semana ' + primero.semana;
+
+  let html = '';
+
+  historico.forEach(data => {
+    const turnoInfo = findTurnoWorkerInData(currentUser.nombre, data);
+    const sem = parseInt(data.semana);
+    const ano = parseInt(data.ano);
+    const { monday, sunday } = getWeekDates(ano, sem);
+
+    // Determinar tipo de semana
+    const semKey = ano * 100 + sem;
+    const actKey = anoActual * 100 + semActual;
+    const sigKey = anoActual * 100 + (semActual + 1);
+
+    let tipo, labelTxt, cardClass, leftColor;
+    if (semKey === sigKey) {
+      tipo = 'proxima'; labelTxt = 'Próxima semana'; cardClass = 'turno-card'; leftColor = '';
+    } else if (semKey === actKey) {
+      tipo = 'actual'; labelTxt = 'Esta semana'; cardClass = 'turno-card-actual'; leftColor = '';
+    } else if (semKey > sigKey) {
+      tipo = 'futura'; labelTxt = 'Semana ' + sem; cardClass = 'turno-card-hist'; leftColor = 'border-left-color:#9ca3af';
+    } else {
+      tipo = 'pasada'; labelTxt = 'Semana ' + sem; cardClass = 'turno-card-hist'; leftColor = 'border-left-color:#d1d5db';
+    }
+
+    const sinAsignar = !turnoInfo;
+    const turnoNombre = turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
+    const puestoNombre = turnoInfo ? turnoInfo.puesto : 'Sin asignar';
+
+    if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
+      html += `
+        <div class="${cardClass}">
+          <span class="sem-label ${tipo}">${labelTxt}</span>
+          <div class="tc-turno">${turnoNombre}</div>
+          <div class="tc-puesto">${puestoNombre}</div>
+          <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+        </div>`;
+    } else {
+      html += `
+        <div class="${cardClass}" style="${leftColor}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span class="sem-label ${tipo}">${labelTxt}</span>
+              <div style="font-size:16px;font-weight:600;color:${sinAsignar?'#aaa':'var(--text)'}">${turnoNombre}</div>
+              <div style="font-size:12px;color:#888;margin-top:2px">${puestoNombre}</div>
+            </div>
+            <div style="text-align:right;font-size:11px;color:#aaa;font-family:'DM Mono',monospace">
+              ${fmtDate(monday)}<br>${fmtDate(sunday)}
+            </div>
+          </div>
+        </div>`;
+    }
+  });
+
+  c.innerHTML = html;
 }
 
 function findTurnoWorkerInData(nombre, data) {
