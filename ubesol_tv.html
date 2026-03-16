@@ -592,7 +592,7 @@ function appendRow(container, puesto, workers, idx) {
 function buildDots(currentIdx) {
   const wrap = document.getElementById('dept-dots');
   wrap.innerHTML = '';
-  DEPARTMENTS.forEach((d, i) => {
+  ACTIVE_DEPARTMENTS.forEach((d, i) => {
     const dot = document.createElement('div');
     dot.className = 'dept-dot' + (i===currentIdx?' active':'');
     dot.textContent = d.name;
@@ -623,14 +623,14 @@ function tick() {
 }
 
 function nextDept() {
-  currentIdx = (currentIdx + 1) % DEPARTMENTS.length;
+  currentIdx = (currentIdx + 1) % ACTIVE_DEPARTMENTS.length;
   remaining = DURATION;
   showDept(currentIdx);
 }
 
 function showDept(idx) {
-  const dept = DEPARTMENTS[idx];
-  const next = DEPARTMENTS[(idx+1) % DEPARTMENTS.length];
+  const dept = ACTIVE_DEPARTMENTS[idx];
+  const next = ACTIVE_DEPARTMENTS[(idx+1) % ACTIVE_DEPARTMENTS.length];
   renderDept(dept);
   buildDots(idx);
   document.getElementById('next-dept-name').textContent = next.name;
@@ -639,14 +639,124 @@ function showDept(idx) {
 }
 
 // ── WEEK ─────────────────────────────────────────────────────────────
-function initWeek() {
-  const {wk, dates} = getWeekInfo();
-  document.getElementById('week-num').textContent = wk;
-  document.getElementById('week-dates').textContent = dates;
+function getWeekKey() {
+  const now = new Date();
+  const jan4 = new Date(now.getFullYear(), 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const wk = Math.ceil((now - startW1) / 604800000) + 1;
+  const sem = String(Math.min(wk, 52)).padStart(2,'0');
+  return 'ubesol_' + now.getFullYear() + '_s' + sem;
+}
+
+function loadFromStorage() {
+  const key = getWeekKey();
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return null;
+    return JSON.parse(saved);
+  } catch(e) { return null; }
+}
+
+const PUESTO_LABELS = {
+  'sup':'SUPERVISOR/A DE TURNO','tr1':'TRACKING NAVE 1','sum':'SUMINISTRO',
+  'tol3':'TOLVAS NAVE 3','tras3':'TRASLADO NAVE 3','trk3':'TRACKING NAVE 3',
+  'tol4':'TOLVAS NAVE 4','comp4':'COMPONENTES NAVE 4','trk4':'TRACKING NAVE 4',
+  'sopl_sup':'SUPERVISOR/A TURNO','sopl_s12':'SOPLADORA 1 Y 2','sopl_s3':'SOPLADORA 3',
+  'sopl_s46':'SOPLADORA 4 Y 6','sopl_s5t':'SOPLADORA 5 Y TRACKING',
+  'sopl_pal':'PALETIZADORES','sopl_ref':'REFUERZO TURNO',
+  'mc_tec':'TÉCNICO PROCESOS',
+  'calmat_tec':'TÉCNICO MATERIALES','calfq_tec':'TÉCNICO LABORATORIO',
+  'calmicro_tec':'TÉCNICO MICROBIOLOGÍA',
+  'cal_nave1':'NAVE 1-MK1','cal_nave3':'NAVE 3-NAVE 4','cal_tec':'TÉCNICO',
+  'elab_sup':'SUPERVISOR/A TURNO','elab_elab':'ELABORADOR/A','elab_pes':'PESADAS',
+  'elab_hig':'HIGIENE','elab_desc':'DESCARGA CISTERNAS',
+  'mto_coord':'COORDINADOR','mto_back':'BACKOFFICE',
+  'mto_sup':'SUPERVISOR/A DE TURNO','mto_tec':'TÉCNICO MTO.',
+  'alm_sup':'SUPERVISOR/A TURNO','alm_desc':'DESCARGA / UBICAR',
+  'alm_sopl':'SOPLADO / UBICAR','alm_ab3':'ABAST. NAVE 3 / UBICAR',
+  'alm_ab1':'ABAST. NAVE 1 / UBICAR','alm_res':'RESIDUOS / DESTRUCCIONES',
+  'alm_ubi':'UBICAR','alm_mmpp':'MMPP','alm_sala':'SALA BLANCA',
+  'alm_cargas':'CARGAS','alm_silo':'SILO','alm_destr':'DESTRUCCIONES',
+};
+
+function buildDepartmentsFromStorage(data) {
+  if (!data) return DEPARTMENTS;
+
+  const depts = [];
+  const safeArr = a => Array.isArray(a) ? a : [];
+
+  // ── ENVASADO ──
+  const env = data.envasado;
+  if (env) {
+    const special = [];
+    if (env.specialWorkers) {
+      Object.entries(env.specialWorkers).forEach(([id, arr]) => {
+        safeArr(arr).forEach(w => {
+          if (w && w.cells) special.push({puesto: PUESTO_LABELS[id] || id, workers:[w.cells]});
+        });
+      });
+    }
+    const sections = [];
+    safeArr(env.lines).forEach(line => {
+      const groups = [];
+      safeArr(line.maq).forEach(w => {
+        if(w && w.cells) groups.push({puesto:'O. Máquina', workers:[w.cells]});
+      });
+      safeArr(line.ops).forEach(w => {
+        if(w && w.cells) groups.push({puesto:'Operaria/O', workers:[w.cells]});
+      });
+      if (groups.length) sections.push({label: line.label || line.id, groups});
+    });
+    depts.push({id:'envasado', name:'Envasado', type:'machine', special, sections});
+  }
+
+  // ── DEPTS TIPO POST ──
+  const POST_MAP = [
+    {key:'elaboracion',   name:'Elaboración'},
+    {key:'almacen',       name:'Almacén'},
+    {key:'mantenimiento', name:'Mantenimiento'},
+    {key:'calidadLineas', name:'Calidad Líneas'},
+    {key:'calidadFQ',     name:'Calidad Fís-Quím'},
+    {key:'calidadMicro',  name:'Calidad Microbiología'},
+    {key:'calidadMat',    name:'Calidad Materiales'},
+    {key:'mejoraContinua',name:'Mejora Continua'},
+    {key:'soplado',       name:'Soplado'},
+  ];
+
+  POST_MAP.forEach(({key, name}) => {
+    const d = data[key];
+    if (!d || !d.workers) return;
+    const puestos = [];
+    Object.entries(d.workers).forEach(([puestoId, arr]) => {
+      const label = PUESTO_LABELS[puestoId] || puestoId;
+      safeArr(arr).forEach(w => {
+        if (w && w.cells) puestos.push({puesto: label, workers:[w.cells]});
+      });
+    });
+    if (puestos.length) depts.push({id:key, name, type:'post', puestos});
+  });
+
+  return depts.length ? depts : DEPARTMENTS;
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────
+const storageData = loadFromStorage();
+const ACTIVE_DEPARTMENTS = buildDepartmentsFromStorage(storageData);
+
+// Actualizar semana en header
 initWeek();
+
+// Recargar datos cada 60 segundos por si el encargado publica nuevo cuadrante
+setInterval(() => {
+  const fresh = loadFromStorage();
+  if (fresh) {
+    const newDepts = buildDepartmentsFromStorage(fresh);
+    ACTIVE_DEPARTMENTS.splice(0, ACTIVE_DEPARTMENTS.length, ...newDepts);
+    showDept(currentIdx);
+  }
+}, 60000);
+
 showDept(0);
 timer = setInterval(tick, 1000);
 
@@ -655,7 +765,7 @@ document.getElementById('dept-dots').addEventListener('click', e => {
   const dot = e.target.closest('.dept-dot');
   if (!dot) return;
   const idx = Array.from(dot.parentNode.children).indexOf(dot);
-  if (idx >= 0 && idx < DEPARTMENTS.length) {
+  if (idx >= 0 && idx < ACTIVE_DEPARTMENTS.length) {
     currentIdx = idx;
     remaining = DURATION;
     showDept(idx);
