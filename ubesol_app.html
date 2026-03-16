@@ -1086,13 +1086,18 @@ function renderCalendario() {
 
   const anoActual = new Date().getFullYear();
 
-  // Calcular número de semana ISO para una fecha
+  // Calcular número de semana ISO para una fecha — usando siempre el lunes de esa semana
   function getSemKey(fecha) {
-    const jan4 = new Date(fecha.getFullYear(), 0, 4);
+    // Encontrar el lunes de la semana de esta fecha
+    const diaSem = (fecha.getDay() + 6) % 7; // 0=lun
+    const lunes = new Date(fecha);
+    lunes.setDate(fecha.getDate() - diaSem);
+    // Calcular semana ISO del lunes
+    const jan4 = new Date(lunes.getFullYear(), 0, 4);
     const sw1 = new Date(jan4);
     sw1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-    const sem = Math.ceil((fecha - sw1) / 604800000);
-    return fecha.getFullYear() + '_' + String(sem).padStart(2,'0');
+    const sem = Math.ceil((lunes - sw1) / 604800000);
+    return lunes.getFullYear() + '_' + String(sem).padStart(2,'0');
   }
 
   let html = `
