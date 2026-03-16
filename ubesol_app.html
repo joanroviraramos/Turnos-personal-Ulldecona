@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GrupoUbesol — Portal Trabajador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #4a7c2f;
+  --green-light: #6a9e45;
+  --green-dark: #2d5a1a;
+  --green-pale: #eef5e8;
+  --green-bg: #f5f9f2;
+  --amber: #e07b00;
+  --amber-pale: #fff8ec;
+  --red: #c0392b;
+  --red-pale: #fdf0ef;
+  --text: #1a2012;
+  --text-2: #4a5540;
+  --text-3: #8a9580;
+  --border: #dde8d4;
+  --border-2: #c8d9ba;
+  --surface: #ffffff;
+  --bg: #f2f7ee;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── LOGIN ── */
+#screen-login {
+  background: var(--surface);
+  justify-content: center;
+  padding: 40px 28px;
+  gap: 0;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.login-brand .brand-mark {
+  width: 64px; height: 64px;
+  background: var(--green);
+  border-radius: 18px;
+  margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.brand-mark svg { width: 36px; height: 36px; }
+
+.login-brand h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.login-brand p {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.login-form { display: flex; flex-direction: column; gap: 14px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field input {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 13px 16px;
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+
+.field input:focus { border-color: var(--green); background: #fff; }
+
+.field input::placeholder { color: var(--text-3); }
+
+.login-error {
+  background: var(--red-pale);
+  border: 1px solid #f5c6c2;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red);
+  display: none;
+}
+
+.login-error.show { display: block; }
+
+.btn-primary {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  margin-top: 4px;
+}
+
+.btn-primary:active { background: var(--green-dark); transform: scale(0.98); }
+
+.login-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 20px;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--green);
+  padding: 16px 20px 14px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.header-logo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+.header-logout {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+
+.header-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.header-dept {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 1px;
+}
+
+/* ── HOME SCREEN ── */
+#screen-home { background: var(--bg); }
+
+.home-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+
+/* semana banner */
+.semana-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sb-label { font-size: 11px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.sb-value { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.sb-badge {
+  background: var(--green-pale);
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+/* main 3 buttons */
+.main-actions { display: flex; flex-direction: column; gap: 12px; }
+
+.action-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn:active { transform: scale(0.98); }
+
+.action-btn.green  { border-left: 4px solid var(--green); }
+.action-btn.amber  { border-left: 4px solid var(--amber); }
+.action-btn.blue   { border-left: 4px solid #2563eb; }
+
+.action-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
+}
+
+.action-btn.green .action-icon { background: var(--green-pale); }
+.action-btn.amber .action-icon { background: var(--amber-pale); }
+.action-btn.blue  .action-icon { background: #eff6ff; }
+
+.action-text { flex: 1; }
+.action-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.action-desc  { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.action-arrow {
+  color: var(--text-3);
+  font-size: 18px;
+  font-weight: 300;
+}
+
+.action-badge {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: var(--red);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── TURNOS SCREEN ── */
+#screen-turnos { background: var(--bg); }
+
+.screen-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none;
+  font-size: 14px; font-weight: 500;
+  color: var(--green); cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  padding: 0 0 4px;
+}
+
+.turno-card {
+  background: var(--green);
+  border-radius: var(--radius);
+  padding: 20px;
+  color: white;
+}
+
+.tc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+.tc-turno { font-size: 28px; font-weight: 700; margin: 4px 0 2px; letter-spacing: -0.02em; }
+.tc-puesto { font-size: 13px; opacity: 0.85; }
+.tc-fechas { font-size: 11px; opacity: 0.65; margin-top: 6px; font-family: 'DM Mono', monospace; }
+
+.dias-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.dias-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+
+.dias-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+
+.dia-cell { text-align: center; }
+.dia-name { font-size: 10px; color: var(--text-3); margin-bottom: 4px; font-weight: 500; }
+.dia-chip {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600;
+}
+.dia-chip.work  { background: var(--green-pale); color: var(--green-dark); }
+.dia-chip.off   { background: #f0f0f0; color: #aaa; }
+.dia-chip.today { background: var(--green); color: white; }
+
+.no-turno {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* ── EPI SCREEN ── */
+#screen-epi { background: var(--bg); }
+
+.epi-list { display: flex; flex-direction: column; gap: 10px; }
+
+.epi-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.epi-ico {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--green-pale);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+
+.epi-info { flex: 1; }
+.epi-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.epi-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+.tag {
+  font-size: 10px; font-weight: 600;
+  padding: 3px 8px; border-radius: 20px;
+  display: inline-block; margin-top: 4px;
+}
+
+.tag-ok   { background: #dcfce7; color: #166534; }
+.tag-pend { background: #fef3c7; color: #92400e; }
+
+.btn-nueva-epi {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* EPI form */
+.epi-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.epi-form h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.epi-form select, .epi-form textarea {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.epi-form textarea { resize: none; height: 80px; }
+.epi-form select:focus, .epi-form textarea:focus { border-color: var(--green); background: #fff; }
+
+.form-btns { display: flex; gap: 8px; }
+.btn-cancel {
+  flex: 1; background: #f0f0f0; border: none; border-radius: var(--radius-sm);
+  padding: 12px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+.btn-send {
+  flex: 2; background: var(--green); color: white; border: none; border-radius: var(--radius-sm);
+  padding: 12px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+
+/* ── AVISOS SCREEN ── */
+#screen-avisos { background: var(--bg); }
+
+.aviso-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.aviso-item.nuevo { border-left: 3px solid var(--green); }
+
+.av-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.av-fecha { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+.av-nuevo-badge {
+  background: var(--green-pale);
+  color: var(--green-dark);
+  font-size: 9px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+
+.av-titulo { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.av-texto  { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+/* ── SUCCESS TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999;
+  white-space: nowrap;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="screen-login" class="screen active">
+  <div class="login-brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 36 36" fill="none">
+        <path d="M18 4L6 10v8c0 7.7 5.1 14.9 12 17 6.9-2.1 12-9.3 12-17v-8L18 4z" fill="white" opacity="0.9"/>
+      </svg>
+    </div>
+    <h1>GrupoUbesol</h1>
+    <p>Portal del trabajador</p>
+  </div>
+
+  <div class="login-form">
+    <div class="field">
+      <label>DNI</label>
+      <input type="text" id="input-dni" placeholder="12345678A" maxlength="20" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="input-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error">DNI o contraseña incorrectos</div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+  </div>
+
+  <p class="login-hint">Primera vez aquí: tu contraseña inicial es tu DNI</p>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div id="screen-home" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name" id="home-name">Hola</div>
+    <div class="header-dept" id="home-dept"></div>
+  </div>
+
+  <div class="home-body">
+    <div class="semana-banner">
+      <div>
+        <div class="sb-label">Próxima semana publicada</div>
+        <div class="sb-value" id="home-semana-fechas">—</div>
+      </div>
+      <div class="sb-badge" id="home-semana-num">S—</div>
+    </div>
+
+    <div class="section-title">Acceso rápido</div>
+
+    <div class="main-actions">
+      <button class="action-btn green" onclick="goTo('turnos')">
+        <div class="action-icon">📅</div>
+        <div class="action-text">
+          <div class="action-title">Mis turnos</div>
+          <div class="action-desc">Ver tu horario semanal</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+
+      <button class="action-btn amber" onclick="goTo('epi')">
+        <div class="action-icon">🦺</div>
+        <div class="action-text">
+          <div class="action-title">EPIs</div>
+          <div class="action-desc">Solicitar equipos de protección</div>
+        </div>
+        <div class="action-arrow">›</div>
+        <div class="action-badge" id="epi-badge" style="display:none">1</div>
+      </button>
+
+      <button class="action-btn blue" onclick="goTo('avisos')">
+        <div class="action-icon">📢</div>
+        <div class="action-text">
+          <div class="action-title">Avisos</div>
+          <div class="action-desc">Comunicados de empresa</div>
+        </div>
+        <div class="action-arrow">›</div>
+        <div class="action-badge" id="avisos-badge" style="display:none">2</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TURNOS ═══ -->
+<div id="screen-turnos" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Mis turnos</div>
+    <div class="header-dept" id="turnos-semana"></div>
+  </div>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="turnos-content"></div>
+  </div>
+</div>
+
+<!-- ═══ EPI ═══ -->
+<div id="screen-epi" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Mis EPIs</div>
+    <div class="header-dept">Historial y solicitudes</div>
+  </div>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="epi-content"></div>
+  </div>
+</div>
+
+<!-- ═══ AVISOS ═══ -->
+<div id="screen-avisos" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Avisos</div>
+    <div class="header-dept">Comunicados de empresa</div>
+  </div>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="avisos-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATOS — usuarios desde el mismo CSV de trabajadores
+//  En producción se carga desde GitHub
+// ═══════════════════════════════════════════════════════
+const CSV_URL = 'https://raw.githubusercontent.com/joanroviraramos/Turnos-personal-Ulldecona/main/prueba%20de%20trabajadores.csv';
+const CUADRANTE_URL = 'https://raw.githubusercontent.com/joanroviraramos/Turnos-personal-Ulldecona/main/cuadrante.json';
+const LS_USERS = 'ubesol_app_users';
+const LS_SESSION = 'ubesol_app_session';
+const LS_EPIS = 'ubesol_app_epis';
+
+let allWorkers = [];
+let cuadrante = null;
+let currentUser = null;
+
+// ─── INIT ────────────────────────────────────────────
+async function init() {
+  // Restaurar sesión si existe
+  try {
+    const sess = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
+    if (sess) { currentUser = sess; showHome(); }
+  } catch(e) {}
+
+  // Cargar trabajadores y cuadrante en background
+  loadWorkers();
+  loadCuadrante();
+}
+
+async function loadWorkers() {
+  try {
+    const r = await fetch(CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const text = await r.text();
+    const lines = text.trim().split('\n').slice(1);
+    allWorkers = lines.map(l => {
+      const p = l.split(',');
+      return { nombre: (p[0]||'').trim(), dni: (p[1]||'').trim().toUpperCase(), departamento: (p[2]||'').trim() };
+    }).filter(w => w.nombre && w.dni);
+  } catch(e) {
+    console.warn('No se pudo cargar CSV:', e.message);
+  }
+}
+
+async function loadCuadrante() {
+  try {
+    const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    cuadrante = await r.json();
+    if (currentUser) updateHomeInfo();
+  } catch(e) {
+    // Sin cuadrante publicado — normal
+  }
+}
+
+// ─── AUTH ────────────────────────────────────────────
+function doLogin() {
+  const dni  = document.getElementById('input-dni').value.trim().toUpperCase();
+  const pass = document.getElementById('input-pass').value;
+  const err  = document.getElementById('login-error');
+
+  if (!dni || !pass) { err.textContent = 'Introduce tu DNI y contraseña'; err.classList.add('show'); return; }
+
+  // Buscar en workers cargados
+  const worker = allWorkers.find(w => w.dni === dni);
+
+  // Obtener contraseña guardada (por defecto = DNI)
+  const users = JSON.parse(localStorage.getItem(LS_USERS) || '{}');
+  const savedPass = users[dni] || dni; // si no tiene pass guardada, es el propio DNI
+
+  if (!worker) {
+    err.textContent = 'DNI no encontrado en el sistema';
+    err.classList.add('show'); return;
+  }
+
+  if (pass !== savedPass) {
+    err.textContent = 'Contraseña incorrecta';
+    err.classList.add('show'); return;
+  }
+
+  err.classList.remove('show');
+  currentUser = { dni, nombre: worker.nombre, departamento: worker.departamento };
+  localStorage.setItem(LS_SESSION, JSON.stringify(currentUser));
+  showHome();
+}
+
+document.getElementById('input-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem(LS_SESSION);
+  goScreen('login');
+  document.getElementById('input-dni').value = '';
+  document.getElementById('input-pass').value = '';
+}
+
+// ─── NAVIGATION ──────────────────────────────────────
+function goTo(screen) {
+  if (screen === 'home') { showHome(); return; }
+  if (screen === 'turnos') { showTurnos(); return; }
+  if (screen === 'epi') { showEpi(); return; }
+  if (screen === 'avisos') { showAvisos(); return; }
+}
+
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ─── HOME ────────────────────────────────────────────
+function showHome() {
+  goScreen('home');
+  if (!currentUser) return;
+  const nombre = currentUser.nombre.split(' ')[0];
+  document.getElementById('home-name').textContent = 'Hola, ' + nombre;
+  document.getElementById('home-dept').textContent = currentUser.departamento;
+  updateHomeInfo();
+  updateBadges();
+}
+
+function updateHomeInfo() {
+  if (!cuadrante) return;
+  const sem = cuadrante.semana;
+  const ano = cuadrante.ano;
+  if (sem && ano) {
+    document.getElementById('home-semana-num').textContent = 'S' + sem;
+    const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
+    document.getElementById('home-semana-fechas').textContent = fmtDate(monday) + ' — ' + fmtDate(sunday);
+  }
+}
+
+function updateBadges() {
+  // Avisos no leídos
+  const leidos = JSON.parse(localStorage.getItem('ubesol_avisos_leidos') || '[]');
+  const avisos = getAvisos();
+  const noLeidos = avisos.filter(a => !leidos.includes(a.id)).length;
+  const ab = document.getElementById('avisos-badge');
+  if (noLeidos > 0) { ab.textContent = noLeidos; ab.style.display = 'flex'; }
+  else ab.style.display = 'none';
+
+  // EPIs pendientes
+  const epis = getEpis();
+  const pend = epis.filter(e => e.estado === 'pendiente').length;
+  const eb = document.getElementById('epi-badge');
+  if (pend > 0) { eb.textContent = pend; eb.style.display = 'flex'; }
+  else eb.style.display = 'none';
+}
+
+// ─── TURNOS ──────────────────────────────────────────
+function showTurnos() {
+  goScreen('turnos');
+  const c = document.getElementById('turnos-content');
+
+  if (!cuadrante) {
+    c.innerHTML = '<div class="no-turno">No hay cuadrante publicado.<br>Consulta con tu encargado.</div>';
+    return;
+  }
+
+  const sem = cuadrante.semana;
+  const ano = cuadrante.ano;
+  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
+  document.getElementById('turnos-semana').textContent = 'Semana ' + sem + ' · ' + fmtDate(monday) + ' al ' + fmtDate(sunday);
+
+  // Buscar turno del trabajador
+  const turnoInfo = findTurnoWorker(currentUser.nombre);
+
+  if (!turnoInfo) {
+    c.innerHTML = '<div class="no-turno">No estás asignado en el cuadrante de esta semana.</div>';
+    return;
+  }
+
+  const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
+  const DIAS = ['L','M','X','J','V','S','D'];
+  const hoy = new Date().getDay(); // 0=dom,1=lun...
+  const hoyIdx = hoy === 0 ? 6 : hoy - 1;
+
+  let diasHtml = '';
+  DIAS.forEach((d, i) => {
+    const isHoy = i === hoyIdx;
+    const tieneWork = turnoInfo.turno !== 'P' ? (i < 5) : (i < 5);
+    const cls = isHoy ? 'today' : (i < 5 ? 'work' : 'off');
+    const label = i < 5 ? turnoInfo.turno : '—';
+    diasHtml += `<div class="dia-cell">
+      <div class="dia-name">${d}</div>
+      <div class="dia-chip ${cls}">${label}</div>
+    </div>`;
+  });
+
+  c.innerHTML = `
+    <div class="turno-card">
+      <div class="tc-label">Tu turno</div>
+      <div class="tc-turno">${TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno}</div>
+      <div class="tc-puesto">${turnoInfo.puesto}</div>
+      <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+    </div>
+    <div class="dias-card">
+      <div class="dias-title">Días trabajados</div>
+      <div class="dias-row">${diasHtml}</div>
+    </div>
+  `;
+}
+
+function findTurnoWorker(nombre) {
+  if (!cuadrante) return null;
+  const nameUpper = nombre.toUpperCase().trim();
+  const TURNOS = ['M','T','N','P'];
+  const safeArr = a => Array.isArray(a) ? a : [];
+
+  // Buscar en Envasado
+  const env = cuadrante.envasado;
+  if (env) {
+    if (env.specialWorkers) {
+      for (const [id, arr] of Object.entries(env.specialWorkers)) {
+        for (const w of safeArr(arr)) {
+          if (!w || !w.cells) continue;
+          for (const t of TURNOS) {
+            if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+              return { turno: t, puesto: id.toUpperCase() };
+          }
+        }
+      }
+    }
+    for (const line of safeArr(env.lines)) {
+      for (const w of [...safeArr(line.maq), ...safeArr(line.ops)]) {
+        if (!w || !w.cells) continue;
+        for (const t of TURNOS) {
+          if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+            return { turno: t, puesto: line.label };
+        }
+      }
+    }
+  }
+
+  // Buscar en resto de departamentos
+  const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
+  for (const key of POST_KEYS) {
+    const d = cuadrante[key];
+    if (!d || !d.workers) continue;
+    for (const [pid, arr] of Object.entries(d.workers)) {
+      for (const w of safeArr(arr)) {
+        if (!w || !w.cells) continue;
+        for (const t of TURNOS) {
+          if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+            return { turno: t, puesto: pid };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// ─── EPIs ────────────────────────────────────────────
+const EPI_TIPOS = ['Botas de seguridad','Guantes anticorte','Guantes de nitrilo','Gafas de protección','Casco','Chaleco reflectante','Mascarilla FFP2','Tapones auditivos','Ropa de trabajo','Otros'];
+
+function getEpis() {
+  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  return all[currentUser.dni] || [];
+}
+
+function saveEpis(epis) {
+  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  all[currentUser.dni] = epis;
+  localStorage.setItem(LS_EPIS, JSON.stringify(all));
+}
+
+function showEpi() {
+  goScreen('epi');
+  renderEpi();
+}
+
+function renderEpi() {
+  const epis = getEpis();
+  const c = document.getElementById('epi-content');
+
+  const lista = epis.length ? epis.map(e => `
+    <div class="epi-item">
+      <div class="epi-ico">🦺</div>
+      <div class="epi-info">
+        <div class="epi-name">${e.tipo}</div>
+        <div class="epi-meta">${e.nota || ''}</div>
+        <span class="tag ${e.estado === 'entregado' ? 'tag-ok' : 'tag-pend'}">
+          ${e.estado === 'entregado' ? 'Entregado · ' + e.fecha : 'Pendiente · ' + e.fecha}
+        </span>
+      </div>
+    </div>
+  `).join('') : '<div class="no-turno" style="margin-bottom:12px">No tienes solicitudes de EPIs</div>';
+
+  c.innerHTML = `
+    <div class="epi-list">${lista}</div>
+    <button class="btn-nueva-epi" onclick="showEpiForm()" style="margin-top:12px">+ Nueva solicitud</button>
+    <div id="epi-form-wrap" style="display:none;margin-top:12px">
+      <div class="epi-form">
+        <h3>Nueva solicitud</h3>
+        <select id="epi-tipo">
+          <option value="">Selecciona el EPI...</option>
+          ${EPI_TIPOS.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
+        <textarea id="epi-nota" placeholder="Motivo o comentario (opcional)"></textarea>
+        <div class="form-btns">
+          <button class="btn-cancel" onclick="hideEpiForm()">Cancelar</button>
+          <button class="btn-send" onclick="submitEpi()">Enviar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showEpiForm() {
+  document.getElementById('epi-form-wrap').style.display = 'block';
+  document.querySelector('.btn-nueva-epi').style.display = 'none';
+}
+
+function hideEpiForm() {
+  document.getElementById('epi-form-wrap').style.display = 'none';
+  document.querySelector('.btn-nueva-epi').style.display = 'block';
+}
+
+function submitEpi() {
+  const tipo = document.getElementById('epi-tipo').value;
+  const nota = document.getElementById('epi-nota').value.trim();
+  if (!tipo) { showToast('Selecciona el tipo de EPI'); return; }
+
+  const epis = getEpis();
+  epis.unshift({ tipo, nota, estado: 'pendiente', fecha: fmtDateShort(new Date()) });
+  saveEpis(epis);
+  showToast('✓ Solicitud enviada correctamente');
+  renderEpi();
+  updateBadges();
+}
+
+// ─── AVISOS ──────────────────────────────────────────
+function getAvisos() {
+  // Avisos fijos + los del cuadrante si existe
+  const base = [
+    { id: 'av1', fecha: hoy(), titulo: 'Cuadrante semana ' + (cuadrante ? cuadrante.semana : '—') + ' publicado', texto: 'Ya puedes consultar tu turno de la próxima semana en la sección Mis Turnos.' },
+    { id: 'av2', fecha: '15/03/2026', titulo: 'Reunión informativa departamentos', texto: 'El jueves 19/03 a las 9:00 hay reunión en la sala de formación para todos los encargados.' },
+    { id: 'av3', fecha: '10/03/2026', titulo: 'Renovación de EPIs obligatorios', texto: 'Recordad que el calzado de seguridad debe renovarse cada 12 meses. Consultad con vuestro encargado.' },
+  ];
+  return base;
+}
+
+function hoy() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function showAvisos() {
+  goScreen('avisos');
+  const leidos = JSON.parse(localStorage.getItem('ubesol_avisos_leidos') || '[]');
+  const avisos = getAvisos();
+
+  // Marcar todos como leídos
+  const todosIds = avisos.map(a => a.id);
+  localStorage.setItem('ubesol_avisos_leidos', JSON.stringify(todosIds));
+  updateBadges();
+
+  const c = document.getElementById('avisos-content');
+  c.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' +
+    avisos.map(a => {
+      const esNuevo = !leidos.includes(a.id);
+      return `<div class="aviso-item ${esNuevo ? 'nuevo' : ''}">
+        <div class="av-top">
+          <span class="av-fecha">${a.fecha}</span>
+          ${esNuevo ? '<span class="av-nuevo-badge">Nuevo</span>' : ''}
+        </div>
+        <div class="av-titulo">${a.titulo}</div>
+        <div class="av-texto">${a.texto}</div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+// ─── UTILS ───────────────────────────────────────────
+function getWeekDates(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const monday = new Date(startW1);
+  monday.setDate(startW1.getDate() + (week-1)*7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return { monday, sunday };
+}
+
+function fmtDate(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function fmtDateShort(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── START ───────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
