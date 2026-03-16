@@ -1301,7 +1301,7 @@ function exportJSON() {
     ano:           document.getElementById('meta-ano').value,
     fecha_inicio:  document.getElementById('meta-ini').value,
     fecha_fin:     document.getElementById('meta-fin').value,
-    responsable:   document.getElementById('responsable').value,
+    responsable:   (document.getElementById('responsable') || {value:''}).value,
     // ── Envasado ──
     envasado: {
       specialWorkers,
@@ -1398,7 +1398,7 @@ function loadJSON(input) {
       if (d.ano)          document.getElementById('meta-ano').value  = d.ano;
       if (d.fecha_inicio) document.getElementById('meta-ini').value  = d.fecha_inicio;
       if (d.fecha_fin)    document.getElementById('meta-fin').value  = d.fecha_fin;
-      if (d.responsable)  document.getElementById('responsable').value = d.responsable;
+      if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
 
       // ── Envasado ──
       if (d.envasado) {
@@ -1908,7 +1908,7 @@ function buildPayload() {
     ano:           ano,
     fecha_inicio:  fmtISO(monday),
     fecha_fin:     fmtISO(sunday),
-    responsable:   document.getElementById('responsable').value,
+    responsable:   (document.getElementById('responsable') || {value:''}).value,
     envasado:       { specialWorkers, lines, bajas, vacaciones },
     elaboracion:    { workers: elabWorkers,    bajas: elabBajas,      vacaciones: elabVacaciones },
     almacen:        { workers: almWorkers,     bajas: almBajas,       vacaciones: almVacaciones },
@@ -1924,15 +1924,19 @@ function buildPayload() {
 
 function autoSave() {
   try {
-    localStorage.setItem(weekKey(), JSON.stringify(buildPayload()));
-  } catch(e) {}
+    const key = weekKey();
+    const data = JSON.stringify(buildPayload());
+    localStorage.setItem(key, data);
+  } catch(e) {
+    console.error('autoSave error:', e);
+  }
 }
 
 function applyPayload(d) {
   if (!d || !d._version) return false;
   if (d.semana)     document.getElementById('meta-sem').value    = d.semana;
   if (d.ano)        document.getElementById('meta-ano').value    = d.ano;
-  if (d.responsable) document.getElementById('responsable').value = d.responsable;
+  if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
   updateWeekFromSelector();
 
   const merge = (target, src) => { if(src) Object.assign(target, src); };
