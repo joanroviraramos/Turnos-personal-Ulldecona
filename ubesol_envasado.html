@@ -755,11 +755,15 @@ function rebuildUsedNames() {
   const add = (v) => { if(v && v.trim()) usedNames.add(v.trim().toUpperCase()); };
   const safeArr = (a) => Array.isArray(a) ? a : [];
 
-  // Envasado — lines
-  safeArr(lines).forEach(l => safeArr(l.groups).forEach(g => safeArr(g.workers).forEach(w => add(w.n))));
+  // Envasado — lines (nombres en w.cells[turno], NO en w.n)
+  safeArr(lines).forEach(l => safeArr(l.groups).forEach(g => safeArr(g.workers).forEach(w => {
+    if(w && w.cells) Object.values(w.cells).forEach(add);
+  })));
+
   // Servicios transversales Envasado
   if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
     safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); }));
+
   // Todos los depts tipo post
   [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers,
    calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers].forEach(obj => {
@@ -768,6 +772,7 @@ function rebuildUsedNames() {
       if(w && w.cells) Object.values(w.cells).forEach(add);
     }));
   });
+
   // Bajas / vacaciones de todos los depts
   [bajas, vacaciones, elabBajas, elabVacaciones, almBajas, almVacaciones,
    mtoBajas, mtoVacaciones, calBajas, calVacaciones, calfqBajas, calfqVacaciones,
