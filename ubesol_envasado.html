@@ -1534,56 +1534,84 @@ function publicar() {
 
   autoSave();
 
-  // ── Publicar en JSONBlob y generar URL para TV ──────────────────────
+  // ── Generar URL para TV con datos codificados en el hash ─────────────
   const payload = buildPayload();
   const TV_BASE = 'https://joanroviraramos.github.io/Turnos-personal-Ulldecona/ubesol_tv.html';
-  const BLOB_KEY = 'ubesol_blob_id';
-  const existingId = localStorage.getItem(BLOB_KEY);
 
-  async function publishToBlob() {
-    try {
-      let blobId, response;
+  try {
+    // Codificar los datos en base64 y ponerlos en el hash de la URL
+    const json = JSON.stringify(payload);
+    const encoded = btoa(unescape(encodeURIComponent(json)));
+    const tvUrl = TV_BASE + '#' + encoded;
 
-      if (existingId) {
-        // Actualizar blob existente (PUT)
-        response = await fetch('https://jsonblob.com/api/jsonBlob/' + existingId, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        blobId = existingId;
-      } else {
-        // Crear nuevo blob (POST)
-        response = await fetch('https://jsonblob.com/api/jsonBlob', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        // El ID está en la URL de respuesta: Location header
-        const location = response.headers.get('Location') || '';
-        blobId = location.split('/').pop();
-        if (blobId) localStorage.setItem(BLOB_KEY, blobId);
-      }
-
-      if (blobId) {
-        const tvUrl = TV_BASE + '?id=' + blobId;
-        localStorage.setItem('ubesol_tv_url', tvUrl);
-        // Mostrar URL en un diálogo para copiar
-        const msg = duplicados.length > 0
-          ? '⚠️ Publicado con ' + duplicados.length + ' duplicado(s)\n\n'
-          : '✓ Cuadrante semana ' + payload.semana + ' publicado\n\n';
-        prompt(msg + 'URL para las pantallas TV (cópiala y configúrala en las TVs):', tvUrl);
-      } else {
-        toast('⚠️ Error al generar URL. Inténtalo de nuevo.');
-      }
-    } catch(e) {
-      console.error('Error publicando:', e);
-      toast('⚠️ Error de conexión. Comprueba internet e inténtalo de nuevo.');
-    }
+    // Mostrar modal con la URL completa y botón copiar
+    localStorage.setItem('ubesol_tv_url', tvUrl);
+    localStorage.setItem('ubesol_publicado', json);
+    showPublishModal(tvUrl, payload.semana, duplicados.length);
+  } catch(e) {
+    console.error('Error generando URL:', e);
+    toast('⚠️ Error al generar la URL');
   }
+}
 
-  publishToBlob();
-  toast('⏳ Publicando cuadrante...');
+function showPublishModal(url, semana, numDups) {
+  // Eliminar modal anterior si existe
+  const old = document.getElementById('publish-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'publish-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:12px;padding:28px;max-width:680px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2)';
+
+  const titulo = numDups > 0
+    ? `⚠️ Cuadrante semana ${semana} publicado con ${numDups} duplicado(s)`
+    : `✓ Cuadrante semana ${semana} publicado correctamente`;
+
+  modal.innerHTML = `
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;color:#1a1a1a">${titulo}</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:10px">Copia esta URL y configúrala en las pantallas TV. Solo hay que hacerlo una vez por TV:</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="tv-url-input" type="text" readonly value="${url}"
+        style="flex:1;font-size:11px;padding:8px 10px;border:1px solid #d0cdc5;border-radius:6px;background:#f8f7f4;color:#333;font-family:monospace">
+      <button id="copy-url-btn"
+        style="padding:8px 16px;background:#6a8a3a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap">
+        Copiar URL
+      </button>
+    </div>
+    <p style="font-size:12px;color:#999;margin-bottom:16px">La TV mostrará automáticamente los turnos de la semana ${semana} al abrir esta URL.</p>
+    <div style="text-align:right">
+      <button id="close-modal-btn"
+        style="padding:8px 20px;background:#f0ede6;color:#333;border:1px solid #d0cdc5;border-radius:6px;cursor:pointer;font-size:13px">
+        Cerrar
+      </button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  document.getElementById('copy-url-btn').onclick = () => {
+    const input = document.getElementById('tv-url-input');
+    input.select();
+    navigator.clipboard.writeText(url).then(() => {
+      document.getElementById('copy-url-btn').textContent = '✓ Copiada';
+      document.getElementById('copy-url-btn').style.background = '#2e6b1a';
+      setTimeout(() => {
+        document.getElementById('copy-url-btn').textContent = 'Copiar URL';
+        document.getElementById('copy-url-btn').style.background = '#6a8a3a';
+      }, 2000);
+    }).catch(() => {
+      // Fallback para navegadores sin clipboard API
+      document.execCommand('copy');
+      document.getElementById('copy-url-btn').textContent = '✓ Copiada';
+    });
+  };
+
+  document.getElementById('close-modal-btn').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 }
 
 function clearStorage() {
