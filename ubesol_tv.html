@@ -679,21 +679,22 @@ function getNextWeekKey() {
 }
 
 async function loadFromStorage() {
-  // 1. Intentar leer del hash de la URL (datos codificados al publicar)
-  if (window.location.hash && window.location.hash.length > 1) {
-    try {
-      const encoded = window.location.hash.substring(1);
-      const json = decodeURIComponent(escape(atob(encoded)));
-      const data = JSON.parse(json);
+  // 1. Leer cuadrante.json desde GitHub (siempre lo más actualizado)
+  try {
+    const r = await fetch(
+      'https://raw.githubusercontent.com/joanroviraramos/Turnos-personal-Ulldecona/main/cuadrante.json?t=' + Date.now(),
+      { cache: 'no-store' }
+    );
+    if (r.ok) {
+      const data = await r.json();
       updateHeader(data);
       return data;
-    } catch(e) { console.warn('Error leyendo hash:', e); }
-  }
+    }
+  } catch(e) { console.warn('Error leyendo cuadrante.json:', e); }
 
   // 2. Fallback: leer del localStorage (mismo navegador)
   try {
-    let saved = localStorage.getItem('ubesol_publicado');
-    if (!saved) saved = localStorage.getItem(getNextWeekKey());
+    const saved = localStorage.getItem('ubesol_publicado');
     if (saved) {
       const data = JSON.parse(saved);
       updateHeader(data);

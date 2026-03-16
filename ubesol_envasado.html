@@ -605,6 +605,7 @@ td.name-cell { overflow: visible !important; }
   </div>
   <div class="btn-group">
     <button class="btn btn-sec" onclick="window.print()">Imprimir / PDF</button>
+    <button class="btn btn-sec" onclick="generarPdfTV()" title="Genera un PDF optimizado para pantallas de TV">📺 PDF para TV</button>
     <button class="btn btn-sec" onclick="triggerLoad()" title="Carga un fichero JSON guardado anteriormente">Cargar JSON</button>
     <button class="btn btn-sec" onclick="exportJSON()">Exportar JSON</button>
     <button class="btn btn-sec" onclick="guardarManual()" title="Guardar datos en el navegador" style="color:#1b5e20;font-weight:600">💾 Guardar</button>
@@ -1534,24 +1535,65 @@ function publicar() {
 
   autoSave();
 
-  // ── Generar URL para TV con datos codificados en el hash ─────────────
+  // ── Publicar en GitHub — sube cuadrante.json al repositorio ──────────
   const payload = buildPayload();
-  const TV_BASE = 'https://joanroviraramos.github.io/Turnos-personal-Ulldecona/ubesol_tv.html';
+  const GITHUB_TOKEN = 'ghp_AGP02RK92McpdhWNUkTLyI9RS71Qy33q7B6D';
+  const REPO_OWNER   = 'joanroviraramos';
+  const REPO_NAME    = 'Turnos-personal-Ulldecona';
+  const FILE_PATH    = 'cuadrante.json';
+  const API_URL      = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
+  const TV_URL       = `https://${REPO_OWNER}.github.io/${REPO_NAME}/ubesol_tv.html`;
 
-  try {
-    // Codificar los datos en base64 y ponerlos en el hash de la URL
-    const json = JSON.stringify(payload);
-    const encoded = btoa(unescape(encodeURIComponent(json)));
-    const tvUrl = TV_BASE + '#' + encoded;
+  toast('⏳ Publicando cuadrante...');
 
-    // Mostrar modal con la URL completa y botón copiar
-    localStorage.setItem('ubesol_tv_url', tvUrl);
-    localStorage.setItem('ubesol_publicado', json);
-    showPublishModal(tvUrl, payload.semana, duplicados.length);
-  } catch(e) {
-    console.error('Error generando URL:', e);
-    toast('⚠️ Error al generar la URL');
+  async function subirAGitHub() {
+    try {
+      // Obtener SHA del fichero si ya existe (necesario para actualizarlo)
+      let sha = null;
+      const check = await fetch(API_URL, {
+        headers: { 'Authorization': 'token ' + GITHUB_TOKEN, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (check.ok) {
+        const existing = await check.json();
+        sha = existing.sha;
+      }
+
+      // Subir el JSON codificado en base64
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+      const body = {
+        message: `Cuadrante semana ${payload.semana}/${payload.ano}`,
+        content,
+        ...(sha ? { sha } : {})
+      };
+
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + GITHUB_TOKEN,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        localStorage.setItem('ubesol_publicado', JSON.stringify(payload));
+        const msg = duplicados.length > 0
+          ? `⚠️ Publicado con ${duplicados.length} duplicado(s)\n\nLas TVs se actualizarán en 1-2 minutos con la semana ${payload.semana}.`
+          : `✓ Cuadrante semana ${payload.semana} publicado correctamente.\n\nLas TVs se actualizarán en 1-2 minutos automáticamente.`;
+        toast('✓ Cuadrante publicado — TVs se actualizan en 1-2 min');
+        alert(msg + '\n\nURL de las TVs:\n' + TV_URL);
+      } else {
+        const err = await res.json();
+        throw new Error(err.message || res.status);
+      }
+    } catch(e) {
+      console.error('Error publicando en GitHub:', e);
+      toast('⚠️ Error al publicar: ' + e.message);
+    }
   }
+
+  subirAGitHub();
 }
 
 function showPublishModal(url, semana, numDups) {
@@ -1613,6 +1655,132 @@ function showPublishModal(url, semana, numDups) {
   document.getElementById('close-modal-btn').onclick = () => overlay.remove();
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PDF PARA TV — genera una ventana imprimible con una página por dpto
+// ═══════════════════════════════════════════════════════════════════════
+function generarPdfTV() {
+  const payload = buildPayload();
+  const sem = payload.semana;
+  const ano = payload.ano;
+  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
+  const fechas = fmtDate(monday) + ' al ' + fmtDate(sunday);
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const T = ['M','T','N','P'];
+  const TC = {M:'#bbdefb',T:'#fff9c4',N:'#e8eaf6',P:'#fce4ec'};
+  const TX = {M:'#0d47a1',T:'#e65100',N:'#283593',P:'#880e4f'};
+
+  const SLABELS = {sup:'Supervisor/A Turno',tr1:'Tracking Nave 1',sum:'Suministro',
+    tol3:'Tolvas Nave 3',tras3:'Traslado Nave 3',trk3:'Tracking Nave 3',
+    tol4:'Tolvas Nave 4',comp4:'Componentes Nave 4',trk4:'Tracking Nave 4'};
+  const PLABELS = {
+    elab_sup:'Supervisor/A',elab_elab:'Elaborador/A',elab_pes:'Pesadas',
+    elab_hig:'Higiene',elab_desc:'Descarga Cisternas',
+    mto_coord:'Coordinador',mto_back:'Backoffice',mto_sup:'Supervisor/A',mto_tec:'Técnico Mto.',
+    alm_sup:'Supervisor/A',alm_desc:'Descarga/Ubicar',alm_sopl:'Soplado/Ubicar',
+    alm_ab3:'Abast.Nave3',alm_ab1:'Abast.Nave1',alm_res:'Residuos/Destruc.',
+    alm_ubi:'Ubicar',alm_mmpp:'MMPP',alm_sala:'Sala Blanca',alm_cargas:'Cargas',
+    alm_silo:'Silo',alm_destr:'Destrucciones',
+    cal_nave1:'Nave 1-MK1',cal_nave3:'Nave 3-Nave 4',cal_tec:'Técnico',
+    calfq_tec:'Técnico Lab.',calmicro_tec:'Técnico Micro.',
+    calmat_tec:'Técnico Mat.',mc_tec:'Técnico Procesos',
+    sopl_sup:'Supervisor/A',sopl_s12:'Sopladora 1 y 2',sopl_s3:'Sopladora 3',
+    sopl_s46:'Sopladora 4 y 6',sopl_s5t:'Sopladora 5 y Trk.',
+    sopl_pal:'Paletizadores',sopl_ref:'Refuerzo Turno',
+  };
+
+  function buildTable(rows) {
+    let h = '<table><thead><tr><th class="cp">PUESTO</th>';
+    h += '<th style="background:'+TC.M+';color:'+TX.M+'">MAÑANA</th>';
+    h += '<th style="background:'+TC.T+';color:'+TX.T+'">TARDE</th>';
+    h += '<th style="background:'+TC.N+';color:'+TX.N+'">NOCHE</th>';
+    h += '<th style="background:'+TC.P+';color:'+TX.P+'">PARTIDO</th>';
+    h += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      h += '<tr><td class="cp">'+r.puesto+'</td>';
+      T.forEach(t => { h += '<td style="background:'+TC[t]+'30">'+(r[t]||'')+'</td>'; });
+      h += '</tr>';
+    });
+    return h + '</tbody></table>';
+  }
+
+  function page(name, rows) {
+    if (!rows.length) return '';
+    return '<div class="pg"><div class="ph"><span class="logo">GRUPOUBESOL</span>'
+      +'<span class="dept">'+name.toUpperCase()+'</span>'
+      +'<span class="sem">Semana '+sem+' &nbsp;·&nbsp; '+fechas+'</span></div>'
+      +buildTable(rows)+'</div>';
+  }
+
+  let pages = '';
+
+  // Envasado
+  const env = payload.envasado;
+  if (env) {
+    const rows = [];
+    if (env.specialWorkers) {
+      Object.entries(env.specialWorkers).forEach(([id,arr]) => {
+        safeArr(arr).forEach(w => {
+          if (w && w.cells && T.some(t => w.cells[t]))
+            rows.push({puesto:SLABELS[id]||id, ...w.cells});
+        });
+      });
+    }
+    safeArr(env.lines).forEach(line => {
+      [...safeArr(line.maq),...safeArr(line.ops)].forEach((w,wi) => {
+        if (w && w.cells) {
+          const p = wi < line.maq.length ? line.label+' — O.Máquina' : line.label+' — Operaria/O';
+          rows.push({puesto:p, ...w.cells});
+        }
+      });
+    });
+    pages += page('Envasado', rows);
+  }
+
+  // Post depts
+  [
+    ['elaboracion','Elaboración'],['almacen','Almacén'],['mantenimiento','Mantenimiento'],
+    ['calidadLineas','Calidad Líneas'],['calidadFQ','Calidad Fís-Quím'],
+    ['calidadMicro','Calidad Microbiología'],['calidadMat','Calidad Materiales'],
+    ['mejoraContinua','Mejora Continua'],['soplado','Soplado']
+  ].forEach(([key,name]) => {
+    const d = payload[key];
+    if (!d || !d.workers) return;
+    const rows = [];
+    Object.entries(d.workers).forEach(([pid,arr]) => {
+      safeArr(arr).forEach(w => {
+        if (w && w.cells && T.some(t => w.cells[t]))
+          rows.push({puesto:PLABELS[pid]||pid, ...w.cells});
+      });
+    });
+    pages += page(name, rows);
+  });
+
+  if (!pages) { toast('No hay datos para generar el PDF. Rellena el cuadrante primero.'); return; }
+
+  const win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
+    +'<title>Cuadrante S'+sem+' — GrupoUbesol</title><style>'
+    +'* {box-sizing:border-box;margin:0;padding:0}'
+    +'body {font-family:Segoe UI,Arial,sans-serif;background:#fff}'
+    +'.pg {width:100%;padding:28px 36px;page-break-after:always}'
+    +'.ph {display:flex;align-items:center;justify-content:space-between;'
+    +'border-bottom:3px solid #6a8a3a;padding-bottom:10px;margin-bottom:18px}'
+    +'.logo {font-size:20px;font-weight:800;color:#6a8a3a}'
+    +'.dept {font-size:30px;font-weight:800;color:#1a1a1a;letter-spacing:0.05em}'
+    +'.sem {font-size:12px;color:#666;text-align:right}'
+    +'table {width:100%;border-collapse:collapse}'
+    +'th {padding:9px 12px;font-size:12px;font-weight:700;letter-spacing:0.07em;'
+    +'text-transform:uppercase;text-align:center;border:1px solid #d0cdc5}'
+    +'td {padding:8px 12px;font-size:14px;font-weight:500;border:1px solid #e0ddd6;text-align:center}'
+    +'.cp {text-align:left;font-size:11px;font-weight:700;letter-spacing:0.05em;'
+    +'text-transform:uppercase;color:#555;background:#f8f7f4;width:200px}'
+    +'@media print {.pg{padding:14px 18px}.dept{font-size:22px}th{padding:6px 8px;font-size:10px}td{padding:5px 8px;font-size:12px}}'
+    +'</style></head><body>'+pages
+    +'<script>window.onload=()=>window.print();<\/script></body></html>');
+  win.document.close();
+}
+
 
 function clearStorage() {
   const k = weekKey();
