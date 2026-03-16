@@ -474,11 +474,41 @@ td.cell-p { background: var(--p-bg) !important; }
 }
 .toast.show { transform: translateY(0); opacity: 1; }
 
-@media print {
-  .dept-tabs, .bottom-bar, .add-op-btn, .add-line-area, .del-row { display: none !important; }
-  .table-area { padding: 8px; }
-  body { background: white; }
+/* ── AUTOCOMPLETE ── */
+.ac-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+.ac-wrap input { width: 100%; }
+.ac-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 240px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  z-index: 999;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
 }
+.ac-list.open { display: block; }
+.ac-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-l);
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: #f0ede6; }
+.ac-item.used { opacity: .4; pointer-events: none; }
+.ac-item .ac-name { font-weight: 500; color: var(--text); }
+.ac-item .ac-dni { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--faint); }
+.ac-empty { padding: 8px 12px; font-size: 12px; color: var(--faint); font-style: italic; }
+
 </style>
 </head>
 <body>
@@ -590,6 +620,110 @@ td.cell-p { background: var(--p-bg) !important; }
 //  Bottom rows: Tolvas Nave3, Traslado Nave3, Tracking Nave3/4,
 //               Componentes Nave4, Bajas, Vacaciones
 // ═══════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════
+//  WORKERS DATA — carga desde trabajadores.csv en el mismo repositorio
+// ═══════════════════════════════════════════════════════════════════════
+let allWorkers = [];   // [{nombre, dni, departamento}]
+let usedNames  = new Set(); // nombres ya asignados esta semana
+
+// Nombre del CSV — en GitHub Pages estará en la misma carpeta
+const CSV_URL = 'trabajadores.csv';
+
+async function loadWorkers() {
+  try {
+    const r = await fetch(CSV_URL);
+    if (!r.ok) return;
+    const text = await r.text();
+    const lines = text.trim().split('\n').slice(1); // skip header
+    allWorkers = lines.map(line => {
+      const parts = line.split(',');
+      return {
+        nombre:       (parts[0]||'').trim(),
+        dni:          (parts[1]||'').trim(),
+        departamento: (parts[2]||'').trim(),
+      };
+    }).filter(w => w.nombre);
+  } catch(e) {
+    console.warn('No se pudo cargar trabajadores.csv:', e.message);
+  }
+}
+
+function getWorkersForDept(dept) {
+  if (!allWorkers.length) return [];
+  return allWorkers.filter(w => w.departamento === dept);
+}
+
+function rebuildUsedNames() {
+  usedNames = new Set();
+  // Collect all names currently filled in across ALL departments
+  const collectFrom = (arr) => arr && arr.forEach(w => { if(w && w.n) usedNames.add(w.n.toUpperCase().trim()); });
+  const collectWorkers = (obj) => obj && Object.values(obj).forEach(arr => arr && arr.forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(v => { if(v) usedNames.add(v.toUpperCase().trim()); }); }));
+
+  // Envasado lines
+  lines.forEach(l => l.groups.forEach(g => g.workers.forEach(w => { if(w.n) usedNames.add(w.n.toUpperCase().trim()); })));
+  // Post depts
+  [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers, calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers, specialWorkers].forEach(collectWorkers);
+}
+
+// ── AUTOCOMPLETE ENGINE ────────────────────────────────────────────────
+function makeAcInput(currentVal, dept, onSelect) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-wrap';
+
+  const inp = document.createElement('input');
+  inp.className = 'name-inp';
+  inp.type = 'text';
+  inp.value = currentVal || '';
+  inp.placeholder = 'Nombre…';
+  inp.autocomplete = 'off';
+
+  const list = document.createElement('div');
+  list.className = 'ac-list';
+
+  function showList(query) {
+    rebuildUsedNames();
+    const q = query.toLowerCase().trim();
+    const workers = getWorkersForDept(dept);
+    const filtered = workers.filter(w =>
+      !q || w.nombre.toLowerCase().includes(q)
+    );
+
+    list.innerHTML = '';
+    if (!filtered.length) {
+      list.innerHTML = `<div class="ac-empty">Sin resultados para "${query}"</div>`;
+    } else {
+      filtered.forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'ac-item';
+        const nameUpper = w.nombre.toUpperCase().trim();
+        const isUsed = usedNames.has(nameUpper) && nameUpper !== (currentVal||'').toUpperCase().trim();
+        if (isUsed) item.classList.add('used');
+        item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
+        item.onmousedown = (e) => {
+          e.preventDefault();
+          if (isUsed) return;
+          inp.value = w.nombre;
+          onSelect(w.nombre);
+          list.classList.remove('open');
+        };
+        list.appendChild(item);
+      });
+    }
+    list.classList.add('open');
+  }
+
+  inp.addEventListener('focus', () => { if (allWorkers.length) showList(inp.value); });
+  inp.addEventListener('input', () => {
+    onSelect(inp.value);
+    if (allWorkers.length) showList(inp.value);
+  });
+  inp.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
+
+  wrap.appendChild(inp);
+  wrap.appendChild(list);
+  return { wrap, inp };
+}
 
 const TURNOS = ['M','T','N','P'];
 
@@ -805,15 +939,24 @@ function buildNameCell(worker, turno) {
   const div = document.createElement('div');
   div.className = 'row-controls';
 
-  const inp = document.createElement('input');
-  inp.className = 'name-inp';
-  inp.type = 'text';
-  inp.value = worker.cells[turno] || '';
-  inp.placeholder = '—';
-  inp.autocomplete = 'off';
-  inp.oninput = () => { worker.cells[turno] = inp.value; };
+  if (allWorkers.length) {
+    const { wrap } = makeAcInput(
+      worker.cells[turno] || '',
+      currentTab,
+      (val) => { worker.cells[turno] = val; }
+    );
+    div.appendChild(wrap);
+  } else {
+    const inp = document.createElement('input');
+    inp.className = 'name-inp';
+    inp.type = 'text';
+    inp.value = worker.cells[turno] || '';
+    inp.placeholder = '—';
+    inp.autocomplete = 'off';
+    inp.oninput = () => { worker.cells[turno] = inp.value; };
+    div.appendChild(inp);
+  }
 
-  div.appendChild(inp);
   td.appendChild(div);
   return td;
 }
@@ -1457,13 +1600,22 @@ function buildPostRow(worker, wi, puesto, arr) {
   TURNOS.forEach(t => {
     const td = document.createElement('td');
     td.className = `name-cell cell-${t.toLowerCase()}`;
-    const inp = document.createElement('input');
-    inp.className = 'name-inp';
-    inp.value = worker.cells[t] || '';
-    inp.placeholder = '—';
-    inp.autocomplete = 'off';
-    inp.oninput = () => { worker.cells[t] = inp.value; };
-    td.appendChild(inp);
+    if (allWorkers.length) {
+      const { wrap } = makeAcInput(
+        worker.cells[t] || '',
+        currentTab,
+        (val) => { worker.cells[t] = val; }
+      );
+      td.appendChild(wrap);
+    } else {
+      const inp = document.createElement('input');
+      inp.className = 'name-inp';
+      inp.value = worker.cells[t] || '';
+      inp.placeholder = '—';
+      inp.autocomplete = 'off';
+      inp.oninput = () => { worker.cells[t] = inp.value; };
+      td.appendChild(inp);
+    }
     tr.appendChild(td);
   });
 
@@ -1704,8 +1856,10 @@ initElaboracion();
 initAlmacen();
 initMantenimiento();
 
-// Load current week from storage (or start fresh if none)
-loadWeekFromStorage();
+// Load workers CSV then restore week data
+loadWorkers().finally(() => {
+  loadWeekFromStorage();
+});
 </script>
 </body>
 </html>
