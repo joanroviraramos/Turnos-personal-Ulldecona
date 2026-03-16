@@ -1539,6 +1539,10 @@ function publicar() {
     const json = JSON.stringify(payload, null, 2);
     localStorage.setItem('ubesol_publicado', json);
 
+    // Guardar en histórico con clave por semana
+    const histricoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
+    localStorage.setItem(histricoKey, json);
+
     // Descargar el fichero automáticamente
     const blob = new Blob([json], {type: 'application/json'});
     const a = document.createElement('a');
