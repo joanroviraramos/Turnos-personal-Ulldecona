@@ -325,7 +325,15 @@ body {
 .dia-chip.off   { background: #f0f0f0; color: #aaa; }
 .dia-chip.today { background: var(--green); color: white; }
 
-.no-turno {
+.tc-turno-sm { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+
+.turno-card-hist {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border-left: 4px solid var(--border-2);
+}
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -835,7 +843,7 @@ function goScreen(id) {
 function showHome() {
   goScreen('home');
   if (!currentUser) return;
-  const nombre = currentUser.nombre.split(' ')[0];
+  const nombre = currentUser.nombre;
   document.getElementById('home-name').textContent = 'Hola, ' + nombre;
   document.getElementById('home-dept').textContent = currentUser.departamento;
   updateHomeInfo();
@@ -874,71 +882,83 @@ function updateBadges() {
 function showTurnos() {
   goScreen('turnos');
   const c = document.getElementById('turnos-content');
-
-  if (!cuadrante) {
-    c.innerHTML = '<div class="no-turno">No hay cuadrante publicado.<br>Consulta con tu encargado.</div>';
-    return;
-  }
-
-  const sem = cuadrante.semana;
-  const ano = cuadrante.ano;
-  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
-  document.getElementById('turnos-semana').textContent = 'Semana ' + sem + ' · ' + fmtDate(monday) + ' al ' + fmtDate(sunday);
-
-  // Buscar turno por nombre (asociado al DNI del trabajador logado)
-  const turnoInfo = findTurnoWorker(currentUser.nombre);
-
-  if (!turnoInfo) {
-    c.innerHTML = '<div class="no-turno">No estás asignado en el cuadrante de esta semana.<br>Consulta con tu encargado.</div>';
-    return;
-  }
-
   const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
-  const TURNO_ICONS  = { M: '🌅', T: '🌤', N: '🌙', P: '🔄' };
 
-  c.innerHTML = `
-    <div class="turno-card">
-      <div class="tc-label">Hola, ${currentUser.nombre.split(' ')[0]}</div>
-      <div class="tc-turno">${TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno}</div>
-      <div class="tc-puesto">${turnoInfo.puesto}</div>
-      <div class="tc-fechas">Semana ${sem} &nbsp;·&nbsp; ${fmtDate(monday)} — ${fmtDate(sunday)}</div>
-    </div>
-    <div class="dias-card">
-      <div class="dias-title">Resumen</div>
-      <table style="width:100%;font-size:13px;border-collapse:collapse">
-        <tr style="border-bottom:1px solid #eee">
-          <td style="padding:8px 0;color:#888;width:110px">Trabajador</td>
-          <td style="padding:8px 0;font-weight:500">${currentUser.nombre}</td>
-        </tr>
-        <tr style="border-bottom:1px solid #eee">
-          <td style="padding:8px 0;color:#888">Departamento</td>
-          <td style="padding:8px 0;font-weight:500">${currentUser.departamento}</td>
-        </tr>
-        <tr style="border-bottom:1px solid #eee">
-          <td style="padding:8px 0;color:#888">Turno</td>
-          <td style="padding:8px 0;font-weight:500">${TURNO_NOMBRES[turnoInfo.turno]}</td>
-        </tr>
-        <tr style="border-bottom:1px solid #eee">
-          <td style="padding:8px 0;color:#888">Puesto / Línea</td>
-          <td style="padding:8px 0;font-weight:500">${turnoInfo.puesto}</td>
-        </tr>
-        <tr>
-          <td style="padding:8px 0;color:#888">Semana</td>
-          <td style="padding:8px 0;font-weight:500;font-family:'DM Mono',monospace;font-size:12px">${fmtDate(monday)} — ${fmtDate(sunday)}</td>
-        </tr>
-      </table>
-    </div>
-  `;
+  // Recoger todos los cuadrantes del histórico
+  const historico = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('ubesol_historico_')) continue;
+    try {
+      const data = JSON.parse(localStorage.getItem(key));
+      if (data) historico.push(data);
+    } catch(e) {}
+  }
+
+  // Añadir el publicado actual si no está ya en el histórico
+  if (cuadrante) {
+    const yaEsta = historico.some(h => h.semana === cuadrante.semana && h.ano === cuadrante.ano);
+    if (!yaEsta) historico.push(cuadrante);
+  }
+
+  // Ordenar de más reciente a más antiguo
+  historico.sort((a, b) => {
+    const ka = parseInt(a.ano) * 100 + parseInt(a.semana);
+    const kb = parseInt(b.ano) * 100 + parseInt(b.semana);
+    return kb - ka;
+  });
+
+  if (!historico.length) {
+    c.innerHTML = '<div class="no-turno">No hay cuadrantes publicados.<br>Consulta con tu encargado.</div>';
+    document.getElementById('turnos-semana').textContent = '';
+    return;
+  }
+
+  // Semana más reciente en el header
+  const ultimo = historico[0];
+  const { monday: m0, sunday: s0 } = getWeekDates(parseInt(ultimo.ano), parseInt(ultimo.semana));
+  document.getElementById('turnos-semana').textContent = 'Semana ' + ultimo.semana + ' · ' + fmtDate(m0) + ' al ' + fmtDate(s0);
+
+  // Renderizar cada semana
+  let html = '';
+  historico.forEach((data, idx) => {
+    const turnoInfo = findTurnoWorkerInData(currentUser.nombre, data);
+    const { monday, sunday } = getWeekDates(parseInt(data.ano), parseInt(data.semana));
+    const esActual = idx === 0;
+
+    if (!turnoInfo) {
+      if (esActual) {
+        html += `<div class="no-turno">No estás asignado en el cuadrante de la semana ${data.semana}.</div>`;
+      }
+      return;
+    }
+
+    html += `
+      <div class="${esActual ? 'turno-card' : 'turno-card-hist'}">
+        ${esActual ? `<div class="tc-label">Hola, ${currentUser.nombre}</div>` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${esActual?'4px':'0'}">
+          <div>
+            <div class="${esActual ? 'tc-turno' : 'tc-turno-sm'}">${TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno}</div>
+            <div class="tc-puesto">${turnoInfo.puesto}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:${esActual?'13px':'12px'};${esActual?'opacity:0.85':'color:#888'}">Semana ${data.semana}</div>
+            <div style="font-size:11px;${esActual?'opacity:0.65':'color:#aaa'};font-family:'DM Mono',monospace">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  c.innerHTML = html || '<div class="no-turno">No hay asignaciones registradas.</div>';
 }
 
-function findTurnoWorker(nombre) {
-  if (!cuadrante) return null;
+function findTurnoWorkerInData(nombre, data) {
+  if (!data) return null;
   const nameUpper = nombre.toUpperCase().trim();
   const TURNOS = ['M','T','N','P'];
   const safeArr = a => Array.isArray(a) ? a : [];
 
-  // Buscar en Envasado
-  const env = cuadrante.envasado;
+  const env = data.envasado;
   if (env) {
     if (env.specialWorkers) {
       for (const [id, arr] of Object.entries(env.specialWorkers)) {
@@ -962,10 +982,9 @@ function findTurnoWorker(nombre) {
     }
   }
 
-  // Buscar en resto de departamentos
   const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
   for (const key of POST_KEYS) {
-    const d = cuadrante[key];
+    const d = data[key];
     if (!d || !d.workers) continue;
     for (const [pid, arr] of Object.entries(d.workers)) {
       for (const w of safeArr(arr)) {
@@ -978,6 +997,10 @@ function findTurnoWorker(nombre) {
     }
   }
   return null;
+}
+
+function findTurnoWorker(nombre) {
+  return findTurnoWorkerInData(nombre, cuadrante);
 }
 
 // ─── EPIs ────────────────────────────────────────────
