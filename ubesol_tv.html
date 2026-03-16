@@ -589,10 +589,12 @@ function appendRow(container, puesto, workers, idx) {
 }
 
 // ── DOTS ─────────────────────────────────────────────────────────────
+function getDepts() { return window.ACTIVE_DEPARTMENTS || DEPARTMENTS; }
+
 function buildDots(currentIdx) {
   const wrap = document.getElementById('dept-dots');
   wrap.innerHTML = '';
-  ACTIVE_DEPARTMENTS.forEach((d, i) => {
+  getDepts().forEach((d, i) => {
     const dot = document.createElement('div');
     dot.className = 'dept-dot' + (i===currentIdx?' active':'');
     dot.textContent = d.name;
@@ -623,14 +625,17 @@ function tick() {
 }
 
 function nextDept() {
-  currentIdx = (currentIdx + 1) % ACTIVE_DEPARTMENTS.length;
+  currentIdx = (currentIdx + 1) % getDepts().length;
   remaining = DURATION;
   showDept(currentIdx);
 }
 
 function showDept(idx) {
-  const dept = ACTIVE_DEPARTMENTS[idx];
-  const next = ACTIVE_DEPARTMENTS[(idx+1) % ACTIVE_DEPARTMENTS.length];
+  const depts = getDepts();
+  if (!depts.length) return;
+  const dept = depts[idx];
+  const next = depts[(idx+1) % depts.length];
+  if (!dept) return;
   renderDept(dept);
   buildDots(idx);
   document.getElementById('next-dept-name').textContent = next.name;
@@ -673,21 +678,43 @@ function getNextWeekKey() {
   return 'ubesol_' + ano + '_s' + String(wkSig).padStart(2,'0');
 }
 
-function loadFromStorage() {
+async function loadFromStorage() {
+  // 1. Intentar leer desde JSONBlob si hay ?id= en la URL
+  const params = new URLSearchParams(window.location.search);
+  const blobId = params.get('id');
+  if (blobId) {
+    try {
+      const r = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (r.ok) {
+        const data = await r.json();
+        updateHeader(data);
+        return data;
+      }
+    } catch(e) { console.warn('Error leyendo JSONBlob:', e); }
+  }
+
+  // 2. Fallback: leer del localStorage (mismo navegador)
   try {
-    // Primero intentar leer el cuadrante publicado
     let saved = localStorage.getItem('ubesol_publicado');
-    // Si no hay publicado, buscar la semana siguiente
     if (!saved) saved = localStorage.getItem(getNextWeekKey());
-    if (!saved) return null;
-    const data = JSON.parse(saved);
-    if (data.semana) {
-      document.getElementById('week-num').textContent = data.semana;
-      const { monday, sunday } = getWeekDatesTV(parseInt(data.ano||2026), parseInt(data.semana));
-      document.getElementById('week-dates').textContent = fmtDateTV(monday) + ' — ' + fmtDateTV(sunday);
+    if (saved) {
+      const data = JSON.parse(saved);
+      updateHeader(data);
+      return data;
     }
-    return data;
-  } catch(e) { return null; }
+  } catch(e) {}
+
+  return null;
+}
+
+function updateHeader(data) {
+  if (data && data.semana) {
+    document.getElementById('week-num').textContent = data.semana;
+    const { monday, sunday } = getWeekDatesTV(parseInt(data.ano||2026), parseInt(data.semana));
+    document.getElementById('week-dates').textContent = fmtDateTV(monday) + ' — ' + fmtDateTV(sunday);
+  }
 }
 
 function getWeekDatesTV(year, week) {
@@ -789,36 +816,36 @@ function buildDepartmentsFromStorage(data) {
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────
-const storageData = loadFromStorage();
-const ACTIVE_DEPARTMENTS = buildDepartmentsFromStorage(storageData);
+(async function() {
+  initWeek();
+  const storageData = await loadFromStorage();
+  const ACTIVE_DEPARTMENTS = buildDepartmentsFromStorage(storageData);
+  window.ACTIVE_DEPARTMENTS = ACTIVE_DEPARTMENTS;
 
-// Actualizar semana en header
-initWeek();
+  // Recargar datos cada 60 segundos
+  setInterval(async () => {
+    const fresh = await loadFromStorage();
+    if (fresh) {
+      const newDepts = buildDepartmentsFromStorage(fresh);
+      ACTIVE_DEPARTMENTS.splice(0, ACTIVE_DEPARTMENTS.length, ...newDepts);
+      showDept(currentIdx < ACTIVE_DEPARTMENTS.length ? currentIdx : 0);
+    }
+  }, 60000);
 
-// Recargar datos cada 60 segundos por si el encargado publica nuevo cuadrante
-setInterval(() => {
-  const fresh = loadFromStorage();
-  if (fresh) {
-    const newDepts = buildDepartmentsFromStorage(fresh);
-    ACTIVE_DEPARTMENTS.splice(0, ACTIVE_DEPARTMENTS.length, ...newDepts);
-    showDept(currentIdx < ACTIVE_DEPARTMENTS.length ? currentIdx : 0);
-  }
-}, 60000);
+  showDept(0);
+  timer = setInterval(tick, 1000);
 
-showDept(0);
-timer = setInterval(tick, 1000);
-
-// Click on dot to jump
-document.getElementById('dept-dots').addEventListener('click', e => {
-  const dot = e.target.closest('.dept-dot');
-  if (!dot) return;
-  const idx = Array.from(dot.parentNode.children).indexOf(dot);
-  if (idx >= 0 && idx < ACTIVE_DEPARTMENTS.length) {
-    currentIdx = idx;
-    remaining = DURATION;
-    showDept(idx);
-  }
-});
+  document.getElementById('dept-dots').addEventListener('click', e => {
+    const dot = e.target.closest('.dept-dot');
+    if (!dot) return;
+    const idx = Array.from(dot.parentNode.children).indexOf(dot);
+    if (idx >= 0 && idx < ACTIVE_DEPARTMENTS.length) {
+      currentIdx = idx;
+      remaining = DURATION;
+      showDept(idx);
+    }
+  });
+})();
 </script>
 </body>
 </html>

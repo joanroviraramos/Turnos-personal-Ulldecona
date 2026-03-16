@@ -1533,13 +1533,57 @@ function publicar() {
   }
 
   autoSave();
-  // Guardar también como cuadrante publicado — la TV siempre lee esta clave
-  try {
-    localStorage.setItem('ubesol_publicado', JSON.stringify(buildPayload()));
-  } catch(e) {}
-  toast(duplicados.length > 0
-    ? '⚠️ Cuadrante publicado con ' + duplicados.length + ' duplicado(s)'
-    : '✓ Cuadrante publicado — la pantalla TV se actualizará automáticamente');
+
+  // ── Publicar en JSONBlob y generar URL para TV ──────────────────────
+  const payload = buildPayload();
+  const TV_BASE = 'https://joanroviraramos.github.io/Turnos-personal-Ulldecona/ubesol_tv.html';
+  const BLOB_KEY = 'ubesol_blob_id';
+  const existingId = localStorage.getItem(BLOB_KEY);
+
+  async function publishToBlob() {
+    try {
+      let blobId, response;
+
+      if (existingId) {
+        // Actualizar blob existente (PUT)
+        response = await fetch('https://jsonblob.com/api/jsonBlob/' + existingId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        blobId = existingId;
+      } else {
+        // Crear nuevo blob (POST)
+        response = await fetch('https://jsonblob.com/api/jsonBlob', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        // El ID está en la URL de respuesta: Location header
+        const location = response.headers.get('Location') || '';
+        blobId = location.split('/').pop();
+        if (blobId) localStorage.setItem(BLOB_KEY, blobId);
+      }
+
+      if (blobId) {
+        const tvUrl = TV_BASE + '?id=' + blobId;
+        localStorage.setItem('ubesol_tv_url', tvUrl);
+        // Mostrar URL en un diálogo para copiar
+        const msg = duplicados.length > 0
+          ? '⚠️ Publicado con ' + duplicados.length + ' duplicado(s)\n\n'
+          : '✓ Cuadrante semana ' + payload.semana + ' publicado\n\n';
+        prompt(msg + 'URL para las pantallas TV (cópiala y configúrala en las TVs):', tvUrl);
+      } else {
+        toast('⚠️ Error al generar URL. Inténtalo de nuevo.');
+      }
+    } catch(e) {
+      console.error('Error publicando:', e);
+      toast('⚠️ Error de conexión. Comprueba internet e inténtalo de nuevo.');
+    }
+  }
+
+  publishToBlob();
+  toast('⏳ Publicando cuadrante...');
 }
 
 function clearStorage() {
