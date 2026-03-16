@@ -929,6 +929,93 @@ function updateBadges() {
 // ─── TURNOS ──────────────────────────────────────────
 let turnosTab = 'lista';
 
+function showTurnos() {
+  goScreen('turnos');
+  turnosTab = 'lista';
+  const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
+
+  // Calcular semana actual
+  const now = new Date();
+  const jan4 = new Date(now.getFullYear(), 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const semActual = Math.ceil((now - startW1) / 604800000);
+  const anoActual = now.getFullYear();
+
+  // Recoger histórico, máximo 10 semanas
+  let historico = getHistorico();
+  const actKey = anoActual * 100 + semActual;
+  historico = historico.filter(d => {
+    const k = parseInt(d.ano) * 100 + parseInt(d.semana);
+    return k >= actKey - 500 && k <= actKey + 400;
+  }).slice(0, 10);
+
+  const c = document.getElementById('turnos-content');
+  c.style.display = 'flex';
+  c.style.flexDirection = 'column';
+  c.style.gap = '10px';
+
+  if (!historico.length) {
+    c.innerHTML = '<div class="no-turno">No hay cuadrantes publicados.<br>Consulta con tu encargado.</div>';
+    document.getElementById('turnos-semana').textContent = '';
+    // Reset tabs visual
+    document.getElementById('tab-lista').style.background = 'rgba(255,255,255,0.9)';
+    document.getElementById('tab-lista').style.color = 'var(--green)';
+    document.getElementById('tab-calendario').style.background = 'rgba(255,255,255,0.2)';
+    document.getElementById('tab-calendario').style.color = 'rgba(255,255,255,0.85)';
+    document.getElementById('calendario-content').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('turnos-semana').textContent = 'Semana ' + historico[0].semana;
+
+  // Reset tabs
+  document.getElementById('tab-lista').style.background = 'rgba(255,255,255,0.9)';
+  document.getElementById('tab-lista').style.color = 'var(--green)';
+  document.getElementById('tab-calendario').style.background = 'rgba(255,255,255,0.2)';
+  document.getElementById('tab-calendario').style.color = 'rgba(255,255,255,0.85)';
+  document.getElementById('calendario-content').style.display = 'none';
+
+  let html = '';
+  historico.forEach(data => {
+    const turnoInfo = findTurnoWorkerInData(currentUser.nombre, data);
+    const sem = parseInt(data.semana);
+    const ano = parseInt(data.ano);
+    const { monday, sunday } = getWeekDates(ano, sem);
+    const semKey = ano * 100 + sem;
+    const sigKey = anoActual * 100 + (semActual + 1);
+
+    let tipo, labelTxt, cardClass;
+    if (semKey === sigKey)      { tipo = 'proxima'; labelTxt = 'Próxima semana'; cardClass = 'turno-card'; }
+    else if (semKey === actKey) { tipo = 'actual';  labelTxt = 'Esta semana';    cardClass = 'turno-card-actual'; }
+    else if (semKey > sigKey)   { tipo = 'futura';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
+    else                        { tipo = 'pasada';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
+
+    const sinAsignar = !turnoInfo;
+    const turnoNombre  = turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
+    const puestoNombre = turnoInfo ? turnoInfo.puesto : 'Sin asignar';
+    const borderColor  = tipo === 'futura' ? '#6366f1' : '#d1d5db';
+
+    if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
+      html += `<div class="${cardClass}">
+        <span class="sem-label ${tipo}">${labelTxt}</span>
+        <div class="tc-turno">${turnoNombre}</div>
+        <div class="tc-puesto">${puestoNombre}</div>
+        <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+      </div>`;
+    } else {
+      html += `<div class="${cardClass}" style="border-left-color:${borderColor}">
+        <span class="sem-label ${tipo}">${labelTxt}</span>
+        <div style="font-size:26px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.1">${turnoNombre}</div>
+        <div style="font-size:24px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2;margin-bottom:6px">${puestoNombre}</div>
+        <div style="font-size:13px;color:#999;font-family:'DM Mono',monospace;letter-spacing:0.02em">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+      </div>`;
+    }
+  });
+
+  c.innerHTML = html;
+}
+
 function switchTurnosTab(tab) {
   turnosTab = tab;
   const btnLista = document.getElementById('tab-lista');
