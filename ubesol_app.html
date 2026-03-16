@@ -616,7 +616,7 @@ body {
 //  DATOS — usuarios desde el mismo CSV de trabajadores
 //  En producción se carga desde GitHub
 // ═══════════════════════════════════════════════════════
-const CUADRANTE_URL = 'https://raw.githubusercontent.com/joanroviraramos/Turnos-personal-Ulldecona/main/cuadrante.json';
+const CUADRANTE_URL = 'https://joanroviraramos.github.io/Turnos-personal-Ulldecona/cuadrante.json';
 const LS_USERS = 'ubesol_app_users';
 const LS_SESSION = 'ubesol_app_session';
 const LS_EPIS = 'ubesol_app_epis';
@@ -735,14 +735,24 @@ async function init() {
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
 async function loadCuadrante() {
+  // Leer el cuadrante publicado desde localStorage
+  // El cuadrante HTML guarda con la clave 'ubesol_publicado' al pulsar Publicar
+  try {
+    const saved = localStorage.getItem('ubesol_publicado');
+    if (saved) {
+      cuadrante = JSON.parse(saved);
+      if (currentUser) updateHomeInfo();
+      return;
+    }
+  } catch(e) {}
+
+  // Fallback: intentar leer desde GitHub Pages
   try {
     const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
     cuadrante = await r.json();
     if (currentUser) updateHomeInfo();
-  } catch(e) {
-    // Sin cuadrante publicado — normal
-  }
+  } catch(e) {}
 }
 
 // ─── AUTH ────────────────────────────────────────────
@@ -875,41 +885,48 @@ function showTurnos() {
   const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
   document.getElementById('turnos-semana').textContent = 'Semana ' + sem + ' · ' + fmtDate(monday) + ' al ' + fmtDate(sunday);
 
-  // Buscar turno del trabajador
+  // Buscar turno por nombre (asociado al DNI del trabajador logado)
   const turnoInfo = findTurnoWorker(currentUser.nombre);
 
   if (!turnoInfo) {
-    c.innerHTML = '<div class="no-turno">No estás asignado en el cuadrante de esta semana.</div>';
+    c.innerHTML = '<div class="no-turno">No estás asignado en el cuadrante de esta semana.<br>Consulta con tu encargado.</div>';
     return;
   }
 
   const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
-  const DIAS = ['L','M','X','J','V','S','D'];
-  const hoy = new Date().getDay(); // 0=dom,1=lun...
-  const hoyIdx = hoy === 0 ? 6 : hoy - 1;
-
-  let diasHtml = '';
-  DIAS.forEach((d, i) => {
-    const isHoy = i === hoyIdx;
-    const tieneWork = turnoInfo.turno !== 'P' ? (i < 5) : (i < 5);
-    const cls = isHoy ? 'today' : (i < 5 ? 'work' : 'off');
-    const label = i < 5 ? turnoInfo.turno : '—';
-    diasHtml += `<div class="dia-cell">
-      <div class="dia-name">${d}</div>
-      <div class="dia-chip ${cls}">${label}</div>
-    </div>`;
-  });
+  const TURNO_ICONS  = { M: '🌅', T: '🌤', N: '🌙', P: '🔄' };
 
   c.innerHTML = `
     <div class="turno-card">
-      <div class="tc-label">Tu turno</div>
+      <div class="tc-label">Hola, ${currentUser.nombre.split(' ')[0]}</div>
       <div class="tc-turno">${TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno}</div>
       <div class="tc-puesto">${turnoInfo.puesto}</div>
-      <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+      <div class="tc-fechas">Semana ${sem} &nbsp;·&nbsp; ${fmtDate(monday)} — ${fmtDate(sunday)}</div>
     </div>
     <div class="dias-card">
-      <div class="dias-title">Días trabajados</div>
-      <div class="dias-row">${diasHtml}</div>
+      <div class="dias-title">Resumen</div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <tr style="border-bottom:1px solid #eee">
+          <td style="padding:8px 0;color:#888;width:110px">Trabajador</td>
+          <td style="padding:8px 0;font-weight:500">${currentUser.nombre}</td>
+        </tr>
+        <tr style="border-bottom:1px solid #eee">
+          <td style="padding:8px 0;color:#888">Departamento</td>
+          <td style="padding:8px 0;font-weight:500">${currentUser.departamento}</td>
+        </tr>
+        <tr style="border-bottom:1px solid #eee">
+          <td style="padding:8px 0;color:#888">Turno</td>
+          <td style="padding:8px 0;font-weight:500">${TURNO_NOMBRES[turnoInfo.turno]}</td>
+        </tr>
+        <tr style="border-bottom:1px solid #eee">
+          <td style="padding:8px 0;color:#888">Puesto / Línea</td>
+          <td style="padding:8px 0;font-weight:500">${turnoInfo.puesto}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;color:#888">Semana</td>
+          <td style="padding:8px 0;font-weight:500;font-family:'DM Mono',monospace;font-size:12px">${fmtDate(monday)} — ${fmtDate(sunday)}</td>
+        </tr>
+      </table>
     </div>
   `;
 }
