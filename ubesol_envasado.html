@@ -802,46 +802,33 @@ function makeAcInput(currentVal, dept, onSelect) {
   function getOwnValue() { return inp.value.trim().toUpperCase(); }
 
   function showList(query) {
-    // Reconstruir nombres usados EN ESTE MOMENTO
     rebuildUsedNames();
-    // Quitar el valor propio del campo para que no se marque como duplicado de sí mismo
-    const own = getOwnValue();
+    // Quitar el valor propio para que no se marque como duplicado de sí mismo
+    const own = inp.value.trim().toUpperCase();
     if (own) usedNames.delete(own);
 
     const q = query.trim().toUpperCase();
     const workers = getWorkersForDept(dept);
-    const filtered = workers.filter(w => !q || w.nombre.toUpperCase().includes(q));
+    // SOLO mostrar trabajadores que NO están ya asignados en otro campo
+    const available = workers.filter(w =>
+      !usedNames.has(w.nombre.toUpperCase()) &&
+      (!q || w.nombre.toUpperCase().includes(q))
+    );
 
     list.innerHTML = '';
-    if (!filtered.length) {
-      list.innerHTML = `<div class="ac-empty">Sin resultados</div>`;
+    if (!available.length) {
+      list.innerHTML = `<div class="ac-empty">${q ? 'Sin resultados' : 'Todos los trabajadores ya están asignados'}</div>`;
     } else {
-      filtered.slice(0, 30).forEach(w => {
+      available.slice(0, 30).forEach(w => {
         const item = document.createElement('div');
         item.className = 'ac-item';
-        const nameUpper = w.nombre.toUpperCase();
-        const isUsed = usedNames.has(nameUpper);
-        if (isUsed) item.classList.add('used');
         item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
-        if (!isUsed) {
-          item.onmousedown = (e) => {
-            e.preventDefault();
-            // Doble comprobación justo antes de asignar
-            rebuildUsedNames();
-            const ownNow = getOwnValue();
-            if (ownNow) usedNames.delete(ownNow);
-            if (usedNames.has(w.nombre.toUpperCase())) {
-              // Ya asignado en otro campo mientras teníamos el dropdown abierto
-              inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
-              setTimeout(() => inp.style.boxShadow = '', 1500);
-              list.classList.remove('open');
-              return;
-            }
-            inp.value = w.nombre;
-            onSelect(w.nombre);
-            list.classList.remove('open');
-          };
-        }
+        item.onmousedown = (e) => {
+          e.preventDefault();
+          inp.value = w.nombre;
+          onSelect(w.nombre);
+          list.classList.remove('open');
+        };
         list.appendChild(item);
       });
     }
@@ -1472,8 +1459,63 @@ function loadJSON(input) {
 }
 
 function publicar() {
+  // ── Buscar duplicados ─────────────────────────────────────────────
+  const count = {};
+  const add = (v, dept) => {
+    if (!v || !v.trim()) return;
+    const k = v.trim().toUpperCase();
+    if (!count[k]) count[k] = { nombre: v.trim(), depts: [] };
+    count[k].depts.push(dept);
+  };
+  const safeArr = (a) => Array.isArray(a) ? a : [];
+
+  // Envasado lines
+  safeArr(lines).forEach(l => safeArr(l.groups).forEach(g => safeArr(g.workers).forEach(w => {
+    if (w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / ' + l.name));
+  })));
+  // Especiales Envasado
+  if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
+    safeArr(arr).forEach(w => { if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / Especiales')); }));
+  // Post depts
+  const postDepts = [
+    [elabWorkers,    'Elaboración'],
+    [almWorkers,     'Almacén'],
+    [mtoWorkers,     'Mantenimiento'],
+    [calWorkers,     'Calidad Líneas'],
+    [calfqWorkers,   'Calidad Fís-Quím'],
+    [calmicroWorkers,'Calidad Microbiología'],
+    [calmatWorkers,  'Calidad Materiales'],
+    [mcWorkers,      'Mejora Continua'],
+    [soplWorkers,    'Soplado'],
+  ];
+  postDepts.forEach(([obj, label]) => {
+    if (!obj) return;
+    Object.values(obj).forEach(arr => safeArr(arr).forEach(w => {
+      if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], label));
+    }));
+  });
+
+  // Encontrar nombres que aparecen más de una vez
+  const duplicados = Object.values(count).filter(d => d.depts.length > 1);
+
+  if (duplicados.length > 0) {
+    // Mostrar modal de aviso
+    const msg = duplicados.map(d =>
+      `• ${d.nombre} — aparece ${d.depts.length} veces (${d.depts.join(', ')})`
+    ).join('\n');
+
+    const continuar = confirm(
+      '⚠️ ATENCIÓN — Se han encontrado ' + duplicados.length + ' trabajador(es) duplicado(s):\n\n' +
+      msg + '\n\n' +
+      '¿Desea publicar el cuadrante igualmente?'
+    );
+    if (!continuar) return;
+  }
+
   autoSave();
-  toast('✓ Cuadrante publicado y guardado — los operarios recibirán notificación');
+  toast(duplicados.length > 0
+    ? '⚠️ Cuadrante publicado con ' + duplicados.length + ' duplicado(s)'
+    : '✓ Cuadrante publicado y guardado correctamente');
 }
 
 function clearStorage() {
