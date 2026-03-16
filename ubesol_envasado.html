@@ -799,15 +799,18 @@ function makeAcInput(currentVal, dept, onSelect) {
   const list = document.createElement('div');
   list.className = 'ac-list';
 
+  function getOwnValue() { return inp.value.trim().toUpperCase(); }
+
   function showList(query) {
+    // Reconstruir nombres usados EN ESTE MOMENTO
     rebuildUsedNames();
+    // Quitar el valor propio del campo para que no se marque como duplicado de sí mismo
+    const own = getOwnValue();
+    if (own) usedNames.delete(own);
+
     const q = query.trim().toUpperCase();
-    // Siempre leer el valor ACTUAL del input, no el del momento de creación
-    const ownUpper = inp.value.trim().toUpperCase();
     const workers = getWorkersForDept(dept);
-    const filtered = workers.filter(w =>
-      !q || w.nombre.toUpperCase().includes(q)
-    );
+    const filtered = workers.filter(w => !q || w.nombre.toUpperCase().includes(q));
 
     list.innerHTML = '';
     if (!filtered.length) {
@@ -817,13 +820,23 @@ function makeAcInput(currentVal, dept, onSelect) {
         const item = document.createElement('div');
         item.className = 'ac-item';
         const nameUpper = w.nombre.toUpperCase();
-        // Es duplicado solo si está usado EN OTRO campo distinto al propio
-        const isUsed = usedNames.has(nameUpper) && nameUpper !== ownUpper;
+        const isUsed = usedNames.has(nameUpper);
         if (isUsed) item.classList.add('used');
         item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
         if (!isUsed) {
           item.onmousedown = (e) => {
             e.preventDefault();
+            // Doble comprobación justo antes de asignar
+            rebuildUsedNames();
+            const ownNow = getOwnValue();
+            if (ownNow) usedNames.delete(ownNow);
+            if (usedNames.has(w.nombre.toUpperCase())) {
+              // Ya asignado en otro campo mientras teníamos el dropdown abierto
+              inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
+              setTimeout(() => inp.style.boxShadow = '', 1500);
+              list.classList.remove('open');
+              return;
+            }
             inp.value = w.nombre;
             onSelect(w.nombre);
             list.classList.remove('open');
@@ -837,11 +850,24 @@ function makeAcInput(currentVal, dept, onSelect) {
 
   inp.addEventListener('focus', () => showList(inp.value));
   inp.addEventListener('click', () => showList(inp.value));
-  inp.addEventListener('input', () => {
-    onSelect(inp.value);
-    showList(inp.value);
+  inp.addEventListener('input', () => { onSelect(inp.value); showList(inp.value); });
+  inp.addEventListener('blur', () => {
+    setTimeout(() => {
+      list.classList.remove('open');
+      // Validar al salir del campo: si escribió a mano un duplicado, borrarlo
+      const v = inp.value.trim().toUpperCase();
+      if (v) {
+        rebuildUsedNames();
+        usedNames.delete(v); // quitar el propio
+        if (usedNames.has(v)) {
+          inp.value = '';
+          onSelect('');
+          inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
+          setTimeout(() => inp.style.boxShadow = '', 1500);
+        }
+      }
+    }, 200);
   });
-  inp.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 200));
 
   wrap.appendChild(inp);
   wrap.appendChild(list);
