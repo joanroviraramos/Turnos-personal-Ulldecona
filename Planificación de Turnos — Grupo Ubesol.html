@@ -497,10 +497,26 @@ td.cell-p { background: var(--p-bg) !important; }
   </div>
 
   <div class="doc-meta">
-    <div class="meta-row"><label>AÑO:</label><input type="number" id="meta-ano" value="2026" style="width:70px"></div>
-    <div class="meta-row"><label>SEMANA:</label><input type="number" id="meta-sem" value="12" style="width:55px"></div>
-    <div class="meta-row"><label>DEL:</label><input type="date" id="meta-ini" value="2026-03-16" oninput="updateWeek()"></div>
-    <div class="meta-row"><label>AL:</label><input type="date" id="meta-fin" value="2026-03-22" readonly></div>
+    <div class="meta-row"><label>AÑO:</label>
+      <select id="meta-ano" onchange="updateWeekFromSelector()" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;border:1px solid var(--border-l);border-radius:3px;padding:2px 6px;background:white;color:var(--text);cursor:pointer;width:80px">
+        <option>2025</option>
+        <option selected>2026</option>
+        <option>2027</option>
+      </select>
+    </div>
+    <div class="meta-row">
+      <label>SEMANA:</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="changeWeek(-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">‹</button>
+        <input type="number" id="meta-sem" value="12" min="1" max="53"
+          oninput="updateWeekFromSelector()"
+          style="width:48px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;border:1px solid var(--border-l);border-radius:3px;padding:2px 4px">
+        <button onclick="changeWeek(1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">›</button>
+      </div>
+    </div>
+    <div class="meta-row" style="grid-column:1/-1;justify-content:center">
+      <span id="meta-dates" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:0.04em"></span>
+    </div>
   </div>
 </div>
 
@@ -942,19 +958,58 @@ function addVac()     { addSpecial('vacaciones'); }
 function removeVac()  { removeSpecial('vacaciones'); }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  DATES / META
+//  DATES — calcula lunes a domingo a partir de semana + año ISO
 // ═══════════════════════════════════════════════════════════════════════
-function updateWeek() {
-  const v = document.getElementById('meta-ini').value;
-  if(!v) return;
-  const ini = new Date(v+'T00:00:00');
-  const fin = new Date(ini); fin.setDate(ini.getDate() + 6);
-  document.getElementById('meta-fin').value = fin.toISOString().slice(0,10);
-  const soy = new Date(ini.getFullYear(),0,1);
-  const wk = Math.ceil(((ini-soy)/86400000 + soy.getDay()+1)/7);
-  document.getElementById('meta-sem').value = wk;
-  document.getElementById('meta-ano').value = ini.getFullYear();
+function getWeekDates(year, week) {
+  // ISO week: week 1 = week containing first Thursday of year
+  const jan4 = new Date(year, 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const monday = new Date(startOfW1);
+  monday.setDate(startOfW1.getDate() + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
 }
+
+function fmtDate(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function fmtISO(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function updateWeekFromSelector() {
+  const year = parseInt(document.getElementById('meta-ano').value) || 2026;
+  const week = parseInt(document.getElementById('meta-sem').value) || 1;
+  const { monday, sunday } = getWeekDates(year, week);
+  document.getElementById('meta-dates').textContent =
+    'Del ' + fmtDate(monday) + ' al ' + fmtDate(sunday);
+}
+
+function changeWeek(delta) {
+  const sem = document.getElementById('meta-sem');
+  let w = parseInt(sem.value) + delta;
+  const year = parseInt(document.getElementById('meta-ano').value) || 2026;
+  if (w < 1) {
+    w = 52;
+    document.getElementById('meta-ano').value = year - 1;
+  } else if (w > 52) {
+    w = 1;
+    document.getElementById('meta-ano').value = year + 1;
+  }
+  sem.value = w;
+  updateWeekFromSelector();
+  // auto-save new week slot and load existing data for that week if available
+  loadWeekFromStorage(year + '-' + String(w).padStart(2,'0'));
+}
+
+// legacy compat — keep for any old references
+function updateWeek() { updateWeekFromSelector(); }
 
 // ═══════════════════════════════════════════════════════════════════════
 //  EXPORT / PUBLISH
@@ -1036,10 +1091,10 @@ function exportJSON() {
   const b = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(b);
-  a.download = `ubesol_cuadrante_s${payload.semana}_${payload.ano}.json`;
+  a.download = `ubesol_${weekKey()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  toast('✓ Fichero descargado: ubesol_cuadrante_s' + payload.semana + '_' + payload.ano + '.json');
+  toast('✓ Fichero descargado: ubesol_' + weekKey() + '.json');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1146,9 +1201,11 @@ function publicar() {
 }
 
 function clearStorage() {
-  if (!confirm('¿Borrar todos los datos guardados en este navegador? Esta acción no se puede deshacer.')) return;
-  localStorage.removeItem(LS_KEY);
-  toast('Datos borrados. Recarga la página para empezar desde cero.');
+  const k = weekKey();
+  if (!confirm('¿Borrar los datos de la semana ' + document.getElementById('meta-sem').value + '? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(k);
+  loadWeekFromStorage(k);
+  toast('Datos de la semana borrados.');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1518,17 +1575,24 @@ function renderCurrent() {
   }
 }
 
-// ── LOCALSTORAGE — auto-save & auto-load ───────────────────────────────
-const LS_KEY = 'ubesol_cuadrante';
+// ── LOCALSTORAGE — guarda por semana ──────────────────────────────────
+function weekKey() {
+  const ano = document.getElementById('meta-ano').value || '2026';
+  const sem = String(document.getElementById('meta-sem').value || '1').padStart(2,'0');
+  return 'ubesol_' + ano + '_s' + sem;
+}
 
 function buildPayload() {
+  const ano = document.getElementById('meta-ano').value || '2026';
+  const sem = document.getElementById('meta-sem').value || '1';
+  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
   return {
     _version: 1,
-    semana:       document.getElementById('meta-sem').value,
-    ano:          document.getElementById('meta-ano').value,
-    fecha_inicio: document.getElementById('meta-ini').value,
-    fecha_fin:    document.getElementById('meta-fin').value,
-    responsable:  document.getElementById('responsable').value,
+    semana:        sem,
+    ano:           ano,
+    fecha_inicio:  fmtISO(monday),
+    fecha_fin:     fmtISO(sunday),
+    responsable:   document.getElementById('responsable').value,
     envasado:       { specialWorkers, lines, bajas, vacaciones },
     elaboracion:    { workers: elabWorkers,    bajas: elabBajas,      vacaciones: elabVacaciones },
     almacen:        { workers: almWorkers,     bajas: almBajas,       vacaciones: almVacaciones },
@@ -1544,17 +1608,16 @@ function buildPayload() {
 
 function autoSave() {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(buildPayload()));
-  } catch(e) { /* quota exceeded — silently ignore */ }
+    localStorage.setItem(weekKey(), JSON.stringify(buildPayload()));
+  } catch(e) {}
 }
 
 function applyPayload(d) {
   if (!d || !d._version) return false;
-  if (d.semana)       document.getElementById('meta-sem').value      = d.semana;
-  if (d.ano)          document.getElementById('meta-ano').value      = d.ano;
-  if (d.fecha_inicio) document.getElementById('meta-ini').value      = d.fecha_inicio;
-  if (d.fecha_fin)    document.getElementById('meta-fin').value      = d.fecha_fin;
-  if (d.responsable)  document.getElementById('responsable').value   = d.responsable;
+  if (d.semana)     document.getElementById('meta-sem').value    = d.semana;
+  if (d.ano)        document.getElementById('meta-ano').value    = d.ano;
+  if (d.responsable) document.getElementById('responsable').value = d.responsable;
+  updateWeekFromSelector();
 
   const merge = (target, src) => { if(src) Object.assign(target, src); };
   if (d.envasado)       { merge(specialWorkers, d.envasado.specialWorkers); if(d.envasado.lines) lines=d.envasado.lines; if(d.envasado.bajas) bajas=d.envasado.bajas; if(d.envasado.vacaciones) vacaciones=d.envasado.vacaciones; }
@@ -1570,7 +1633,39 @@ function applyPayload(d) {
   return true;
 }
 
-// Auto-save every 30 seconds + on any input change
+function loadWeekFromStorage(key) {
+  // Reset all departments to empty before loading
+  lines = defaultLines(); initSpecialWorkers();
+  bajas = [mkWorker('baja_0')]; vacaciones = [mkWorker('vac_0')];
+  initSoplado(); initMejoraContinua(); initCalidadMat();
+  initCalidadFQ(); initCalidadMicro(); initCalidad();
+  initElaboracion(); initAlmacen(); initMantenimiento();
+  try {
+    const saved = localStorage.getItem(key || weekKey());
+    if (saved) {
+      const d = JSON.parse(saved);
+      if (applyPayload(d)) {
+        toast('✓ Semana ' + d.semana + '/' + d.ano + ' cargada');
+      }
+    } else {
+      updateWeekFromSelector();
+      toast('Semana nueva — sin datos guardados');
+    }
+  } catch(e) {}
+  renderCurrent();
+}
+
+// Saved weeks list — shows which weeks have data
+function listSavedWeeks() {
+  const weeks = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('ubesol_')) weeks.push(k);
+  }
+  return weeks.sort().reverse();
+}
+
+// Auto-save every 30s + on any input
 setInterval(autoSave, 30000);
 document.addEventListener('input', autoSave);
 document.addEventListener('change', autoSave);
@@ -1584,6 +1679,17 @@ function toast(msg) {
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────
+// Set current week number automatically
+(function() {
+  const now = new Date();
+  const jan4 = new Date(now.getFullYear(), 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const wk = Math.ceil((now - startW1) / 604800000) + 1;
+  document.getElementById('meta-sem').value = Math.min(wk, 52);
+  document.getElementById('meta-ano').value = now.getFullYear();
+})();
+
 lines = defaultLines();
 initSpecialWorkers();
 bajas = [mkWorker('baja_0')];
@@ -1597,20 +1703,9 @@ initCalidad();
 initElaboracion();
 initAlmacen();
 initMantenimiento();
-updateWeek();
 
-// Try to restore from localStorage
-try {
-  const saved = localStorage.getItem(LS_KEY);
-  if (saved) {
-    const d = JSON.parse(saved);
-    if (applyPayload(d)) {
-      toast('✓ Datos restaurados automáticamente (sem. ' + (d.semana||'?') + ')');
-    }
-  }
-} catch(e) { /* no saved data or parse error — start fresh */ }
-
-renderCurrent();
+// Load current week from storage (or start fresh if none)
+loadWeekFromStorage();
 </script>
 </body>
 </html>
