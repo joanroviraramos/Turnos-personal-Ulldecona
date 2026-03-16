@@ -639,6 +639,8 @@ async function init() {
   loadCuadrante();
 }
 
+let workersLoaded = false;
+
 async function loadWorkers() {
   try {
     const r = await fetch(CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
@@ -649,8 +651,10 @@ async function loadWorkers() {
       const p = l.split(',');
       return { nombre: (p[0]||'').trim(), dni: (p[1]||'').trim().toUpperCase(), departamento: (p[2]||'').trim() };
     }).filter(w => w.nombre && w.dni);
+    workersLoaded = true;
   } catch(e) {
     console.warn('No se pudo cargar CSV:', e.message);
+    workersLoaded = true; // marcamos como cargado aunque haya fallado
   }
 }
 
@@ -666,19 +670,35 @@ async function loadCuadrante() {
 }
 
 // ─── AUTH ────────────────────────────────────────────
-function doLogin() {
+async function doLogin() {
   const dni  = document.getElementById('input-dni').value.trim().toUpperCase();
   const pass = document.getElementById('input-pass').value;
   const err  = document.getElementById('login-error');
+  const btn  = document.querySelector('#screen-login .btn-primary');
 
   if (!dni || !pass) { err.textContent = 'Introduce tu DNI y contraseña'; err.classList.add('show'); return; }
+
+  // Si el CSV aún no ha cargado, esperar
+  if (!workersLoaded) {
+    btn.textContent = 'Cargando...';
+    btn.disabled = true;
+    await loadWorkers();
+    btn.textContent = 'Entrar';
+    btn.disabled = false;
+  }
 
   // Buscar en workers cargados
   const worker = allWorkers.find(w => w.dni === dni);
 
+  // Si no hay workers cargados (sin conexión), intentar con sesión guardada
+  if (!allWorkers.length) {
+    err.textContent = 'No se puede conectar. Comprueba tu conexión a internet.';
+    err.classList.add('show'); return;
+  }
+
   // Obtener contraseña guardada (por defecto = DNI)
   const users = JSON.parse(localStorage.getItem(LS_USERS) || '{}');
-  const savedPass = users[dni] || dni; // si no tiene pass guardada, es el propio DNI
+  const savedPass = users[dni] || dni;
 
   if (!worker) {
     err.textContent = 'DNI no encontrado en el sistema';
@@ -698,6 +718,9 @@ function doLogin() {
 
 document.getElementById('input-pass').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
+});
+document.getElementById('input-dni').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('input-pass').focus();
 });
 
 function doLogout() {
