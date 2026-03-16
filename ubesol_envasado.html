@@ -1532,34 +1532,22 @@ function publicar() {
 
   autoSave();
 
-  // ── Publicar: descarga cuadrante.json y da instrucciones ─────────────
   const payload = buildPayload();
 
   try {
     const json = JSON.stringify(payload, null, 2);
+
+    // Guardar como publicado actual
     localStorage.setItem('ubesol_publicado', json);
 
     // Guardar en histórico con clave por semana
-    const histricoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
-    localStorage.setItem(histricoKey, json);
+    const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
+    localStorage.setItem(historicoKey, json);
 
-    // Descargar el fichero automáticamente
-    const blob = new Blob([json], {type: 'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'cuadrante.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    toast(duplicados.length > 0
+      ? `⚠️ Cuadrante semana ${payload.semana} publicado con ${duplicados.length} duplicado(s)`
+      : `✓ Cuadrante semana ${payload.semana} publicado correctamente`);
 
-    const msg = (duplicados.length > 0
-      ? `⚠️ Hay ${duplicados.length} trabajador(es) duplicado(s).\n\n`
-      : `✓ Cuadrante semana ${payload.semana} listo.\n\n`)
-      + `Se ha descargado "cuadrante.json".\n\n`
-      + `Sube ese fichero a GitHub (arrastrándolo al repositorio) y las TVs se actualizarán en 1-2 minutos.\n\n`
-      + `URL de las TVs:\nhttps://joanroviraramos.github.io/Turnos-personal-Ulldecona/ubesol_tv.html`;
-
-    toast('✓ cuadrante.json descargado — súbelo a GitHub');
-    setTimeout(() => alert(msg), 500);
   } catch(e) {
     toast('⚠️ Error al publicar: ' + e.message);
   }
