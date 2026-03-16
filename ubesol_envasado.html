@@ -2,639 +2,672 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planificación de Turnos — Grupo Ubesol</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GrupoUbesol — Portal Trabajador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
 :root {
-  --bg: #f0f0f0;
-  --white: #ffffff;
-  --border: #b0b0b0;
-  --border-l: #d0d0d0;
-  --text: #1a1a1a;
-  --muted: #555;
-  --faint: #999;
-
-  /* Line background colors (alternating green / yellow like Excel) */
-  --line-green: #e8f5e4;
-  --line-yellow: #fffde7;
-  --line-green-hdr: #c8e6c1;
-  --line-yellow-hdr: #fff9c4;
-
-  /* Turno colors */
-  --m-bg: #e3f2fd; --m-bd: #90caf9; --m-tx: #0d47a1; --m-hdr: #bbdefb;
-  --t-bg: #fff8e1; --t-bd: #ffe082; --t-tx: #e65100; --t-hdr: #ffecb3;
-  --n-bg: #ede7f6; --n-bd: #b39ddb; --n-tx: #311b92; --n-hdr: #d1c4e9;
-  --p-bg: #fce4ec; --p-bd: #f48fb1; --p-tx: #880e4f; --p-hdr: #f8bbd0;
-
-  --sup-bg: #e0f7fa;
-  --special-bg: #f3e5f5;
-  --bajas-bg: #ffebee;
-  --vac-bg: #e8f5e9;
+  --green: #4a7c2f;
+  --green-light: #6a9e45;
+  --green-dark: #2d5a1a;
+  --green-pale: #eef5e8;
+  --green-bg: #f5f9f2;
+  --amber: #e07b00;
+  --amber-pale: #fff8ec;
+  --red: #c0392b;
+  --red-pale: #fdf0ef;
+  --text: #1a2012;
+  --text-2: #4a5540;
+  --text-3: #8a9580;
+  --border: #dde8d4;
+  --border-2: #c8d9ba;
+  --surface: #ffffff;
+  --bg: #f2f7ee;
+  --radius: 16px;
+  --radius-sm: 10px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── LOGIN ── */
+#screen-login {
+  background: var(--surface);
+  justify-content: center;
+  padding: 40px 28px;
+  gap: 0;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.login-brand .brand-mark {
+  width: 64px; height: 64px;
+  background: var(--green);
+  border-radius: 18px;
+  margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.brand-mark svg { width: 36px; height: 36px; }
+
+.login-brand h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.login-brand p {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.login-form { display: flex; flex-direction: column; gap: 14px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
   font-size: 12px;
-  padding: 0;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field input {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 13px 16px;
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+
+.field input:focus { border-color: var(--green); background: #fff; }
+
+.field input::placeholder { color: var(--text-3); }
+
+.login-error {
+  background: var(--red-pale);
+  border: 1px solid #f5c6c2;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red);
+  display: none;
+}
+
+.login-error.show { display: block; }
+
+.btn-primary {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  margin-top: 4px;
+}
+
+.btn-primary:active { background: var(--green-dark); transform: scale(0.98); }
+
+.login-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 20px;
 }
 
 /* ── HEADER ── */
-.doc-header {
-  background: var(--white);
-  border-bottom: 2px solid var(--border);
-  padding: 16px 24px 12px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 20px;
+.app-header {
+  background: var(--green);
+  padding: 16px 20px 14px;
+  color: white;
+  flex-shrink: 0;
 }
 
-.logo-area {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.logo-text {
+.header-top {
   display: flex;
   align-items: center;
-  gap: 6px;
-  line-height: 1;
+  justify-content: space-between;
+  margin-bottom: 2px;
 }
 
-.logo-grupo {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -.01em;
-  color: #6a8a3a;
-}
-
-.logo-ubesol {
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: -.01em;
-  color: #6a8a3a;
-}
-
-.logo-icons {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 4px;
-}
-
-.logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-sub {
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: .1em;
+.header-logo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
   text-transform: uppercase;
-  color: var(--faint);
+}
+
+.header-logout {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+
+.header-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.header-dept {
+  font-size: 12px;
+  opacity: 0.75;
   margin-top: 1px;
 }
 
-.doc-title {
-  text-align: center;
+/* ── HOME SCREEN ── */
+#screen-home { background: var(--bg); }
+
+.home-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+
+/* semana banner */
+.semana-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.doc-title h1 {
+.sb-label { font-size: 11px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.sb-value { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.sb-badge {
+  background: var(--green-pale);
+  color: var(--green-dark);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 20px;
 }
 
-.doc-title h2 {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--text);
-  margin-top: 2px;
-}
+/* main 3 buttons */
+.main-actions { display: flex; flex-direction: column; gap: 12px; }
 
-.doc-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 16px;
-  font-size: 11px;
-}
-
-.meta-row { display: flex; align-items: center; gap: 6px; }
-.meta-row label { font-weight: 600; color: var(--muted); white-space: nowrap; }
-.meta-row input {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  font-weight: 500;
-  border: 1px solid var(--border-l);
-  border-radius: 3px;
-  padding: 2px 6px;
-  background: var(--white);
-  color: var(--text);
-  width: 100px;
-  outline: none;
-}
-.meta-row input:focus { border-color: #666; }
-
-/* ── DEPT TABS ── */
-.dept-tabs {
-  background: #e8e8e8;
-  border-bottom: 1px solid var(--border);
+.action-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px;
   display: flex;
-  gap: 2px;
-  padding: 8px 24px 0;
-}
-
-.tab {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  padding: 7px 16px;
-  border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 5px 5px 0 0;
+  align-items: center;
+  gap: 16px;
   cursor: pointer;
-  background: #d8d8d8;
-  color: var(--muted);
   transition: all .15s;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
 }
 
-.tab:hover { background: #ebebeb; color: var(--text); }
-.tab.active { background: var(--white); color: var(--text); border-bottom: 1px solid var(--white); margin-bottom: -1px; }
-.tab.disabled { opacity: .4; cursor: default; }
+.action-btn:active { transform: scale(0.98); }
 
-/* ── MAIN TABLE AREA ── */
-.table-area {
-  padding: 20px 24px;
-  overflow: visible;
-}
-.table-scroll-x {
-  overflow-x: auto;
-}
+.action-btn.green  { border-left: 4px solid var(--green); }
+.action-btn.amber  { border-left: 4px solid var(--amber); }
+.action-btn.blue   { border-left: 4px solid #2563eb; }
 
-/* ── THE TABLE ── */
-table {
-  border-collapse: collapse;
-  min-width: 900px;
-  width: 100%;
-  background: var(--white);
-  border: 2px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+.action-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 22px;
 }
 
-/* Column widths */
-col.c-linea  { width: 52px; }
-col.c-puesto { width: 160px; }
-col.c-m      { width: 1fr; }
-col.c-t      { width: 1fr; }
-col.c-n      { width: 1fr; }
-col.c-p      { width: 1fr; }
+.action-btn.green .action-icon { background: var(--green-pale); }
+.action-btn.amber .action-icon { background: var(--amber-pale); }
+.action-btn.blue  .action-icon { background: #eff6ff; }
 
-/* ── TURNO HEADER ── */
-thead tr.turno-hdr th {
-  padding: 8px 10px;
-  font-size: 11px;
+.action-text { flex: 1; }
+.action-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.action-desc  { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.action-arrow {
+  color: var(--text-3);
+  font-size: 18px;
+  font-weight: 300;
+}
+
+.action-badge {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: var(--red);
+  color: white;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── TURNOS SCREEN ── */
+#screen-turnos { background: var(--bg); }
+
+.screen-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none;
+  font-size: 14px; font-weight: 500;
+  color: var(--green); cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  padding: 0 0 4px;
+}
+
+.turno-card {
+  background: var(--green);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  color: white;
+}
+
+.tc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+.tc-turno { font-size: 24px; font-weight: 700; margin: 3px 0 1px; letter-spacing: -0.02em; }
+.tc-puesto { font-size: 22px; font-weight: 700; opacity: 0.9; letter-spacing: -0.01em; margin-top: 0; }
+.tc-fechas { font-size: 12px; opacity: 0.7; margin-top: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
+
+.dias-card {
+  background: var(--surface);
   border: 1px solid var(--border);
-  text-align: center;
+  border-radius: var(--radius);
+  padding: 16px;
 }
 
-.th-linea { background: #f5f5f5; }
-.th-puesto { background: #f5f5f5; }
-.th-m  { background: var(--m-hdr); color: var(--m-tx); }
-.th-t  { background: var(--t-hdr); color: var(--t-tx); }
-.th-n  { background: var(--n-hdr); color: var(--n-tx); }
-.th-p  { background: var(--p-hdr); color: var(--p-tx); }
+.dias-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
 
-/* ── DATA ROWS ── */
-tbody td {
-  border: 1px solid var(--border-l);
-  padding: 0;
-  vertical-align: middle;
+.dias-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+
+.dia-cell { text-align: center; }
+.dia-name { font-size: 10px; color: var(--text-3); margin-bottom: 4px; font-weight: 500; }
+.dia-chip {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600;
+}
+.dia-chip.work  { background: var(--green-pale); color: var(--green-dark); }
+.dia-chip.off   { background: #f0f0f0; color: #aaa; }
+.dia-chip.today { background: var(--green); color: white; }
+
+.turno-card-actual {
+  background: #1a6eb5;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  color: white;
 }
 
-/* Line label cell */
-td.linea-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-align: center;
-  color: var(--text);
-  vertical-align: middle;
+.turno-card-actual .tc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; }
+.turno-card-actual .tc-turno { font-size: 24px; font-weight: 700; margin: 3px 0 0; letter-spacing: -0.02em; }
+.turno-card-actual .tc-puesto { font-size: 22px; font-weight: 700; opacity: 0.9; letter-spacing: -0.01em; }
+.turno-card-actual .tc-fechas { font-size: 12px; opacity: 0.7; margin-top: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
+
+.turno-card-hist {
+  background: var(--surface);
   border: 1px solid var(--border);
-  padding: 4px;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  border-left: 5px solid var(--border-2);
 }
 
-/* Puesto label cell */
-td.puesto-label {
-  padding: 4px 10px;
-  font-size: 11px;
+.sem-label {
+  font-size: 10px;
   font-weight: 600;
-  color: #333;
-  border: 1px solid var(--border-l);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.sem-label.proxima { background: #e8f5e4; color: #27500a; }
+.sem-label.actual   { background: #dbeafe; color: #1e40af; }
+.sem-label.pasada   { background: #f3f4f6; color: #6b7280; }
+.sem-label.futura   { background: #f3f4f6; color: #6b7280; }
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+/* ── EPI SCREEN ── */
+#screen-epi { background: var(--bg); }
+
+.epi-list { display: flex; flex-direction: column; gap: 10px; }
+
+.epi-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.epi-ico {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--green-pale);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+
+.epi-info { flex: 1; }
+.epi-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.epi-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+.tag {
+  font-size: 10px; font-weight: 600;
+  padding: 3px 8px; border-radius: 20px;
+  display: inline-block; margin-top: 4px;
+}
+
+.tag-ok   { background: #dcfce7; color: #166534; }
+.tag-pend { background: #fef3c7; color: #92400e; }
+
+.btn-nueva-epi {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* EPI form */
+.epi-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.epi-form h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.epi-form select, .epi-form textarea {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+
+.epi-form textarea { resize: none; height: 80px; }
+.epi-form select:focus, .epi-form textarea:focus { border-color: var(--green); background: #fff; }
+
+.form-btns { display: flex; gap: 8px; }
+.btn-cancel {
+  flex: 1; background: #f0f0f0; border: none; border-radius: var(--radius-sm);
+  padding: 12px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+.btn-send {
+  flex: 2; background: var(--green); color: white; border: none; border-radius: var(--radius-sm);
+  padding: 12px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+
+/* ── AVISOS SCREEN ── */
+#screen-avisos { background: var(--bg); }
+
+.aviso-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.aviso-item.nuevo { border-left: 3px solid var(--green); }
+
+.av-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.av-fecha { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+.av-nuevo-badge {
+  background: var(--green-pale);
+  color: var(--green-dark);
+  font-size: 9px; font-weight: 700;
+  padding: 2px 7px; border-radius: 20px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+
+.av-titulo { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.av-texto  { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+/* ── SUCCESS TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999;
   white-space: nowrap;
 }
 
-/* Name input cell */
-td.name-cell {
-  padding: 2px 4px;
-}
+.toast.show { transform: translateX(-50%) translateY(0); }
 
-.name-inp {
-  width: 100%;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  padding: 4px 8px;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  cursor: text;
-}
-
-.name-inp::placeholder {
-  color: #ccc;
-  font-style: italic;
-}
-
-.name-inp:focus {
-  background: rgba(255,255,255,.9);
-  box-shadow: inset 0 0 0 1px #aaa;
-  border-radius: 2px;
-}
-
-/* Row backgrounds by line type */
-tr.line-maq { background: var(--line-green-hdr); }
-tr.line-op  { background: var(--line-green); }
-tr.line-maq.yellow { background: var(--line-yellow-hdr); }
-tr.line-op.yellow  { background: var(--line-yellow); }
-
-/* Special section rows */
-tr.section-divider td {
-  background: #e8e8e8;
-  border-top: 2px solid var(--border);
-  border-bottom: 2px solid var(--border);
-  padding: 5px 10px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .1em;
+/* ── SECTION TITLE ── */
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
   text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: 0.07em;
 }
-
-tr.special-row { background: var(--special-bg); }
-tr.special-row td.puesto-label { font-weight: 700; color: #4a0080; }
-tr.sup-row { background: var(--sup-bg); }
-tr.sup-row td.puesto-label { font-weight: 700; color: #006064; }
-tr.bajas-row { background: var(--bajas-bg); }
-tr.bajas-row td.puesto-label { font-weight: 700; color: #b71c1c; }
-tr.vac-row { background: var(--vac-bg); }
-tr.vac-row td.puesto-label { font-weight: 700; color: #1b5e20; }
-
-/* Line header row (merged linea cell) */
-.line-group td.linea-label {
-  border-right: 2px solid var(--border);
-  border-left: 2px solid var(--border);
-}
-
-/* Turno cell coloring */
-td.cell-m { background: var(--m-bg) !important; }
-td.cell-t { background: var(--t-bg) !important; }
-td.cell-n { background: var(--n-bg) !important; }
-td.cell-p { background: var(--p-bg) !important; }
-
-/* ── ROW CONTROLS ── */
-.row-controls {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 1px 4px;
-}
-
-.del-row {
-  width: 14px; height: 14px;
-  border-radius: 2px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #ccc;
-  font-size: 11px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0; line-height: 1;
-  flex-shrink: 0;
-  transition: all .12s;
-  margin-left: auto;
-}
-.del-row:hover { color: #c00; background: #fde0e0; }
-
-/* ── ROW CONTROL BUTTONS (+ and −) ── */
-.ctrl-btn {
-  width: 18px; height: 18px;
-  border-radius: 3px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
-  border: 1px solid;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: all .12s;
-  flex-shrink: 0;
-}
-.ctrl-add {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border-color: #a5d6a7;
-}
-.ctrl-add:hover { background: #c8e6c9; border-color: #66bb6a; }
-.ctrl-del {
-  background: #fce4ec;
-  color: #c62828;
-  border-color: #f48fb1;
-}
-.ctrl-del:hover { background: #f8bbd0; border-color: #e57373; }
-
-/* ── ADD LINE AREA ── */
-.add-line-area {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  align-items: center;
-}
-
-.add-line-btn {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 5px;
-  cursor: pointer;
-  border: 1px dashed var(--border);
-  background: var(--white);
-  color: var(--muted);
-  transition: all .15s;
-  letter-spacing: .03em;
-}
-.add-line-btn:hover { background: #f0f0f0; color: var(--text); }
-
-/* ── BOTTOM ACTIONS ── */
-.bottom-bar {
-  background: var(--white);
-  border-top: 1px solid var(--border-l);
-  padding: 12px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  position: sticky;
-  bottom: 0;
-}
-
-.legend {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.leg {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: var(--muted);
-}
-
-.leg-chip {
-  width: 28px;
-  height: 15px;
-  border-radius: 3px;
-  font-size: 8px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'IBM Plex Mono', monospace;
-  border: 1px solid;
-}
-
-.btn-group { display: flex; gap: 8px; }
-
-.btn {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 7px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  letter-spacing: .03em;
-  transition: all .15s;
-}
-
-.btn-sec { background: var(--white); color: var(--muted); }
-.btn-sec:hover { background: #f0f0f0; color: var(--text); }
-.btn-pri { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-.btn-pri:hover { background: #333; }
-.btn-pub { background: #1b5e20; color: #fff; border-color: #1b5e20; }
-.btn-pub:hover { background: #2e7d32; }
-
-/* ── TOAST ── */
-.toast {
-  position: fixed;
-  bottom: 70px;
-  right: 24px;
-  background: #1a1a1a;
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  transform: translateY(40px);
-  opacity: 0;
-  transition: all .25s;
-  z-index: 999;
-  pointer-events: none;
-}
-.toast.show { transform: translateY(0); opacity: 1; }
-
-/* ── AUTOCOMPLETE ── */
-.ac-wrap { position: relative; flex: 1; display: flex; align-items: center; min-width: 0; }
-.ac-wrap input { width: 100%; }
-.ac-list {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  min-width: 260px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.15);
-  z-index: 9999;
-  max-height: 220px;
-  overflow-y: auto;
-  display: none;
-}
-.ac-list.open { display: block; }
-.ac-item {
-  padding: 7px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--border-l);
-}
-.ac-item:last-child { border-bottom: none; }
-.ac-item:hover { background: #f0ede6; }
-.ac-item.used { opacity: .35; pointer-events: none; background: #fafafa; }
-.ac-item .ac-name { font-weight: 500; color: var(--text); }
-.ac-item .ac-dni { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--faint); }
-.ac-empty { padding: 8px 12px; font-size: 12px; color: var(--faint); font-style: italic; }
-
-/* Permitir que el dropdown salga fuera de la celda */
-.name-cell { overflow: visible !important; }
-td.name-cell { overflow: visible !important; }
-
 </style>
 </head>
 <body>
 
-<!-- DOCUMENT HEADER -->
-<div class="doc-header">
-  <div class="logo-area">
-    <div class="logo-text">
-      <span class="logo-grupo">GRUPO</span><span class="logo-ubesol">UBESOL</span>
+<!-- ═══ LOGIN ═══ -->
+<div id="screen-login" class="screen active">
+  <div class="login-brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 36 36" fill="none">
+        <path d="M18 4L6 10v8c0 7.7 5.1 14.9 12 17 6.9-2.1 12-9.3 12-17v-8L18 4z" fill="white" opacity="0.9"/>
+      </svg>
     </div>
+    <h1>GrupoUbesol</h1>
+    <p>Portal del trabajador</p>
   </div>
 
-  <div class="doc-title">
-    <h1>Planificación de Turnos Semanal</h1>
-    <h2 id="dept-title">Envasado</h2>
+  <div class="login-form">
+    <div class="field">
+      <label>DNI</label>
+      <input type="text" id="input-dni" placeholder="12345678A" maxlength="20" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="input-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error">DNI o contraseña incorrectos</div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
   </div>
 
-  <div class="doc-meta">
-    <div class="meta-row"><label>AÑO:</label>
-      <select id="meta-ano" onchange="autoSave(); updateWeekFromSelector()" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;border:1px solid var(--border-l);border-radius:3px;padding:2px 6px;background:white;color:var(--text);cursor:pointer;width:80px">
-        <option>2025</option>
-        <option selected>2026</option>
-        <option>2027</option>
-      </select>
+  <p class="login-hint">Primera vez aquí: tu contraseña inicial es tu DNI</p>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div id="screen-home" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
     </div>
-    <div class="meta-row">
-      <label>SEMANA:</label>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button onclick="changeWeek(-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">‹</button>
-        <input type="number" id="meta-sem" value="12" min="1" max="53"
-          onchange="(function(){ var k=weekKey(); autoSaveToKey(k); loadWeekFromStorage(); })()"
-          oninput="updateWeekFromSelector()"
-          style="width:48px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;border:1px solid var(--border-l);border-radius:3px;padding:2px 4px">
-        <button onclick="changeWeek(1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">›</button>
+    <div class="header-name" id="home-name">Hola</div>
+    <div class="header-dept" id="home-dept"></div>
+  </div>
+
+  <div class="home-body">
+    <div class="semana-banner">
+      <div>
+        <div class="sb-label">Próxima semana publicada</div>
+        <div class="sb-value" id="home-semana-fechas">—</div>
       </div>
+      <div class="sb-badge" id="home-semana-num">S—</div>
     </div>
-    <div class="meta-row" style="grid-column:1/-1;justify-content:center">
-      <span id="meta-dates" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:0.04em"></span>
+
+    <div class="section-title">Acceso rápido</div>
+
+    <div class="main-actions">
+      <button class="action-btn green" onclick="goTo('turnos')">
+        <div class="action-icon">📅</div>
+        <div class="action-text">
+          <div class="action-title">Mis turnos</div>
+          <div class="action-desc">Ver tu horario semanal</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+
+      <button class="action-btn amber" onclick="goTo('epi')">
+        <div class="action-icon">🦺</div>
+        <div class="action-text">
+          <div class="action-title">EPIs</div>
+          <div class="action-desc">Solicitar equipos de protección</div>
+        </div>
+        <div class="action-arrow">›</div>
+        <div class="action-badge" id="epi-badge" style="display:none">1</div>
+      </button>
+
+      <button class="action-btn blue" onclick="goTo('avisos')">
+        <div class="action-icon">📢</div>
+        <div class="action-text">
+          <div class="action-title">Avisos</div>
+          <div class="action-desc">Comunicados de empresa</div>
+        </div>
+        <div class="action-arrow">›</div>
+        <div class="action-badge" id="avisos-badge" style="display:none">2</div>
+      </button>
     </div>
   </div>
 </div>
 
-<!-- DEPARTMENT TABS -->
-<div class="dept-tabs">
-  <button class="tab active" id="tab-Envasado" onclick="switchTab('Envasado')">Envasado</button>
-  <button class="tab" id="tab-Elaboración" onclick="switchTab('Elaboración')">Elaboración</button>
-  <button class="tab" id="tab-Almacén" onclick="switchTab('Almacén')">Almacén</button>
-  <button class="tab" id="tab-Mantenimiento" onclick="switchTab('Mantenimiento')">Mantenimiento</button>
-  <button class="tab" id="tab-Calidad Líneas" onclick="switchTab('Calidad Líneas')">Calidad Líneas</button>
-  <button class="tab" id="tab-Calidad FQ" onclick="switchTab('Calidad FQ')">Calidad Fís-Quím</button>
-  <button class="tab" id="tab-Calidad Micro" onclick="switchTab('Calidad Micro')">Calidad Microbiología</button>
-  <button class="tab" id="tab-Calidad Mat" onclick="switchTab('Calidad Mat')">Calidad Materiales</button>
-  <button class="tab" id="tab-Mejora Continua" onclick="switchTab('Mejora Continua')">Mejora Continua</button>
-  <button class="tab" id="tab-Soplado" onclick="switchTab('Soplado')">Soplado</button>
-</div>
-
-<!-- TABLE AREA -->
-<div class="table-area">
-  <div class="table-scroll-x">
-    <div id="table-root"></div>
+<!-- ═══ TURNOS ═══ -->
+<div id="screen-turnos" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Mis turnos</div>
+    <div class="header-dept" id="turnos-semana"></div>
   </div>
-  <div class="add-line-area" id="add-line-area">
-    <button class="add-line-btn" onclick="addLine()">+ Añadir línea</button>
-    <button class="add-line-btn" onclick="addLine('L2')">+ Añadir línea L2.x</button>
+  <div style="background:var(--green);padding:0 16px 12px;display:flex;gap:8px">
+    <button id="tab-lista" onclick="switchTurnosTab('lista')"
+      style="flex:1;padding:8px 0;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;background:rgba(255,255,255,0.9);color:var(--green)">
+      Semanas
+    </button>
+    <button id="tab-calendario" onclick="switchTurnosTab('calendario')"
+      style="flex:1;padding:8px 0;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;background:rgba(255,255,255,0.2);color:rgba(255,255,255,0.85)">
+      Calendario
+    </button>
   </div>
-</div>
-
-<!-- BOTTOM BAR -->
-<div class="bottom-bar">
-  <div class="legend">
-    <div class="leg">
-      <div class="leg-chip" style="background:var(--m-bg);color:var(--m-tx);border-color:var(--m-bd)">M</div>
-      Turno Mañana
-    </div>
-    <div class="leg">
-      <div class="leg-chip" style="background:var(--t-bg);color:var(--t-tx);border-color:var(--t-bd)">T</div>
-      Turno Tarde
-    </div>
-    <div class="leg">
-      <div class="leg-chip" style="background:var(--n-bg);color:var(--n-tx);border-color:var(--n-bd)">N</div>
-      Turno Noche
-    </div>
-    <div class="leg">
-      <div class="leg-chip" style="background:var(--p-bg);color:var(--p-tx);border-color:var(--p-bd)">P</div>
-      Partido / Especial
-    </div>
-  </div>
-  <div class="btn-group">
-    <button class="btn btn-sec" onclick="window.print()">Imprimir / PDF</button>
-    <button class="btn btn-sec" onclick="guardarManual()" title="Guardar datos en el navegador" style="color:#1b5e20;font-weight:600">💾 Guardar</button>
-    <button class="btn btn-sec" onclick="clearStorage()" title="Borrar datos guardados en este navegador" style="color:#c00">Borrar datos</button>
-    <button class="btn btn-pub" onclick="publicar()">Publicar cuadrante ✓</button>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="turnos-content"></div>
+    <div id="calendario-content" style="display:none"></div>
   </div>
 </div>
 
-<!-- Hidden file input for loading JSON -->
-<input type="file" id="json-file-input" accept=".json" style="display:none" onchange="loadJSON(this)">
+<!-- ═══ EPI ═══ -->
+<div id="screen-epi" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Mis EPIs</div>
+    <div class="header-dept">Historial y solicitudes</div>
+  </div>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="epi-content"></div>
+  </div>
+</div>
+
+<!-- ═══ AVISOS ═══ -->
+<div id="screen-avisos" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Avisos</div>
+    <div class="header-dept">Comunicados de empresa</div>
+  </div>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="avisos-content"></div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════
-//  DATA MODEL — Envasado
-//  Each line has:
-//    - id, label (L1, L2, L2.1...), color ('green'|'yellow')
-//    - maq: 1 Operador/a Máquina row (always 1)
-//    - ops: N Operaria/o rows (variable, min 1)
-//    - type: 'standard' | 'L2sub' (L2.1, L2.2 ... grouped under L2 block)
-//
-//  Special rows (no line): Supervisor, Tracking Nave1, Suministro, etc.
-//  Bottom rows: Tolvas Nave3, Traslado Nave3, Tracking Nave3/4,
-//               Componentes Nave4, Bajas, Vacaciones
-// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+//  DATOS — usuarios desde el mismo CSV de trabajadores
+//  En producción se carga desde GitHub
+// ═══════════════════════════════════════════════════════
+const CUADRANTE_URL = 'https://joanroviraramos.github.io/Turnos-personal-Ulldecona/cuadrante.json';
+const LS_USERS = 'ubesol_app_users';
+const LS_SESSION = 'ubesol_app_session';
+const LS_EPIS = 'ubesol_app_epis';
 
-// ═══════════════════════════════════════════════════════════════════════
-//  WORKERS DATA — embebidos directamente (no requiere servidor)
-//  Para actualizar: sustituir WORKERS_DATA con los datos reales
-// ═══════════════════════════════════════════════════════════════════════
-const WORKERS_DATA = [
+// ─── TRABAJADORES EMBEBIDOS ──────────────────────────
+// Para actualizar: sustituir estos datos con los reales
+const WORKERS_EMBEDDED = [
   {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
   {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
   {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
@@ -727,1517 +760,629 @@ const WORKERS_DATA = [
   {nombre:"LARA GARCIA ALONSO",dni:"00011133L",departamento:"Soplado"},
 ];
 
-let allWorkers = WORKERS_DATA;
-let usedNames  = new Set();
-
-// Declaraciones globales de todos los arrays de bajas/vacaciones
-// (se inicializan en los init* pero necesitan existir antes para rebuildUsedNames)
-bajas = [], vacaciones = [];
-elabBajas = [], elabVacaciones = [];
-almBajas = [], almVacaciones = [];
-mtoBajas = [], mtoVacaciones = [];
-calBajas = [], calVacaciones = [];
-calfqBajas = [], calfqVacaciones = [];
-calmicroBajas = [], calmicroVacaciones = [];
-calmatBajas = [], calmatVacaciones = [];
-mcBajas = [], mcVacaciones = [];
-soplBajas = [], soplVacaciones = [];
-elabWorkers = {}, almWorkers = {}, mtoWorkers = {};
-calWorkers = {}, calfqWorkers = {}, calmicroWorkers = {};
-calmatWorkers = {}, mcWorkers = {}, soplWorkers = {};
-
-function getWorkersForDept(dept) {
-  return allWorkers.filter(w => w.departamento === dept);
-}
-
-function rebuildUsedNames() {
-  usedNames = new Set();
-  const add = (v) => { if(v && v.trim()) usedNames.add(v.trim().toUpperCase()); };
-  const safeArr = (a) => Array.isArray(a) ? a : [];
-
-  // Envasado — lines tienen maq[] y ops[], cada worker tiene cells:{M,T,N,P}
-  safeArr(lines).forEach(l => {
-    [...safeArr(l.maq), ...safeArr(l.ops)].forEach(w => {
-      if(w && w.cells) Object.values(w.cells).forEach(add);
-    });
-  });
-
-  // Servicios transversales Envasado
-  if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
-    safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); }));
-
-  // Todos los depts tipo post
-  [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers,
-   calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers].forEach(obj => {
-    if (!obj) return;
-    Object.values(obj).forEach(arr => safeArr(arr).forEach(w => {
-      if(w && w.cells) Object.values(w.cells).forEach(add);
-    }));
-  });
-
-  // Bajas / vacaciones de todos los depts
-  [bajas, vacaciones, elabBajas, elabVacaciones, almBajas, almVacaciones,
-   mtoBajas, mtoVacaciones, calBajas, calVacaciones, calfqBajas, calfqVacaciones,
-   calmicroBajas, calmicroVacaciones, calmatBajas, calmatVacaciones,
-   mcBajas, mcVacaciones, soplBajas, soplVacaciones].forEach(arr => {
-    safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); });
-  });
-}
-
-async function loadWorkers() { /* datos ya embebidos — no hace falta fetch */ }
-
-// ── AUTOCOMPLETE ENGINE ────────────────────────────────────────────────
-function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
-  const wrap = document.createElement('div');
-  wrap.className = 'ac-wrap';
-
-  const inp = document.createElement('input');
-  inp.className = 'name-inp';
-  inp.type = 'text';
-  inp.value = currentVal || '';
-  inp.placeholder = 'Nombre…';
-  inp.autocomplete = 'off';
-
-  const list = document.createElement('div');
-  list.className = 'ac-list';
-
-  function showList(query) {
-    rebuildUsedNames();
-    const own = inp.value.trim().toUpperCase();
-    if (own) usedNames.delete(own);
-
-    const q = query.trim().toUpperCase();
-    const workers = getWorkersForDept(dept);
-
-    const available = workers.filter(w => {
-      const nameUpper = w.nombre.toUpperCase();
-      const matchesQuery = !q || nameUpper.includes(q);
-      // Si blockDuplicates: ocultar ya asignados. Si no: mostrar todos
-      const notUsed = !blockDuplicates || !usedNames.has(nameUpper);
-      return matchesQuery && notUsed;
-    });
-
-    list.innerHTML = '';
-    if (!available.length) {
-      list.innerHTML = `<div class="ac-empty">${q ? 'Sin resultados' : 'Todos los trabajadores ya están asignados'}</div>`;
-    } else {
-      available.slice(0, 30).forEach(w => {
-        const item = document.createElement('div');
-        item.className = 'ac-item';
-        item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
-        item.onmousedown = (e) => {
-          e.preventDefault();
-          selectedFromList = true;
-          inp.value = w.nombre;
-          onSelect(w.nombre);
-          autoSave();
-          list.classList.remove('open');
-        };
-        list.appendChild(item);
-      });
-    }
-    list.classList.add('open');
-  }
-
-  let selectedFromList = false;
-
-  inp.addEventListener('focus', () => showList(inp.value));
-  inp.addEventListener('click', () => showList(inp.value));
-  inp.addEventListener('input', () => { selectedFromList = false; onSelect(inp.value); showList(inp.value); });
-  inp.addEventListener('blur', () => {
-    setTimeout(() => {
-      list.classList.remove('open');
-      if (!selectedFromList && blockDuplicates) {
-        const v = inp.value.trim().toUpperCase();
-        if (v) {
-          rebuildUsedNames();
-          usedNames.delete(v);
-          if (usedNames.has(v)) {
-            inp.value = '';
-            onSelect('');
-            inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
-            setTimeout(() => inp.style.boxShadow = '', 1500);
-          }
-        }
-      }
-      autoSave();
-      selectedFromList = false;
-    }, 200);
-  });
-
-  wrap.appendChild(inp);
-  wrap.appendChild(list);
-  return { wrap, inp };
-}
-
-const TURNOS = ['M','T','N','P'];
-
-// State
-let lines = [];
-
-// Servicios transversales: cada puesto es un array expandible de workers
-const SPECIAL_TOP = [
-  { id:'sup',  label:'SUPERVISOR/A DE TURNO', type:'sup'     },
-  { id:'tr1',  label:'TRACKING NAVE 1',       type:'special' },
-  { id:'sum',  label:'SUMINISTRO',            type:'special' },
-];
-
-const SPECIAL_BOT = [
-  { id:'tol3',  label:'TOLVAS NAVE 3',      type:'special' },
-  { id:'tras3', label:'TRASLADO NAVE 3',    type:'special' },
-  { id:'trk3',  label:'TRACKING NAVE 3',   type:'special' },
-  { id:'tol4',  label:'TOLVAS NAVE 4',      type:'special' },
-  { id:'comp4', label:'COMPONENTES NAVE 4', type:'special' },
-  { id:'trk4',  label:'TRACKING NAVE 4',   type:'special' },
-];
-
-// workers keyed by puesto id — each is an expandable array
-let specialWorkers = {};
-
-function initSpecialWorkers() {
-  specialWorkers = {};
-  [...SPECIAL_TOP, ...SPECIAL_BOT].forEach(p => {
-    specialWorkers[p.id] = [mkWorker(p.id+'_0')];
-  });
-}
-
-// Bajas y vacaciones son arrays expandibles
-
-// default line structure — all lines start with 1 maq + 1 op
-function defaultLines() {
-  return [
-    mkLine('L1',   'L1',    'green',  false),
-    mkLine('L2',   'L2',    'yellow', false),
-    mkLine('L3',   'L3',    'green',  false),
-    mkLine('L4',   'L4',    'yellow', false),
-    mkLine('L7',   'L7',    'green',  false),
-    mkLine('L5.1', 'L5.1',  'yellow', false),
-    mkLine('L2.1', 'L2.1',  'green',  true),
-    mkLine('L2.2', 'L2.2',  'yellow', true),
-    mkLine('L2.3', 'L2.3',  'green',  true),
-    mkLine('L2.5', 'L2.5',  'yellow', true),
-    mkLine('L2.6', 'L2.6',  'green',  true),
-    mkLine('L2.7', 'L2.7',  'yellow', true),
-    mkLine('L2.8', 'L2.8',  'green',  true),
-    mkLine('L2.9', 'L2.9',  'yellow', true),
-    mkLine('L2.10','L2.10', 'green',  true),
-  ];
-}
-
-function mkLine(id, label, color, isL2sub=false) {
-  return {
-    id, label, color, isL2sub,
-    maq: [mkWorker('maq_'+id+'_0')],
-    ops: [mkWorker('op_'+id+'_0')],
-  };
-}
-
-function mkWorker(id) {
-  return { id, name:'', cells:{M:'',T:'',N:'',P:''} };
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════════════════════════════
-function render() {
-  const root = document.getElementById('table-root');
-  root.innerHTML = '';
-
-  const tbl = document.createElement('table');
-  tbl.innerHTML = `<colgroup>
-    <col class="c-linea"><col class="c-puesto">
-    <col class="c-m"><col class="c-t"><col class="c-n"><col class="c-p">
-  </colgroup>`;
-
-  // THEAD
-  const thead = document.createElement('thead');
-  thead.innerHTML = `<tr class="turno-hdr">
-    <th class="th-linea">LÍNEA</th>
-    <th class="th-puesto">PUESTO</th>
-    <th class="th-m">TURNO MAÑANA</th>
-    <th class="th-t">TURNO TARDE</th>
-    <th class="th-n">TURNO NOCHE</th>
-    <th class="th-p">TURNO PARTIDO / ESPECIAL</th>
-  </tr>`;
-  tbl.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-
-  // ── SUPERVISOR / SPECIAL TOP ROWS ──
-  SPECIAL_TOP.forEach(puesto => {
-    const arr = specialWorkers[puesto.id];
-    arr.forEach((w, wi) => tbody.appendChild(buildExpandableRow(w, wi, puesto, arr)));
-  });
-
-  // Divider
-  tbody.appendChild(buildDivider('Líneas de Producción'));
-
-  // ── LINES ──
-  // Separate L2sub lines to group them visually
-  const mainLines = lines.filter(l => !l.isL2sub);
-  const l2subs    = lines.filter(l => l.isL2sub);
-
-  mainLines.forEach(line => renderLineRows(tbody, line));
-
-  if(l2subs.length > 0) {
-    tbody.appendChild(buildDivider('Líneas L2 — Subgrupo'));
-    l2subs.forEach(line => renderLineRows(tbody, line));
-  }
-
-  // ── BOTTOM SPECIALS ──
-  tbody.appendChild(buildDivider('Servicios Transversales'));
-  SPECIAL_BOT.forEach(puesto => {
-    const arr = specialWorkers[puesto.id];
-    arr.forEach((w, wi) => tbody.appendChild(buildExpandableRow(w, wi, puesto, arr)));
-  });
-
-  // ── BAJAS ──
-  tbody.appendChild(buildDivider('Bajas'));
-  bajas.forEach((w, wi) => {
-    tbody.appendChild(buildExpandableRow(w, wi, {id:'bajas', label:'BAJA', type:'bajas'}, bajas));
-  });
-
-  // ── VACACIONES ──
-  tbody.appendChild(buildDivider('Vacaciones'));
-  vacaciones.forEach((w, wi) => {
-    tbody.appendChild(buildExpandableRow(w, wi, {id:'vacaciones', label:'VACACIONES', type:'vac'}, vacaciones));
-  });
-
-  tbl.appendChild(tbody);
-  root.appendChild(tbl);
-}
-
-function renderLineRows(tbody, line) {
-  const color = line.color;
-  const totalRows = line.maq.length + line.ops.length;
-
-  // ── OPERADOR/A MÁQUINA rows ──
-  line.maq.forEach((w, wi) => {
-    const tr = document.createElement('tr');
-    tr.className = `line-maq${color==='yellow'?' yellow':''}`;
-
-    // Line label cell — spans all rows of this line, only on first row
-    if(wi === 0) {
-      const tdLinea = document.createElement('td');
-      tdLinea.className = 'linea-label';
-      tdLinea.rowSpan = totalRows;
-      tdLinea.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <span>${line.label}</span>
-        <button onclick="removeLine('${line.id}')" title="Eliminar línea"
-          style="font-size:9px;color:#ccc;background:none;border:none;cursor:pointer;padding:0;transition:color .12s"
-          onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#ccc'">✕</button>
-      </div>`;
-      tr.appendChild(tdLinea);
-    }
-
-    // Puesto label + controls
-    const tdPuesto = document.createElement('td');
-    tdPuesto.className = 'puesto-label';
-    tdPuesto.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-      <span>OPERADOR/A MÁQUINA</span>
-      <div style="display:flex;gap:2px;flex-shrink:0">
-        ${line.maq.length > 1 && wi === line.maq.length-1
-          ? `<button class="ctrl-btn ctrl-del" onclick="removeMaq('${line.id}')" title="Quitar operador/a máquina">−</button>`
-          : ''}
-        ${wi === line.maq.length-1
-          ? `<button class="ctrl-btn ctrl-add" onclick="addMaq('${line.id}')" title="Añadir operador/a máquina">+</button>`
-          : ''}
-      </div>
-    </div>`;
-    tr.appendChild(tdPuesto);
-
-    TURNOS.forEach(t => tr.appendChild(buildNameCell(w, t)));
-    tbody.appendChild(tr);
-  });
-
-  // ── OPERARIA/O rows ──
-  line.ops.forEach((w, wi) => {
-    const tr = document.createElement('tr');
-    tr.className = `line-op${color==='yellow'?' yellow':''}`;
-
-    const tdPuesto = document.createElement('td');
-    tdPuesto.className = 'puesto-label';
-    tdPuesto.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-      <span>OPERARIA/O</span>
-      <div style="display:flex;gap:2px;flex-shrink:0">
-        ${line.ops.length > 1 && wi === line.ops.length-1
-          ? `<button class="ctrl-btn ctrl-del" onclick="removeOp('${line.id}')" title="Quitar operaria/o">−</button>`
-          : ''}
-        ${wi === line.ops.length-1
-          ? `<button class="ctrl-btn ctrl-add" onclick="addOp('${line.id}')" title="Añadir operaria/o">+</button>`
-          : ''}
-      </div>
-    </div>`;
-    tr.appendChild(tdPuesto);
-
-    TURNOS.forEach(t => tr.appendChild(buildNameCell(w, t)));
-    tbody.appendChild(tr);
-  });
-}
-
-function buildNameCell(worker, turno) {
-  const td = document.createElement('td');
-  td.className = `name-cell cell-${turno.toLowerCase()}`;
-  const div = document.createElement('div');
-  div.className = 'row-controls';
-  const { wrap } = makeAcInput(
-    worker.cells[turno] || '',
-    currentTab,
-    (val) => { worker.cells[turno] = val; },
-    true   // bloquear duplicados igual que el resto de departamentos
-  );
-  div.appendChild(wrap);
-  td.appendChild(div);
-  return td;
-}
-
-
-function buildDivider(text) {
-  const tr = document.createElement('tr');
-  tr.className = 'section-divider';
-  const td = document.createElement('td');
-  td.colSpan = 6;
-  td.textContent = text;
-  tr.appendChild(td);
-  return tr;
-}
-
-function buildExpandableRow(worker, wi, puesto, arr) {
-  const isPuestoObj = typeof puesto === 'object' && puesto.label;
-  const label    = isPuestoObj ? puesto.label : (puesto === 'bajas' ? 'BAJA' : 'VACACIONES');
-  const rowType  = isPuestoObj ? puesto.type  : puesto;
-  const puestoId = isPuestoObj ? puesto.id    : puesto;
-
-  const tr = document.createElement('tr');
-  tr.className = rowType === 'sup'   ? 'sup-row'
-               : rowType === 'bajas' ? 'bajas-row'
-               : rowType === 'vac'   ? 'vac-row'
-               : 'special-row';
-
-  // Empty linea cell
-  const tdL = document.createElement('td');
-  tdL.className = 'linea-label';
-  tdL.style.cssText = 'background:transparent;border-color:var(--border-l)';
-  tr.appendChild(tdL);
-
-  // Label + controls on last row
-  const tdP = document.createElement('td');
-  tdP.className = 'puesto-label';
-  const isLast = wi === arr.length - 1;
-  tdP.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-    <span>${label}</span>
-    ${isLast ? `<div style="display:flex;gap:2px;flex-shrink:0">
-      ${arr.length > 1
-        ? `<button class="ctrl-btn ctrl-del" onclick="removeSpecial('${puestoId}')" title="Quitar fila">−</button>`
-        : ''}
-      <button class="ctrl-btn ctrl-add" onclick="addSpecial('${puestoId}')" title="Añadir persona">+</button>
-    </div>` : ''}
-  </div>`;
-  tr.appendChild(tdP);
-
-  // Usar autocomplete igual que en los turnos
-  TURNOS.forEach(t => {
-    const td = document.createElement('td');
-    td.className = `name-cell cell-${t.toLowerCase()}`;
-    const div = document.createElement('div');
-    div.className = 'row-controls';
-    const { wrap } = makeAcInput(
-      worker.cells[t] || '',
-      currentTab,
-      (val) => { worker.cells[t] = val; }
-    );
-    div.appendChild(wrap);
-    td.appendChild(div);
-    tr.appendChild(td);
-  });
-
-  return tr;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  GUARDAR MANUAL
-// ═══════════════════════════════════════════════════════════════════════
-function guardarManual() {
-  autoSave();
-  toast('💾 Datos guardados — semana ' + document.getElementById('meta-sem').value + '/' + document.getElementById('meta-ano').value);
-}
-function addMaq(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line) return;
-  line.maq.push(mkWorker('maq_'+lineId+'_'+Date.now()));
-  render();
-}
-
-function removeMaq(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line || line.maq.length <= 1) { toast('Mínimo 1 operador/a máquina'); return; }
-  line.maq.pop();
-  render();
-}
-
-function addOp(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line) return;
-  line.ops.push(mkWorker('op_'+lineId+'_'+Date.now()));
-  render();
-}
-
-function removeOp(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line || line.ops.length <= 1) { toast('Mínimo 1 operaria/o'); return; }
-  line.ops.pop();
-  render();
-}
-
-function removeLine(lineId) {
-  if(lines.length <= 1) { toast('Mínimo 1 línea'); return; }
-  lines = lines.filter(l => l.id !== lineId);
-  render();
-}
-
-function addLine(type) {
-  const isL2 = type === 'L2';
-  const prefix = isL2 ? 'L2.' : 'L';
-  const existing = lines.filter(l => l.isL2sub === isL2);
-  const nums = existing.map(l => parseFloat(l.label.replace(/[^\d.]/g,''))).filter(n=>!isNaN(n));
-  const next = nums.length ? Math.max(...nums) + 1 : (isL2 ? 2.11 : 8);
-  const id = prefix + next;
-  const colors = ['green','yellow'];
-  const color = colors[lines.length % 2];
-  lines.push(mkLine(id, id, color, isL2));
-  render();
-  toast('Línea ' + id + ' añadida');
-}
-
-function addSpecial(id) {
-  const arr = getSpecialArr(id);
-  arr.push(mkWorker(id+'_'+Date.now()));
-  render();
-}
-
-function removeSpecial(id) {
-  const arr = getSpecialArr(id);
-  if(arr.length <= 1) { toast('Mínimo 1 fila'); return; }
-  arr.pop();
-  render();
-}
-
-function getSpecialArr(id) {
-  if(id === 'bajas')      return bajas;
-  if(id === 'vacaciones') return vacaciones;
-  return specialWorkers[id];
-}
-
-function addBaja()    { addSpecial('bajas'); }
-function removeBaja() { removeSpecial('bajas'); }
-function addVac()     { addSpecial('vacaciones'); }
-function removeVac()  { removeSpecial('vacaciones'); }
-
-// ═══════════════════════════════════════════════════════════════════════
-//  DATES — calcula lunes a domingo a partir de semana + año ISO
-// ═══════════════════════════════════════════════════════════════════════
-function getWeekDates(year, week) {
-  // ISO week: week 1 = week containing first Thursday of year
-  const jan4 = new Date(year, 0, 4);
-  const startOfW1 = new Date(jan4);
-  startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
-  const monday = new Date(startOfW1);
-  monday.setDate(startOfW1.getDate() + (week - 1) * 7);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return { monday, sunday };
-}
-
-function fmtDate(d) {
-  return String(d.getDate()).padStart(2,'0') + '/' +
-         String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
-}
-
-function fmtISO(d) {
-  return d.getFullYear() + '-' +
-    String(d.getMonth()+1).padStart(2,'0') + '-' +
-    String(d.getDate()).padStart(2,'0');
-}
-
-function updateWeekFromSelector() {
-  const year = parseInt(document.getElementById('meta-ano').value) || 2026;
-  const week = parseInt(document.getElementById('meta-sem').value) || 1;
-  const { monday, sunday } = getWeekDates(year, week);
-  document.getElementById('meta-dates').textContent =
-    'Del ' + fmtDate(monday) + ' al ' + fmtDate(sunday);
-}
-
-function changeWeek(delta) {
-  // Guardar la semana ACTUAL con su clave correcta ANTES de tocar el selector
-  const oldKey = weekKey();
-  autoSaveToKey(oldKey);
-
-  const sem = document.getElementById('meta-sem');
-  let w = parseInt(sem.value) + delta;
-  const year = parseInt(document.getElementById('meta-ano').value) || 2026;
-  if (w < 1) {
-    w = 52;
-    document.getElementById('meta-ano').value = year - 1;
-  } else if (w > 52) {
-    w = 1;
-    document.getElementById('meta-ano').value = year + 1;
-  }
-  sem.value = w;
-  updateWeekFromSelector();
-  loadWeekFromStorage();
-}
-
-// legacy compat — keep for any old references
-function updateWeek() { updateWeekFromSelector(); }
-
-// ═══════════════════════════════════════════════════════════════════════
-//  EXPORT / PUBLISH
-// ═══════════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════════
-//  EXPORT — guarda todos los departamentos en un único fichero JSON
-// ═══════════════════════════════════════════════════════════════════════
-function exportJSON() {
-  const payload = {
-    _version: 1,
-    semana:        document.getElementById('meta-sem').value,
-    ano:           document.getElementById('meta-ano').value,
-    fecha_inicio:  document.getElementById('meta-ini').value,
-    fecha_fin:     document.getElementById('meta-fin').value,
-    responsable:   (document.getElementById('responsable') || {value:''}).value,
-    // ── Envasado ──
-    envasado: {
-      specialWorkers,
-      lines,
-      bajas,
-      vacaciones,
-    },
-    // ── Elaboración ──
-    elaboracion: {
-      workers: elabWorkers,
-      bajas: elabBajas,
-      vacaciones: elabVacaciones,
-    },
-    // ── Almacén ──
-    almacen: {
-      workers: almWorkers,
-      bajas: almBajas,
-      vacaciones: almVacaciones,
-    },
-    // ── Mantenimiento ──
-    mantenimiento: {
-      workers: mtoWorkers,
-      bajas: mtoBajas,
-      vacaciones: mtoVacaciones,
-    },
-    // ── Calidad Líneas ──
-    calidadLineas: {
-      workers: calWorkers,
-      bajas: calBajas,
-      vacaciones: calVacaciones,
-    },
-    // ── Calidad FQ ──
-    calidadFQ: {
-      workers: calfqWorkers,
-      bajas: calfqBajas,
-      vacaciones: calfqVacaciones,
-    },
-    // ── Calidad Micro ──
-    calidadMicro: {
-      workers: calmicroWorkers,
-      bajas: calmicroBajas,
-      vacaciones: calmicroVacaciones,
-    },
-    // ── Calidad Materiales ──
-    calidadMat: {
-      workers: calmatWorkers,
-      bajas: calmatBajas,
-      vacaciones: calmatVacaciones,
-    },
-    // ── Mejora Continua ──
-    mejoraContinua: {
-      workers: mcWorkers,
-      bajas: mcBajas,
-      vacaciones: mcVacaciones,
-    },
-    // ── Soplado ──
-    soplado: {
-      workers: soplWorkers,
-      bajas: soplBajas,
-      vacaciones: soplVacaciones,
-    },
-  };
-
-  const b = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = `ubesol_${weekKey()}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('✓ Fichero descargado: ubesol_' + weekKey() + '.json');
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  IMPORT — carga un fichero JSON exportado anteriormente
-// ═══════════════════════════════════════════════════════════════════════
-function triggerLoad() {
-  const input = document.getElementById('json-file-input');
-  input.value = ''; // reset so same file can be reloaded
-  input.click();
-}
-
-function loadJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const d = JSON.parse(e.target.result);
-      if (!d._version) { toast('Fichero no válido'); return; }
-
-      // ── Meta ──
-      if (d.semana)       document.getElementById('meta-sem').value  = d.semana;
-      if (d.ano)          document.getElementById('meta-ano').value  = d.ano;
-      if (d.fecha_inicio) document.getElementById('meta-ini').value  = d.fecha_inicio;
-      if (d.fecha_fin)    document.getElementById('meta-fin').value  = d.fecha_fin;
-      if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
-
-      // ── Envasado ──
-      if (d.envasado) {
-        if (d.envasado.specialWorkers) Object.assign(specialWorkers, d.envasado.specialWorkers);
-        if (d.envasado.lines)          lines      = d.envasado.lines;
-        if (d.envasado.bajas)          bajas      = d.envasado.bajas;
-        if (d.envasado.vacaciones)     vacaciones = d.envasado.vacaciones;
-      }
-      // ── Elaboración ──
-      if (d.elaboracion) {
-        if (d.elaboracion.workers)    Object.assign(elabWorkers, d.elaboracion.workers);
-        if (d.elaboracion.bajas)      elabBajas      = d.elaboracion.bajas;
-        if (d.elaboracion.vacaciones) elabVacaciones = d.elaboracion.vacaciones;
-      }
-      // ── Almacén ──
-      if (d.almacen) {
-        if (d.almacen.workers)    Object.assign(almWorkers, d.almacen.workers);
-        if (d.almacen.bajas)      almBajas      = d.almacen.bajas;
-        if (d.almacen.vacaciones) almVacaciones = d.almacen.vacaciones;
-      }
-      // ── Mantenimiento ──
-      if (d.mantenimiento) {
-        if (d.mantenimiento.workers)    Object.assign(mtoWorkers, d.mantenimiento.workers);
-        if (d.mantenimiento.bajas)      mtoBajas      = d.mantenimiento.bajas;
-        if (d.mantenimiento.vacaciones) mtoVacaciones = d.mantenimiento.vacaciones;
-      }
-      // ── Calidad Líneas ──
-      if (d.calidadLineas) {
-        if (d.calidadLineas.workers)    Object.assign(calWorkers, d.calidadLineas.workers);
-        if (d.calidadLineas.bajas)      calBajas      = d.calidadLineas.bajas;
-        if (d.calidadLineas.vacaciones) calVacaciones = d.calidadLineas.vacaciones;
-      }
-      // ── Calidad FQ ──
-      if (d.calidadFQ) {
-        if (d.calidadFQ.workers)    Object.assign(calfqWorkers, d.calidadFQ.workers);
-        if (d.calidadFQ.bajas)      calfqBajas      = d.calidadFQ.bajas;
-        if (d.calidadFQ.vacaciones) calfqVacaciones = d.calidadFQ.vacaciones;
-      }
-      // ── Calidad Micro ──
-      if (d.calidadMicro) {
-        if (d.calidadMicro.workers)    Object.assign(calmicroWorkers, d.calidadMicro.workers);
-        if (d.calidadMicro.bajas)      calmicroBajas      = d.calidadMicro.bajas;
-        if (d.calidadMicro.vacaciones) calmicroVacaciones = d.calidadMicro.vacaciones;
-      }
-      // ── Calidad Materiales ──
-      if (d.calidadMat) {
-        if (d.calidadMat.workers)    Object.assign(calmatWorkers, d.calidadMat.workers);
-        if (d.calidadMat.bajas)      calmatBajas      = d.calidadMat.bajas;
-        if (d.calidadMat.vacaciones) calmatVacaciones = d.calidadMat.vacaciones;
-      }
-      // ── Mejora Continua ──
-      if (d.mejoraContinua) {
-        if (d.mejoraContinua.workers)    Object.assign(mcWorkers, d.mejoraContinua.workers);
-        if (d.mejoraContinua.bajas)      mcBajas      = d.mejoraContinua.bajas;
-        if (d.mejoraContinua.vacaciones) mcVacaciones = d.mejoraContinua.vacaciones;
-      }
-      // ── Soplado ──
-      if (d.soplado) {
-        if (d.soplado.workers)    Object.assign(soplWorkers, d.soplado.workers);
-        if (d.soplado.bajas)      soplBajas      = d.soplado.bajas;
-        if (d.soplado.vacaciones) soplVacaciones = d.soplado.vacaciones;
-      }
-
-      renderCurrent();
-      toast('✓ Cuadrante cargado — semana ' + (d.semana||'?') + ' / ' + (d.ano||''));
-
-    } catch(err) {
-      toast('Error al leer el fichero: ' + err.message);
-    }
-  };
-  reader.readAsText(file);
-}
-
-function publicar() {
-  // ── Buscar duplicados ─────────────────────────────────────────────
-  const count = {};
-  const add = (v, dept) => {
-    if (!v || !v.trim()) return;
-    const k = v.trim().toUpperCase();
-    if (!count[k]) count[k] = { nombre: v.trim(), depts: [] };
-    count[k].depts.push(dept);
-  };
-  const safeArr = (a) => Array.isArray(a) ? a : [];
-
-  // Envasado lines — tienen maq[] y ops[], no groups[]
-  safeArr(lines).forEach(l => {
-    [...safeArr(l.maq), ...safeArr(l.ops)].forEach(w => {
-      if (w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / ' + l.label));
-    });
-  });
-  // Especiales Envasado
-  if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
-    safeArr(arr).forEach(w => { if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / Especiales')); }));
-  // Post depts
-  const postDepts = [
-    [elabWorkers,    'Elaboración'],
-    [almWorkers,     'Almacén'],
-    [mtoWorkers,     'Mantenimiento'],
-    [calWorkers,     'Calidad Líneas'],
-    [calfqWorkers,   'Calidad Fís-Quím'],
-    [calmicroWorkers,'Calidad Microbiología'],
-    [calmatWorkers,  'Calidad Materiales'],
-    [mcWorkers,      'Mejora Continua'],
-    [soplWorkers,    'Soplado'],
-  ];
-  postDepts.forEach(([obj, label]) => {
-    if (!obj) return;
-    Object.values(obj).forEach(arr => safeArr(arr).forEach(w => {
-      if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], label));
-    }));
-  });
-
-  // Encontrar nombres que aparecen más de una vez
-  const duplicados = Object.values(count).filter(d => d.depts.length > 1);
-
-  if (duplicados.length > 0) {
-    // Mostrar modal de aviso
-    const msg = duplicados.map(d =>
-      `• ${d.nombre} — aparece ${d.depts.length} veces (${d.depts.join(', ')})`
-    ).join('\n');
-
-    const continuar = confirm(
-      '⚠️ ATENCIÓN — Se han encontrado ' + duplicados.length + ' trabajador(es) duplicado(s):\n\n' +
-      msg + '\n\n' +
-      '¿Desea publicar el cuadrante igualmente?'
-    );
-    if (!continuar) return;
-  }
-
-  autoSave();
-
-  const payload = buildPayload();
-
+let allWorkers = WORKERS_EMBEDDED;
+let cuadrante = null;
+let currentUser = null;
+let workersLoaded = true;
+
+// ─── INIT ────────────────────────────────────────────
+async function init() {
+  // Restaurar sesión si existe
   try {
-    const json = JSON.stringify(payload, null, 2);
-
-    // Guardar como publicado actual
-    localStorage.setItem('ubesol_publicado', json);
-
-    // Guardar en histórico con clave por semana
-    const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
-    localStorage.setItem(historicoKey, json);
-
-    toast(duplicados.length > 0
-      ? `⚠️ Cuadrante semana ${payload.semana} publicado con ${duplicados.length} duplicado(s)`
-      : `✓ Cuadrante semana ${payload.semana} publicado correctamente`);
-
-  } catch(e) {
-    toast('⚠️ Error al publicar: ' + e.message);
-  }
+    const sess = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
+    if (sess) { currentUser = sess; showHome(); }
+  } catch(e) {}
+  // Cargar cuadrante publicado
+  loadCuadrante();
 }
 
-function showPublishModal(url, semana, numDups) {
-  // Eliminar modal anterior si existe
-  const old = document.getElementById('publish-modal');
-  if (old) old.remove();
+async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
-  const overlay = document.createElement('div');
-  overlay.id = 'publish-modal';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-
-  const modal = document.createElement('div');
-  modal.style.cssText = 'background:#fff;border-radius:12px;padding:28px;max-width:680px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2)';
-
-  const titulo = numDups > 0
-    ? `⚠️ Cuadrante semana ${semana} publicado con ${numDups} duplicado(s)`
-    : `✓ Cuadrante semana ${semana} publicado correctamente`;
-
-  modal.innerHTML = `
-    <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;color:#1a1a1a">${titulo}</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:10px">Copia esta URL y configúrala en las pantallas TV. Solo hay que hacerlo una vez por TV:</p>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <input id="tv-url-input" type="text" readonly value="${url}"
-        style="flex:1;font-size:11px;padding:8px 10px;border:1px solid #d0cdc5;border-radius:6px;background:#f8f7f4;color:#333;font-family:monospace">
-      <button id="copy-url-btn"
-        style="padding:8px 16px;background:#6a8a3a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap">
-        Copiar URL
-      </button>
-    </div>
-    <p style="font-size:12px;color:#999;margin-bottom:16px">La TV mostrará automáticamente los turnos de la semana ${semana} al abrir esta URL.</p>
-    <div style="text-align:right">
-      <button id="close-modal-btn"
-        style="padding:8px 20px;background:#f0ede6;color:#333;border:1px solid #d0cdc5;border-radius:6px;cursor:pointer;font-size:13px">
-        Cerrar
-      </button>
-    </div>
-  `;
-
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-
-  document.getElementById('copy-url-btn').onclick = () => {
-    const input = document.getElementById('tv-url-input');
-    input.select();
-    navigator.clipboard.writeText(url).then(() => {
-      document.getElementById('copy-url-btn').textContent = '✓ Copiada';
-      document.getElementById('copy-url-btn').style.background = '#2e6b1a';
-      setTimeout(() => {
-        document.getElementById('copy-url-btn').textContent = 'Copiar URL';
-        document.getElementById('copy-url-btn').style.background = '#6a8a3a';
-      }, 2000);
-    }).catch(() => {
-      // Fallback para navegadores sin clipboard API
-      document.execCommand('copy');
-      document.getElementById('copy-url-btn').textContent = '✓ Copiada';
-    });
-  };
-
-  document.getElementById('close-modal-btn').onclick = () => overlay.remove();
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  PDF PARA TV — genera una ventana imprimible con una página por dpto
-// ═══════════════════════════════════════════════════════════════════════
-function generarPdfTV() {
-  const payload = buildPayload();
-  const sem = payload.semana;
-  const ano = payload.ano;
-  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
-  const fechas = fmtDate(monday) + ' al ' + fmtDate(sunday);
-  const safeArr = a => Array.isArray(a) ? a : [];
-  const T = ['M','T','N','P'];
-  const TC = {M:'#bbdefb',T:'#fff9c4',N:'#e8eaf6',P:'#fce4ec'};
-  const TX = {M:'#0d47a1',T:'#e65100',N:'#283593',P:'#880e4f'};
-
-  const SLABELS = {sup:'Supervisor/A Turno',tr1:'Tracking Nave 1',sum:'Suministro',
-    tol3:'Tolvas Nave 3',tras3:'Traslado Nave 3',trk3:'Tracking Nave 3',
-    tol4:'Tolvas Nave 4',comp4:'Componentes Nave 4',trk4:'Tracking Nave 4'};
-  const PLABELS = {
-    elab_sup:'Supervisor/A',elab_elab:'Elaborador/A',elab_pes:'Pesadas',
-    elab_hig:'Higiene',elab_desc:'Descarga Cisternas',
-    mto_coord:'Coordinador',mto_back:'Backoffice',mto_sup:'Supervisor/A',mto_tec:'Técnico Mto.',
-    alm_sup:'Supervisor/A',alm_desc:'Descarga/Ubicar',alm_sopl:'Soplado/Ubicar',
-    alm_ab3:'Abast.Nave3',alm_ab1:'Abast.Nave1',alm_res:'Residuos/Destruc.',
-    alm_ubi:'Ubicar',alm_mmpp:'MMPP',alm_sala:'Sala Blanca',alm_cargas:'Cargas',
-    alm_silo:'Silo',alm_destr:'Destrucciones',
-    cal_nave1:'Nave 1-MK1',cal_nave3:'Nave 3-Nave 4',cal_tec:'Técnico',
-    calfq_tec:'Técnico Lab.',calmicro_tec:'Técnico Micro.',
-    calmat_tec:'Técnico Mat.',mc_tec:'Técnico Procesos',
-    sopl_sup:'Supervisor/A',sopl_s12:'Sopladora 1 y 2',sopl_s3:'Sopladora 3',
-    sopl_s46:'Sopladora 4 y 6',sopl_s5t:'Sopladora 5 y Trk.',
-    sopl_pal:'Paletizadores',sopl_ref:'Refuerzo Turno',
-  };
-
-  function buildTable(rows) {
-    let h = '<table><thead><tr><th class="cp">PUESTO</th>';
-    h += '<th style="background:'+TC.M+';color:'+TX.M+'">MAÑANA</th>';
-    h += '<th style="background:'+TC.T+';color:'+TX.T+'">TARDE</th>';
-    h += '<th style="background:'+TC.N+';color:'+TX.N+'">NOCHE</th>';
-    h += '<th style="background:'+TC.P+';color:'+TX.P+'">PARTIDO</th>';
-    h += '</tr></thead><tbody>';
-    rows.forEach(r => {
-      h += '<tr><td class="cp">'+r.puesto+'</td>';
-      T.forEach(t => { h += '<td style="background:'+TC[t]+'30">'+(r[t]||'')+'</td>'; });
-      h += '</tr>';
-    });
-    return h + '</tbody></table>';
-  }
-
-  function page(name, rows) {
-    if (!rows.length) return '';
-    return '<div class="pg"><div class="ph"><span class="logo">GRUPOUBESOL</span>'
-      +'<span class="dept">'+name.toUpperCase()+'</span>'
-      +'<span class="sem">Semana '+sem+' &nbsp;·&nbsp; '+fechas+'</span></div>'
-      +buildTable(rows)+'</div>';
-  }
-
-  let pages = '';
-
-  // Envasado
-  const env = payload.envasado;
-  if (env) {
-    const rows = [];
-    if (env.specialWorkers) {
-      Object.entries(env.specialWorkers).forEach(([id,arr]) => {
-        safeArr(arr).forEach(w => {
-          if (w && w.cells && T.some(t => w.cells[t]))
-            rows.push({puesto:SLABELS[id]||id, ...w.cells});
-        });
-      });
-    }
-    safeArr(env.lines).forEach(line => {
-      [...safeArr(line.maq),...safeArr(line.ops)].forEach((w,wi) => {
-        if (w && w.cells) {
-          const p = wi < line.maq.length ? line.label+' — O.Máquina' : line.label+' — Operaria/O';
-          rows.push({puesto:p, ...w.cells});
-        }
-      });
-    });
-    pages += page('Envasado', rows);
-  }
-
-  // Post depts
-  [
-    ['elaboracion','Elaboración'],['almacen','Almacén'],['mantenimiento','Mantenimiento'],
-    ['calidadLineas','Calidad Líneas'],['calidadFQ','Calidad Fís-Quím'],
-    ['calidadMicro','Calidad Microbiología'],['calidadMat','Calidad Materiales'],
-    ['mejoraContinua','Mejora Continua'],['soplado','Soplado']
-  ].forEach(([key,name]) => {
-    const d = payload[key];
-    if (!d || !d.workers) return;
-    const rows = [];
-    Object.entries(d.workers).forEach(([pid,arr]) => {
-      safeArr(arr).forEach(w => {
-        if (w && w.cells && T.some(t => w.cells[t]))
-          rows.push({puesto:PLABELS[pid]||pid, ...w.cells});
-      });
-    });
-    pages += page(name, rows);
-  });
-
-  if (!pages) { toast('No hay datos para generar el PDF. Rellena el cuadrante primero.'); return; }
-
-  const win = window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
-    +'<title>Cuadrante S'+sem+' — GrupoUbesol</title><style>'
-    +'* {box-sizing:border-box;margin:0;padding:0}'
-    +'body {font-family:Segoe UI,Arial,sans-serif;background:#fff}'
-    +'.pg {width:100%;padding:28px 36px;page-break-after:always}'
-    +'.ph {display:flex;align-items:center;justify-content:space-between;'
-    +'border-bottom:3px solid #6a8a3a;padding-bottom:10px;margin-bottom:18px}'
-    +'.logo {font-size:20px;font-weight:800;color:#6a8a3a}'
-    +'.dept {font-size:30px;font-weight:800;color:#1a1a1a;letter-spacing:0.05em}'
-    +'.sem {font-size:12px;color:#666;text-align:right}'
-    +'table {width:100%;border-collapse:collapse}'
-    +'th {padding:9px 12px;font-size:12px;font-weight:700;letter-spacing:0.07em;'
-    +'text-transform:uppercase;text-align:center;border:1px solid #d0cdc5}'
-    +'td {padding:8px 12px;font-size:14px;font-weight:500;border:1px solid #e0ddd6;text-align:center}'
-    +'.cp {text-align:left;font-size:11px;font-weight:700;letter-spacing:0.05em;'
-    +'text-transform:uppercase;color:#555;background:#f8f7f4;width:200px}'
-    +'@media print {.pg{padding:14px 18px}.dept{font-size:22px}th{padding:6px 8px;font-size:10px}td{padding:5px 8px;font-size:12px}}'
-    +'</style></head><body>'+pages
-    +'<script>window.onload=()=>window.print();<\/script></body></html>');
-  win.document.close();
-}
-
-
-function clearStorage() {
-  const k = weekKey();
-  if (!confirm('¿Borrar los datos de la semana ' + document.getElementById('meta-sem').value + '? Esta acción no se puede deshacer.')) return;
-  localStorage.removeItem(k);
-  loadWeekFromStorage(k);
-  toast('Datos de la semana borrados.');
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  TAB SWITCHING
-// ═══════════════════════════════════════════════════════════════════════
-let currentTab = 'Envasado';
-
-// ── SOPLADO DATA ────────────────────────────────────────────────────────
-const SOPL_PUESTOS = [
-  { id:'sopl_sup',   label:'SUPERVISOR/A DE TURNO',  type:'sup'    },
-  { id:'sopl_s12',   label:'SOPLADORA 1 Y 2',         type:'green'  },
-  { id:'sopl_s3',    label:'SOPLADORA 3',              type:'yellow' },
-  { id:'sopl_s46',   label:'SOPLADORA 4 Y 6',         type:'green'  },
-  { id:'sopl_s5t',   label:'SOPLADORA 5 Y TRACKING',  type:'yellow' },
-  { id:'sopl_pal',   label:'PALETIZADORES',            type:'green'  },
-  { id:'sopl_ref',   label:'REFUERZO TURNO',           type:'yellow' },
-];
-function initSoplado() {
-  soplWorkers = {};
-  const counts = { sopl_sup:1, sopl_s12:1, sopl_s3:1, sopl_s46:1, sopl_s5t:1, sopl_pal:2, sopl_ref:2 };
-  SOPL_PUESTOS.forEach(p => {
-    soplWorkers[p.id] = Array.from({length: counts[p.id]||1}, (_,i) => mkWorker(p.id+'_'+i));
-  });
-  soplBajas      = [mkWorker('sopl_baja_0')];
-  soplVacaciones = [mkWorker('sopl_vac_0')];
-}
-
-// ── MEJORA CONTINUA DATA ────────────────────────────────────────────────
-const MC_PUESTOS = [
-  { id:'mc_tec', label:'TÉCNICO PROCESOS', type:'yellow' },
-];
-function initMejoraContinua() {
-  mcWorkers = {};
-  MC_PUESTOS.forEach(p => { mcWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
-  mcBajas      = [mkWorker('mc_baja_0')];
-  mcVacaciones = [mkWorker('mc_vac_0')];
-}
-
-// ── CALIDAD MATERIALES DATA ─────────────────────────────────────────────
-const CALMAT_PUESTOS = [
-  { id:'calmat_tec', label:'TÉCNICO MATERIALES', type:'green' },
-];
-function initCalidadMat() {
-  calmatWorkers = {};
-  CALMAT_PUESTOS.forEach(p => { calmatWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
-  calmatBajas      = [mkWorker('calmat_baja_0')];
-  calmatVacaciones = [mkWorker('calmat_vac_0')];
-}
-
-// ── CALIDAD FÍSICO-QUÍMICO DATA ─────────────────────────────────────────
-const CALFQ_PUESTOS = [
-  { id:'calfq_tec', label:'TÉCNICO LABORATORIO', type:'green' },
-];
-function initCalidadFQ() {
-  calfqWorkers = {};
-  CALFQ_PUESTOS.forEach(p => { calfqWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
-  calfqBajas      = [mkWorker('calfq_baja_0')];
-  calfqVacaciones = [mkWorker('calfq_vac_0')];
-}
-
-// ── CALIDAD MICROBIOLOGÍA DATA ──────────────────────────────────────────
-const CALMICRO_PUESTOS = [
-  { id:'calmicro_tec', label:'TÉCNICO MICROBIOLOGIA', type:'yellow' },
-];
-function initCalidadMicro() {
-  calmicroWorkers = {};
-  CALMICRO_PUESTOS.forEach(p => { calmicroWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
-  calmicroBajas      = [mkWorker('calmicro_baja_0')];
-  calmicroVacaciones = [mkWorker('calmicro_vac_0')];
-}
-
-// ── CALIDAD LÍNEAS DATA ─────────────────────────────────────────────────
-const CAL_PUESTOS = [
-  { id:'cal_nave1', label:'NAVE 1-MK1',   type:'green'  },
-  { id:'cal_nave3', label:'NAVE 3-NAVE 4', type:'yellow' },
-  { id:'cal_tec',   label:'TÉCNICO',       type:'green'  },
-];
-
-
-function initCalidad() {
-  calWorkers = {};
-  CAL_PUESTOS.forEach(p => {
-    calWorkers[p.id] = Array.from({length: 2}, (_, i) => mkWorker(p.id+'_'+i));
-  });
-  calBajas      = [mkWorker('cal_baja_0')];
-  calVacaciones = [mkWorker('cal_vac_0')];
-}
-
-// ── ELABORACIÓN DATA ────────────────────────────────────────────────────
-const ELAB_PUESTOS = [
-  { id:'elab_sup',  label:'SUPERVISOR/A TURNO', type:'sup'    },
-  { id:'elab_elab', label:'ELABORADOR/A',        type:'yellow' },
-  { id:'elab_pes',  label:'PESADAS',             type:'green'  },
-  { id:'elab_hig',  label:'HIGIENE',             type:'yellow' },
-  { id:'elab_desc', label:'DESCARGA CISTERNAS',  type:'green'  },
-];
-
-
-function initElaboracion() {
-  elabWorkers = {};
-  const counts = { elab_sup:1, elab_elab:10, elab_pes:2, elab_hig:3, elab_desc:2 };
-  ELAB_PUESTOS.forEach(p => {
-    elabWorkers[p.id] = Array.from({length: counts[p.id]||1}, (_,i) => mkWorker(p.id+'_'+i));
-  });
-  elabBajas      = [mkWorker('elab_baja_0')];
-  elabVacaciones = [mkWorker('elab_vac_0')];
-}
-
-// ── MANTENIMIENTO DATA ──────────────────────────────────────────────────
-const MTO_PUESTOS = [
-  { id:'mto_coord', label:'COORDINADOR',        type:'green'  },
-  { id:'mto_back',  label:'BACKOFFICE',          type:'yellow' },
-  { id:'mto_sup',   label:'SUPERVISOR/A DE TURNO', type:'sup'  },
-  { id:'mto_tec',   label:'TÉCNICO MTO.',        type:'yellow' },
-];
-
-
-function initMantenimiento() {
-  mtoWorkers = {};
-  MTO_PUESTOS.forEach(p => {
-    // Técnico Mto. starts with 6 rows as in the Excel; rest start with 1
-    const count = p.id === 'mto_tec' ? 6 : 1;
-    mtoWorkers[p.id] = Array.from({length: count}, (_, i) => mkWorker(p.id+'_'+i));
-  });
-  mtoBajas      = [mkWorker('mto_baja_0')];
-  mtoVacaciones = [mkWorker('mto_vac_0')];
-}
-// Post-mode departments: no lines, just expandable puestos
-const ALMC_PUESTOS = [
-  { id:'alm_sup',    label:'SUPERVISOR/A TURNO',      type:'sup'     },
-  { id:'alm_desc',   label:'DESCARGA / UBICAR',        type:'green'   },
-  { id:'alm_sopl',   label:'SOPLADO / UBICAR',         type:'yellow'  },
-  { id:'alm_ab3',    label:'ABAST. NAVE 3 / UBICAR',   type:'green'   },
-  { id:'alm_ab1',    label:'ABAST. NAVE 1 / UBICAR',   type:'yellow'  },
-  { id:'alm_res',    label:'RESIDUOS / DESTRUCCIONES', type:'green'   },
-  { id:'alm_ubi',    label:'UBICAR',                   type:'yellow'  },
-  { id:'alm_mmpp',   label:'MMPP',                     type:'green'   },
-  { id:'alm_sala',   label:'SALA BLANCA',               type:'yellow'  },
-  { id:'alm_cargas', label:'CARGAS',                    type:'green'   },
-  { id:'alm_silo',   label:'SILO',                      type:'yellow'  },
-  { id:'alm_destr',  label:'DESTRUCCIONES',             type:'green'   },
-];
-
-
-function initAlmacen() {
-  almWorkers = {};
-  ALMC_PUESTOS.forEach(p => { almWorkers[p.id] = [mkWorker(p.id+'_0')]; });
-  almBajas      = [mkWorker('alm_baja_0')];
-  almVacaciones = [mkWorker('alm_vac_0')];
-}
-
-// ── POST-MODE RENDER (Almacén style — no lines column) ──────────────────
-function renderMantenimiento() {
-  renderPostDept('Mantenimiento', MTO_PUESTOS, mtoWorkers,
-    [{id:'mto_bajas', label:'BAJAS', type:'bajas', arr: mtoBajas},
-     {id:'mto_vac',   label:'VACACIONES', type:'vac', arr: mtoVacaciones}]);
-}
-
-// ── GENERIC POST-DEPT RENDER ────────────────────────────────────────────
-// Shared by Almacén, Mantenimiento and any future post-mode dept
-function renderPostDept(deptKey, puestos, workers, bottomGroups) {
-  const root = document.getElementById('table-root');
-  root.innerHTML = '';
-  document.getElementById('add-line-area').style.display = 'none';
-
-  const tbl = document.createElement('table');
-  tbl.innerHTML = `<colgroup><col style="width:200px"><col><col><col><col></colgroup>`;
-
-  const thead = document.createElement('thead');
-  thead.innerHTML = `<tr class="turno-hdr">
-    <th class="th-puesto" style="text-align:left;padding-left:12px">PUESTO</th>
-    <th class="th-m">TURNO MAÑANA</th>
-    <th class="th-t">TURNO TARDE</th>
-    <th class="th-n">TURNO NOCHE</th>
-    <th class="th-p">TURNO PARTIDO / ESPECIAL</th>
-  </tr>`;
-  tbl.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-
-  puestos.forEach(puesto => {
-    const arr = workers[puesto.id];
-    arr.forEach((w, wi) => tbody.appendChild(buildPostRow(w, wi, puesto, arr)));
-  });
-
-  // Separator
-  const sep = document.createElement('tr');
-  sep.innerHTML = `<td colspan="5" style="height:20px;background:#f0f0f0;border-top:2px solid var(--border);border-bottom:2px solid var(--border)"></td>`;
-  tbody.appendChild(sep);
-
-  // Bottom groups (bajas / vacaciones)
-  bottomGroups.forEach(grp => {
-    grp.arr.forEach((w, wi) =>
-      tbody.appendChild(buildPostRow(w, wi, {id: grp.id, label: grp.label, type: grp.type}, grp.arr)));
-  });
-
-  tbl.appendChild(tbody);
-  root.appendChild(tbl);
-}
-
-function buildPostRow(worker, wi, puesto, arr) {
-  const isLast = wi === arr.length - 1;
-  const type   = puesto.type;
-
-  const tr = document.createElement('tr');
-  // Row background: alternate green/yellow for puestos, special for bajas/vac
-  if      (type === 'sup')   tr.className = 'sup-row';
-  else if (type === 'bajas') tr.className = 'bajas-row';
-  else if (type === 'vac')   tr.className = 'vac-row';
-  else if (type === 'green') tr.className = 'line-op';
-  else                       tr.className = 'line-op yellow';
-
-  // Puesto label — show on first row only, with rowSpan
-  if (wi === 0) {
-    const tdP = document.createElement('td');
-    tdP.className = 'puesto-label';
-    tdP.rowSpan = arr.length;
-    tdP.style.cssText = 'vertical-align:middle;border-right:2px solid var(--border);font-size:12px;font-weight:700';
-    tdP.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-      <span>${puesto.label}</span>
-      <div style="display:flex;gap:2px;flex-shrink:0">
-        ${arr.length > 1
-          ? `<button class="ctrl-btn ctrl-del" onclick="removePostWorker('${puesto.id}')" title="Quitar fila">−</button>`
-          : ''}
-        <button class="ctrl-btn ctrl-add" onclick="addPostWorker('${puesto.id}')" title="Añadir persona">+</button>
-      </div>
-    </div>`;
-    tr.appendChild(tdP);
-  }
-
-  // 4 turno cells
-  TURNOS.forEach(t => {
-    const td = document.createElement('td');
-    td.className = `name-cell cell-${t.toLowerCase()}`;
-    const { wrap } = makeAcInput(
-      worker.cells[t] || '',
-      currentTab,
-      (val) => { worker.cells[t] = val; }
-    );
-    td.appendChild(wrap);
-    tr.appendChild(td);
-  });
-
-  return tr;
-}
-
-function addPostWorker(puestoId) {
-  const arr = getPostArr(puestoId);
-  arr.push(mkWorker(puestoId+'_'+Date.now()));
-  renderCurrent();
-}
-
-function removePostWorker(puestoId) {
-  const arr = getPostArr(puestoId);
-  if(arr.length <= 1) { toast('Mínimo 1 persona'); return; }
-  arr.pop();
-  renderCurrent();
-}
-
-function getPostArr(id) {
-  // Soplado
-  if(id === 'sopl_bajas') return soplBajas;
-  if(id === 'sopl_vac')   return soplVacaciones;
-  if(soplWorkers[id])     return soplWorkers[id];
-  // Mejora Continua
-  if(id === 'mc_bajas') return mcBajas;
-  if(id === 'mc_vac')   return mcVacaciones;
-  if(mcWorkers[id])     return mcWorkers[id];
-  // Calidad Materiales
-  if(id === 'calmat_bajas') return calmatBajas;
-  if(id === 'calmat_vac')   return calmatVacaciones;
-  if(calmatWorkers[id])     return calmatWorkers[id];
-  // Calidad FQ
-  if(id === 'calfq_bajas') return calfqBajas;
-  if(id === 'calfq_vac')   return calfqVacaciones;
-  if(calfqWorkers[id])     return calfqWorkers[id];
-  // Calidad Micro
-  if(id === 'calmicro_bajas') return calmicroBajas;
-  if(id === 'calmicro_vac')   return calmicroVacaciones;
-  if(calmicroWorkers[id])     return calmicroWorkers[id];
-  // Calidad Líneas
-  if(id === 'cal_bajas') return calBajas;
-  if(id === 'cal_vac')   return calVacaciones;
-  if(calWorkers[id])     return calWorkers[id];
-  // Elaboración
-  if(id === 'elab_bajas') return elabBajas;
-  if(id === 'elab_vac')   return elabVacaciones;
-  if(elabWorkers[id])     return elabWorkers[id];
-  // Almacén
-  if(id === 'alm_bajas')  return almBajas;
-  if(id === 'alm_vac')    return almVacaciones;
-  if(almWorkers[id])      return almWorkers[id];
-  // Mantenimiento
-  if(id === 'mto_bajas')  return mtoBajas;
-  if(id === 'mto_vac')    return mtoVacaciones;
-  if(mtoWorkers[id])      return mtoWorkers[id];
-  return [];
-}
-
-// ── TAB SWITCH ─────────────────────────────────────────────────────────
-function switchTab(dept) {
-  if(dept === currentTab) return;
-  currentTab = dept;
-  document.querySelectorAll('.tab:not(.disabled)').forEach(btn => {
-    btn.classList.toggle('active', btn.id === 'tab-'+dept);
-  });
-  document.getElementById('dept-title').textContent = dept;
-  renderCurrent();
-}
-
-function renderCurrent() {
-  if(currentTab === 'Envasado') {
-    document.getElementById('add-line-area').style.display = '';
-    render();
-  } else if(currentTab === 'Soplado') {
-    renderPostDept('Soplado', SOPL_PUESTOS, soplWorkers,
-      [{id:'sopl_bajas', label:'BAJAS',      type:'bajas', arr: soplBajas},
-       {id:'sopl_vac',   label:'VACACIONES', type:'vac',   arr: soplVacaciones}]);
-  } else if(currentTab === 'Mejora Continua') {
-    renderPostDept('Mejora Continua', MC_PUESTOS, mcWorkers,
-      [{id:'mc_bajas', label:'BAJAS',      type:'bajas', arr: mcBajas},
-       {id:'mc_vac',   label:'VACACIONES', type:'vac',   arr: mcVacaciones}]);
-  } else if(currentTab === 'Calidad Mat') {
-    renderPostDept('Calidad Mat', CALMAT_PUESTOS, calmatWorkers,
-      [{id:'calmat_bajas', label:'BAJAS',      type:'bajas', arr: calmatBajas},
-       {id:'calmat_vac',   label:'VACACIONES', type:'vac',   arr: calmatVacaciones}]);
-  } else if(currentTab === 'Calidad FQ') {
-    renderPostDept('Calidad FQ', CALFQ_PUESTOS, calfqWorkers,
-      [{id:'calfq_bajas', label:'BAJAS',      type:'bajas', arr: calfqBajas},
-       {id:'calfq_vac',   label:'VACACIONES', type:'vac',   arr: calfqVacaciones}]);
-  } else if(currentTab === 'Calidad Micro') {
-    renderPostDept('Calidad Micro', CALMICRO_PUESTOS, calmicroWorkers,
-      [{id:'calmicro_bajas', label:'BAJAS',      type:'bajas', arr: calmicroBajas},
-       {id:'calmicro_vac',   label:'VACACIONES', type:'vac',   arr: calmicroVacaciones}]);
-  } else if(currentTab === 'Calidad Líneas') {
-    renderPostDept('Calidad Líneas', CAL_PUESTOS, calWorkers,
-      [{id:'cal_bajas', label:'BAJAS',      type:'bajas', arr: calBajas},
-       {id:'cal_vac',   label:'VACACIONES', type:'vac',   arr: calVacaciones}]);
-  } else if(currentTab === 'Elaboración') {
-    renderPostDept('Elaboración', ELAB_PUESTOS, elabWorkers,
-      [{id:'elab_bajas', label:'BAJAS',      type:'bajas', arr: elabBajas},
-       {id:'elab_vac',   label:'VACACIONES', type:'vac',   arr: elabVacaciones}]);
-  } else if(currentTab === 'Almacén') {
-    renderPostDept('Almacén', ALMC_PUESTOS, almWorkers,
-      [{id:'alm_bajas', label:'BAJAS',      type:'bajas', arr: almBajas},
-       {id:'alm_vac',   label:'VACACIONES', type:'vac',   arr: almVacaciones}]);
-  } else if(currentTab === 'Mantenimiento') {
-    renderMantenimiento();
-  }
-}
-
-// ── LOCALSTORAGE — guarda por semana ──────────────────────────────────
-function weekKey() {
-  const ano = document.getElementById('meta-ano').value || '2026';
-  const sem = String(document.getElementById('meta-sem').value || '1').padStart(2,'0');
-  return 'ubesol_' + ano + '_s' + sem;
-}
-
-function buildPayload() {
-  const ano = document.getElementById('meta-ano').value || '2026';
-  const sem = document.getElementById('meta-sem').value || '1';
-  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
-  return {
-    _version: 1,
-    semana:        sem,
-    ano:           ano,
-    fecha_inicio:  fmtISO(monday),
-    fecha_fin:     fmtISO(sunday),
-    responsable:   (document.getElementById('responsable') || {value:''}).value,
-    envasado:       { specialWorkers, lines, bajas, vacaciones },
-    elaboracion:    { workers: elabWorkers,    bajas: elabBajas,      vacaciones: elabVacaciones },
-    almacen:        { workers: almWorkers,     bajas: almBajas,       vacaciones: almVacaciones },
-    mantenimiento:  { workers: mtoWorkers,     bajas: mtoBajas,       vacaciones: mtoVacaciones },
-    calidadLineas:  { workers: calWorkers,     bajas: calBajas,       vacaciones: calVacaciones },
-    calidadFQ:      { workers: calfqWorkers,   bajas: calfqBajas,     vacaciones: calfqVacaciones },
-    calidadMicro:   { workers: calmicroWorkers,bajas: calmicroBajas,  vacaciones: calmicroVacaciones },
-    calidadMat:     { workers: calmatWorkers,  bajas: calmatBajas,    vacaciones: calmatVacaciones },
-    mejoraContinua: { workers: mcWorkers,      bajas: mcBajas,        vacaciones: mcVacaciones },
-    soplado:        { workers: soplWorkers,    bajas: soplBajas,      vacaciones: soplVacaciones },
-  };
-}
-
-function autoSaveToKey(key) {
+async function loadCuadrante() {
   try {
-    localStorage.setItem(key, JSON.stringify(buildPayload()));
-  } catch(e) {
-    console.error('autoSave error:', e);
-  }
-}
-
-function autoSave() {
-  autoSaveToKey(weekKey());
-}
-
-function applyPayload(d) {
-  if (!d || !d._version) return false;
-  if (d.semana)     document.getElementById('meta-sem').value    = d.semana;
-  if (d.ano)        document.getElementById('meta-ano').value    = d.ano;
-  if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
-  updateWeekFromSelector();
-
-  const merge = (target, src) => { if(src) Object.assign(target, src); };
-  if (d.envasado)       { merge(specialWorkers, d.envasado.specialWorkers); if(d.envasado.lines) lines=d.envasado.lines; if(d.envasado.bajas) bajas=d.envasado.bajas; if(d.envasado.vacaciones) vacaciones=d.envasado.vacaciones; }
-  if (d.elaboracion)    { merge(elabWorkers, d.elaboracion.workers);    if(d.elaboracion.bajas)    elabBajas=d.elaboracion.bajas;       if(d.elaboracion.vacaciones)    elabVacaciones=d.elaboracion.vacaciones; }
-  if (d.almacen)        { merge(almWorkers,  d.almacen.workers);        if(d.almacen.bajas)        almBajas=d.almacen.bajas;            if(d.almacen.vacaciones)        almVacaciones=d.almacen.vacaciones; }
-  if (d.mantenimiento)  { merge(mtoWorkers,  d.mantenimiento.workers);  if(d.mantenimiento.bajas)  mtoBajas=d.mantenimiento.bajas;      if(d.mantenimiento.vacaciones)  mtoVacaciones=d.mantenimiento.vacaciones; }
-  if (d.calidadLineas)  { merge(calWorkers,  d.calidadLineas.workers);  if(d.calidadLineas.bajas)  calBajas=d.calidadLineas.bajas;      if(d.calidadLineas.vacaciones)  calVacaciones=d.calidadLineas.vacaciones; }
-  if (d.calidadFQ)      { merge(calfqWorkers,d.calidadFQ.workers);      if(d.calidadFQ.bajas)      calfqBajas=d.calidadFQ.bajas;        if(d.calidadFQ.vacaciones)      calfqVacaciones=d.calidadFQ.vacaciones; }
-  if (d.calidadMicro)   { merge(calmicroWorkers,d.calidadMicro.workers);if(d.calidadMicro.bajas)   calmicroBajas=d.calidadMicro.bajas;  if(d.calidadMicro.vacaciones)   calmicroVacaciones=d.calidadMicro.vacaciones; }
-  if (d.calidadMat)     { merge(calmatWorkers,d.calidadMat.workers);    if(d.calidadMat.bajas)     calmatBajas=d.calidadMat.bajas;      if(d.calidadMat.vacaciones)     calmatVacaciones=d.calidadMat.vacaciones; }
-  if (d.mejoraContinua) { merge(mcWorkers,   d.mejoraContinua.workers); if(d.mejoraContinua.bajas) mcBajas=d.mejoraContinua.bajas;      if(d.mejoraContinua.vacaciones) mcVacaciones=d.mejoraContinua.vacaciones; }
-  if (d.soplado)        { merge(soplWorkers, d.soplado.workers);        if(d.soplado.bajas)        soplBajas=d.soplado.bajas;           if(d.soplado.vacaciones)        soplVacaciones=d.soplado.vacaciones; }
-  return true;
-}
-
-function loadWeekFromStorage(key) {
-  // Reset all departments to empty before loading
-  lines = defaultLines(); initSpecialWorkers();
-  bajas = [mkWorker('baja_0')]; vacaciones = [mkWorker('vac_0')];
-  initSoplado(); initMejoraContinua(); initCalidadMat();
-  initCalidadFQ(); initCalidadMicro(); initCalidad();
-  initElaboracion(); initAlmacen(); initMantenimiento();
-  try {
-    const saved = localStorage.getItem(key || weekKey());
+    const saved = localStorage.getItem('ubesol_publicado');
     if (saved) {
-      const d = JSON.parse(saved);
-      if (applyPayload(d)) {
-        toast('✓ Semana ' + d.semana + '/' + d.ano + ' cargada');
+      const data = JSON.parse(saved);
+      cuadrante = data;
+      // Guardar en histórico si no existe ya
+      if (data.semana && data.ano) {
+        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+        if (!localStorage.getItem(hKey)) {
+          localStorage.setItem(hKey, saved);
+        }
       }
-    } else {
-      updateWeekFromSelector();
-      toast('Semana nueva — sin datos guardados');
+      if (currentUser) updateHomeInfo();
     }
   } catch(e) {}
-  renderCurrent();
+
+  // Fallback: GitHub Pages
+  try {
+    const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const data = await r.json();
+    cuadrante = data;
+    if (data.semana && data.ano) {
+      const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+      if (!localStorage.getItem(hKey)) {
+        localStorage.setItem(hKey, JSON.stringify(data));
+      }
+    }
+    if (currentUser) updateHomeInfo();
+  } catch(e) {}
 }
 
-// Saved weeks list — shows which weeks have data
-function listSavedWeeks() {
-  const weeks = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && k.startsWith('ubesol_')) weeks.push(k);
+// ─── AUTH ────────────────────────────────────────────
+async function doLogin() {
+  const dni  = document.getElementById('input-dni').value.trim().toUpperCase();
+  const pass = document.getElementById('input-pass').value;
+  const err  = document.getElementById('login-error');
+  const btn  = document.querySelector('#screen-login .btn-primary');
+
+  if (!dni || !pass) { err.textContent = 'Introduce tu DNI y contraseña'; err.classList.add('show'); return; }
+
+  // Si el CSV aún no ha cargado, esperar
+  if (!workersLoaded) {
+    btn.textContent = 'Cargando...';
+    btn.disabled = true;
+    await loadWorkers();
+    btn.textContent = 'Entrar';
+    btn.disabled = false;
   }
-  return weeks.sort().reverse();
+
+  // Buscar en workers cargados
+  const worker = allWorkers.find(w => w.dni === dni);
+
+  // Si no hay workers cargados (sin conexión), intentar con sesión guardada
+  if (!allWorkers.length) {
+    err.textContent = 'No se puede conectar. Comprueba tu conexión a internet.';
+    err.classList.add('show'); return;
+  }
+
+  // Obtener contraseña guardada (por defecto = DNI)
+  const users = JSON.parse(localStorage.getItem(LS_USERS) || '{}');
+  const savedPass = users[dni] || dni;
+
+  if (!worker) {
+    err.textContent = 'DNI no encontrado en el sistema';
+    err.classList.add('show'); return;
+  }
+
+  if (pass !== savedPass) {
+    err.textContent = 'Contraseña incorrecta';
+    err.classList.add('show'); return;
+  }
+
+  err.classList.remove('show');
+  currentUser = { dni, nombre: worker.nombre, departamento: worker.departamento };
+  localStorage.setItem(LS_SESSION, JSON.stringify(currentUser));
+  showHome();
 }
 
-// Auto-save every 30s + on any input
-setInterval(autoSave, 30000);
-document.addEventListener('input', autoSave);
-document.addEventListener('change', autoSave);
+document.getElementById('input-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('input-dni').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('input-pass').focus();
+});
 
-// ── TOAST ──────────────────────────────────────────────────────────────
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem(LS_SESSION);
+  goScreen('login');
+  document.getElementById('input-dni').value = '';
+  document.getElementById('input-pass').value = '';
 }
 
-// ── INIT ───────────────────────────────────────────────────────────────
-// Arrancar en la semana SIGUIENTE a la actual (es lo que interesa planificar)
-(function() {
+// ─── NAVIGATION ──────────────────────────────────────
+function goTo(screen) {
+  if (screen === 'home') { showHome(); return; }
+  if (screen === 'turnos') { showTurnos(); return; }
+  if (screen === 'epi') { showEpi(); return; }
+  if (screen === 'avisos') { showAvisos(); return; }
+}
+
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ─── HOME ────────────────────────────────────────────
+function showHome() {
+  goScreen('home');
+  if (!currentUser) return;
+  const nombre = currentUser.nombre;
+  document.getElementById('home-name').textContent = 'Hola, ' + nombre;
+  document.getElementById('home-dept').textContent = currentUser.departamento;
+  updateHomeInfo();
+  updateBadges();
+}
+
+function updateHomeInfo() {
+  if (!cuadrante) return;
+  const sem = cuadrante.semana;
+  const ano = cuadrante.ano;
+  if (sem && ano) {
+    document.getElementById('home-semana-num').textContent = 'S' + sem;
+    const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
+    document.getElementById('home-semana-fechas').textContent = fmtDate(monday) + ' — ' + fmtDate(sunday);
+  }
+}
+
+function updateBadges() {
+  // Avisos no leídos
+  const leidos = JSON.parse(localStorage.getItem('ubesol_avisos_leidos') || '[]');
+  const avisos = getAvisos();
+  const noLeidos = avisos.filter(a => !leidos.includes(a.id)).length;
+  const ab = document.getElementById('avisos-badge');
+  if (noLeidos > 0) { ab.textContent = noLeidos; ab.style.display = 'flex'; }
+  else ab.style.display = 'none';
+
+  // EPIs pendientes
+  const epis = getEpis();
+  const pend = epis.filter(e => e.estado === 'pendiente').length;
+  const eb = document.getElementById('epi-badge');
+  if (pend > 0) { eb.textContent = pend; eb.style.display = 'flex'; }
+  else eb.style.display = 'none';
+}
+
+// ─── TURNOS ──────────────────────────────────────────
+let turnosTab = 'lista';
+
+function showTurnos() {
+  goScreen('turnos');
+  turnosTab = 'lista';
+  const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
+
+  // Calcular semana actual
   const now = new Date();
   const jan4 = new Date(now.getFullYear(), 0, 4);
   const startW1 = new Date(jan4);
   startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-  const wkActual = Math.ceil((now - startW1) / 604800000) + 1;
-  let wkSig = wkActual + 1;
-  let ano = now.getFullYear();
-  if (wkSig > 52) { wkSig = 1; ano++; }
-  document.getElementById('meta-sem').value = wkSig;
-  document.getElementById('meta-ano').value = ano;
-})();
+  const semActual = Math.ceil((now - startW1) / 604800000);
+  const anoActual = now.getFullYear();
 
-lines = defaultLines();
-initSpecialWorkers();
-bajas = [mkWorker('baja_0')];
-vacaciones = [mkWorker('vac_0')];
-initSoplado();
-initMejoraContinua();
-initCalidadMat();
-initCalidadFQ();
-initCalidadMicro();
-initCalidad();
-initElaboracion();
-initAlmacen();
-initMantenimiento();
+  // Recoger histórico, máximo 10 semanas
+  let historico = getHistorico();
+  const actKey = anoActual * 100 + semActual;
+  historico = historico.filter(d => {
+    const k = parseInt(d.ano) * 100 + parseInt(d.semana);
+    return k >= actKey - 500 && k <= actKey + 400;
+  }).slice(0, 10);
 
-// Load workers CSV then restore week data
-loadWorkers().finally(() => {
-  loadWeekFromStorage();
-});
+  const c = document.getElementById('turnos-content');
+  c.style.display = 'flex';
+  c.style.flexDirection = 'column';
+  c.style.gap = '7px';
+
+  if (!historico.length) {
+    c.innerHTML = '<div class="no-turno">No hay cuadrantes publicados.<br>Consulta con tu encargado.</div>';
+    document.getElementById('turnos-semana').textContent = '';
+    // Reset tabs visual
+    document.getElementById('tab-lista').style.background = 'rgba(255,255,255,0.9)';
+    document.getElementById('tab-lista').style.color = 'var(--green)';
+    document.getElementById('tab-calendario').style.background = 'rgba(255,255,255,0.2)';
+    document.getElementById('tab-calendario').style.color = 'rgba(255,255,255,0.85)';
+    document.getElementById('calendario-content').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('turnos-semana').textContent = 'Semana ' + historico[0].semana;
+
+  // Reset tabs
+  document.getElementById('tab-lista').style.background = 'rgba(255,255,255,0.9)';
+  document.getElementById('tab-lista').style.color = 'var(--green)';
+  document.getElementById('tab-calendario').style.background = 'rgba(255,255,255,0.2)';
+  document.getElementById('tab-calendario').style.color = 'rgba(255,255,255,0.85)';
+  document.getElementById('calendario-content').style.display = 'none';
+
+  let html = '';
+  historico.forEach(data => {
+    const turnoInfo = findTurnoWorkerInData(currentUser.nombre, data);
+    const sem = parseInt(data.semana);
+    const ano = parseInt(data.ano);
+    const { monday, sunday } = getWeekDates(ano, sem);
+    const semKey = ano * 100 + sem;
+    const sigKey = anoActual * 100 + (semActual + 1);
+
+    let tipo, labelTxt, cardClass;
+    if (semKey === sigKey)      { tipo = 'proxima'; labelTxt = 'Próxima semana'; cardClass = 'turno-card'; }
+    else if (semKey === actKey) { tipo = 'actual';  labelTxt = 'Esta semana';    cardClass = 'turno-card-actual'; }
+    else if (semKey > sigKey)   { tipo = 'futura';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
+    else                        { tipo = 'pasada';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
+
+    const sinAsignar = !turnoInfo;
+    const turnoNombre  = turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
+    const puestoNombre = turnoInfo ? turnoInfo.puesto : 'Sin asignar';
+    const borderColor  = tipo === 'futura' ? '#6366f1' : '#d1d5db';
+
+    if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
+      html += `<div class="${cardClass}">
+        <span class="sem-label ${tipo}">${labelTxt}</span>
+        <div class="tc-turno">${turnoNombre}</div>
+        <div class="tc-puesto">${puestoNombre}</div>
+        <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+      </div>`;
+    } else {
+      html += `<div class="${cardClass}" style="border-left-color:${borderColor}">
+        <span class="sem-label ${tipo}">${labelTxt}</span>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:18px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.2">${turnoNombre}</div>
+            <div style="font-size:16px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2">${puestoNombre}</div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#999;font-family:'DM Mono',monospace;line-height:1.7;flex-shrink:0;padding-top:2px">
+            ${fmtDate(monday)}<br>${fmtDate(sunday)}
+          </div>
+        </div>
+      </div>`;
+    }
+  });
+
+  c.innerHTML = html;
+}
+
+function switchTurnosTab(tab) {
+  turnosTab = tab;
+  const btnLista = document.getElementById('tab-lista');
+  const btnCal   = document.getElementById('tab-calendario');
+  const cLista   = document.getElementById('turnos-content');
+  const cCal     = document.getElementById('calendario-content');
+
+  if (tab === 'lista') {
+    btnLista.style.background = 'rgba(255,255,255,0.9)';
+    btnLista.style.color = 'var(--green)';
+    btnCal.style.background = 'rgba(255,255,255,0.2)';
+    btnCal.style.color = 'rgba(255,255,255,0.85)';
+    cLista.style.display = 'flex';
+    cCal.style.display = 'none';
+  } else {
+    btnCal.style.background = 'rgba(255,255,255,0.9)';
+    btnCal.style.color = 'var(--green)';
+    btnLista.style.background = 'rgba(255,255,255,0.2)';
+    btnLista.style.color = 'rgba(255,255,255,0.85)';
+    cLista.style.display = 'none';
+    cCal.style.display = 'block';
+    renderCalendario();
+  }
+}
+
+function getHistorico() {
+  const historico = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('ubesol_historico_')) continue;
+    try {
+      const data = JSON.parse(localStorage.getItem(key));
+      if (data) historico.push(data);
+    } catch(e) {}
+  }
+  if (cuadrante) {
+    const yaEsta = historico.some(h => h.semana == cuadrante.semana && h.ano == cuadrante.ano);
+    if (!yaEsta) historico.push(cuadrante);
+  }
+  historico.sort((a, b) => {
+    const ka = parseInt(a.ano)*100 + parseInt(a.semana);
+    const kb = parseInt(b.ano)*100 + parseInt(b.semana);
+    return kb - ka;
+  });
+  return historico;
+}
+
+function renderCalendario() {
+  const c = document.getElementById('calendario-content');
+  const historico = getHistorico();
+  const TURNO_COLORS = { M: '#4a7c2f', T: '#c47a00', N: '#1a6eb5', P: '#7c3a8a' };
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+  // Construir mapa semana->turno
+  const turnoMap = {};
+  historico.forEach(data => {
+    const info = findTurnoWorkerInData(currentUser.nombre, data);
+    if (!info) return;
+    const key = data.ano + '_' + String(data.semana).padStart(2,'0');
+    turnoMap[key] = { turno: info.turno, puesto: info.puesto };
+  });
+
+  const anoActual = new Date().getFullYear();
+
+  // Calcular número de semana ISO para una fecha — usando siempre el lunes de esa semana
+  function getSemKey(fecha) {
+    // Encontrar el lunes de la semana de esta fecha
+    const diaSem = (fecha.getDay() + 6) % 7; // 0=lun
+    const lunes = new Date(fecha);
+    lunes.setDate(fecha.getDate() - diaSem);
+    // Calcular semana ISO del lunes
+    const jan4 = new Date(lunes.getFullYear(), 0, 4);
+    const sw1 = new Date(jan4);
+    sw1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+    const sem = Math.ceil((lunes - sw1) / 604800000);
+    return lunes.getFullYear() + '_' + String(sem).padStart(2,'0');
+  }
+
+  let html = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Leyenda</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        ${Object.entries(TURNO_COLORS).map(([t,col]) => `
+          <div style="display:flex;align-items:center;gap:5px">
+            <div style="width:12px;height:12px;border-radius:3px;background:${col}"></div>
+            <span style="font-size:12px;color:var(--text-2)">${{M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'}[t]}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  // 8 columnas: Línea | L | M | X | J | V | S | D
+  const GRID = 'display:grid;grid-template-columns:28px repeat(7,1fr);gap:1px;text-align:center;align-items:center';
+  const CELL = 'display:flex;align-items:center;justify-content:center';
+  const HDR  = 'font-size:10px;font-weight:600;color:var(--text-3);padding:2px 0';
+
+  for (let mes = 0; mes < 12; mes++) {
+    const primerDia  = new Date(anoActual, mes, 1);
+    const ultimoDia  = new Date(anoActual, mes + 1, 0);
+    const diasEnMes  = ultimoDia.getDate();
+    const inicioSem  = (primerDia.getDay() + 6) % 7; // 0=lun
+
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">${MESES[mes]} ${anoActual}</div>
+      <div style="${GRID}">
+        <div style="${HDR}"></div>
+        ${['L','M','X','J','V','S','D'].map(d => `<div style="${HDR}">${d}</div>`).join('')}`;
+
+    // Celdas vacías primera fila + columna línea vacía
+    if (inicioSem > 0) {
+      html += `<div style="${HDR}"></div>`; // col línea vacía
+      for (let v = 0; v < inicioSem; v++) html += `<div></div>`;
+    }
+
+    let colActual = inicioSem; // 0=lun, rastreamos posición en la semana
+
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const fecha  = new Date(anoActual, mes, dia);
+      const hoy    = new Date();
+      const esHoy  = fecha.toDateString() === hoy.toDateString();
+      const diaSem = (fecha.getDay() + 6) % 7; // 0=lun
+      const esFinSem = diaSem >= 5;
+      const mapKey = getSemKey(fecha);
+      const t = turnoMap[mapKey];
+
+      // Al inicio de cada semana (lunes), insertar la columna de línea
+      if (diaSem === 0) {
+        const lineaTxt = t ? t.puesto : '';
+        const lineaCol = t ? TURNO_COLORS[t.turno] : 'var(--text-3)';
+        html += `<div style="font-size:8px;font-weight:800;color:${lineaCol};text-align:center;line-height:1;padding:2px 1px">${lineaTxt}</div>`;
+      }
+
+      const bgColor   = t && !esFinSem ? TURNO_COLORS[t.turno] : 'transparent';
+      const textColor = t && !esFinSem ? 'white' : esFinSem ? '#bbb' : 'var(--text)';
+      const border    = esHoy ? `2px solid var(--green)` : '1px solid transparent';
+
+      html += `<div style="${CELL}">
+        <div style="width:24px;height:24px;border-radius:4px;background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:${esHoy?700:400};border:${border};box-sizing:border-box">${dia}</div>
+      </div>`;
+
+      // Si es domingo (fin de semana) y quedan días, añadir columna línea del próximo lunes
+      if (diaSem === 6 && dia < diasEnMes) {
+        const nextFecha  = new Date(anoActual, mes, dia + 1);
+        const nextKey    = getSemKey(nextFecha);
+        const nextT      = turnoMap[nextKey];
+        // No insertar aquí — se insertará en el siguiente lunes automáticamente
+      }
+    }
+
+    // Rellenar resto de la última fila si no acaba en domingo
+    const ultimoDiaSem = (ultimoDia.getDay() + 6) % 7;
+    if (ultimoDiaSem !== 6) {
+      for (let r = ultimoDiaSem + 1; r <= 6; r++) html += `<div></div>`;
+    }
+
+    html += `</div></div>`;
+  }
+
+  c.innerHTML = html;
+}
+
+
+function findTurnoWorkerInData(nombre, data) {
+  if (!data) return null;
+  const nameUpper = nombre.toUpperCase().trim();
+  const TURNOS = ['M','T','N','P'];
+  const safeArr = a => Array.isArray(a) ? a : [];
+
+  const env = data.envasado;
+  if (env) {
+    if (env.specialWorkers) {
+      for (const [id, arr] of Object.entries(env.specialWorkers)) {
+        for (const w of safeArr(arr)) {
+          if (!w || !w.cells) continue;
+          for (const t of TURNOS) {
+            if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+              return { turno: t, puesto: id.toUpperCase() };
+          }
+        }
+      }
+    }
+    for (const line of safeArr(env.lines)) {
+      for (const w of [...safeArr(line.maq), ...safeArr(line.ops)]) {
+        if (!w || !w.cells) continue;
+        for (const t of TURNOS) {
+          if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+            return { turno: t, puesto: line.label };
+        }
+      }
+    }
+  }
+
+  const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
+  for (const key of POST_KEYS) {
+    const d = data[key];
+    if (!d || !d.workers) continue;
+    for (const [pid, arr] of Object.entries(d.workers)) {
+      for (const w of safeArr(arr)) {
+        if (!w || !w.cells) continue;
+        for (const t of TURNOS) {
+          if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+            return { turno: t, puesto: pid };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function findTurnoWorker(nombre) {
+  return findTurnoWorkerInData(nombre, cuadrante);
+}
+
+// ─── EPIs ────────────────────────────────────────────
+const EPI_TIPOS = ['Botas de seguridad','Guantes anticorte','Guantes de nitrilo','Gafas de protección','Casco','Chaleco reflectante','Mascarilla FFP2','Tapones auditivos','Ropa de trabajo','Otros'];
+
+function getEpis() {
+  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  return all[currentUser.dni] || [];
+}
+
+function saveEpis(epis) {
+  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  all[currentUser.dni] = epis;
+  localStorage.setItem(LS_EPIS, JSON.stringify(all));
+}
+
+function showEpi() {
+  goScreen('epi');
+  renderEpi();
+}
+
+function renderEpi() {
+  const epis = getEpis();
+  const c = document.getElementById('epi-content');
+
+  const lista = epis.length ? epis.map(e => `
+    <div class="epi-item">
+      <div class="epi-ico">🦺</div>
+      <div class="epi-info">
+        <div class="epi-name">${e.tipo}</div>
+        <div class="epi-meta">${e.nota || ''}</div>
+        <span class="tag ${e.estado === 'entregado' ? 'tag-ok' : 'tag-pend'}">
+          ${e.estado === 'entregado' ? 'Entregado · ' + e.fecha : 'Pendiente · ' + e.fecha}
+        </span>
+      </div>
+    </div>
+  `).join('') : '<div class="no-turno" style="margin-bottom:12px">No tienes solicitudes de EPIs</div>';
+
+  c.innerHTML = `
+    <div class="epi-list">${lista}</div>
+    <button class="btn-nueva-epi" onclick="showEpiForm()" style="margin-top:12px">+ Nueva solicitud</button>
+    <div id="epi-form-wrap" style="display:none;margin-top:12px">
+      <div class="epi-form">
+        <h3>Nueva solicitud</h3>
+        <select id="epi-tipo">
+          <option value="">Selecciona el EPI...</option>
+          ${EPI_TIPOS.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
+        <textarea id="epi-nota" placeholder="Motivo o comentario (opcional)"></textarea>
+        <div class="form-btns">
+          <button class="btn-cancel" onclick="hideEpiForm()">Cancelar</button>
+          <button class="btn-send" onclick="submitEpi()">Enviar solicitud</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showEpiForm() {
+  document.getElementById('epi-form-wrap').style.display = 'block';
+  document.querySelector('.btn-nueva-epi').style.display = 'none';
+}
+
+function hideEpiForm() {
+  document.getElementById('epi-form-wrap').style.display = 'none';
+  document.querySelector('.btn-nueva-epi').style.display = 'block';
+}
+
+function submitEpi() {
+  const tipo = document.getElementById('epi-tipo').value;
+  const nota = document.getElementById('epi-nota').value.trim();
+  if (!tipo) { showToast('Selecciona el tipo de EPI'); return; }
+
+  const epis = getEpis();
+  epis.unshift({ tipo, nota, estado: 'pendiente', fecha: fmtDateShort(new Date()) });
+  saveEpis(epis);
+  showToast('✓ Solicitud enviada correctamente');
+  renderEpi();
+  updateBadges();
+}
+
+// ─── AVISOS ──────────────────────────────────────────
+function getAvisos() {
+  // Avisos fijos + los del cuadrante si existe
+  const base = [
+    { id: 'av1', fecha: hoy(), titulo: 'Cuadrante semana ' + (cuadrante ? cuadrante.semana : '—') + ' publicado', texto: 'Ya puedes consultar tu turno de la próxima semana en la sección Mis Turnos.' },
+    { id: 'av2', fecha: '15/03/2026', titulo: 'Reunión informativa departamentos', texto: 'El jueves 19/03 a las 9:00 hay reunión en la sala de formación para todos los encargados.' },
+    { id: 'av3', fecha: '10/03/2026', titulo: 'Renovación de EPIs obligatorios', texto: 'Recordad que el calzado de seguridad debe renovarse cada 12 meses. Consultad con vuestro encargado.' },
+  ];
+  return base;
+}
+
+function hoy() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function showAvisos() {
+  goScreen('avisos');
+  const leidos = JSON.parse(localStorage.getItem('ubesol_avisos_leidos') || '[]');
+  const avisos = getAvisos();
+
+  // Marcar todos como leídos
+  const todosIds = avisos.map(a => a.id);
+  localStorage.setItem('ubesol_avisos_leidos', JSON.stringify(todosIds));
+  updateBadges();
+
+  const c = document.getElementById('avisos-content');
+  c.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' +
+    avisos.map(a => {
+      const esNuevo = !leidos.includes(a.id);
+      return `<div class="aviso-item ${esNuevo ? 'nuevo' : ''}">
+        <div class="av-top">
+          <span class="av-fecha">${a.fecha}</span>
+          ${esNuevo ? '<span class="av-nuevo-badge">Nuevo</span>' : ''}
+        </div>
+        <div class="av-titulo">${a.titulo}</div>
+        <div class="av-texto">${a.texto}</div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+// ─── UTILS ───────────────────────────────────────────
+function getWeekDates(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const monday = new Date(startW1);
+  monday.setDate(startW1.getDate() + (week-1)*7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return { monday, sunday };
+}
+
+function fmtDate(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function fmtDateShort(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── START ───────────────────────────────────────────
+init();
 </script>
 </body>
 </html>
