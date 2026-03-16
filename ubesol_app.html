@@ -1006,9 +1006,15 @@ function showTurnos() {
     } else {
       html += `<div class="${cardClass}" style="border-left-color:${borderColor}">
         <span class="sem-label ${tipo}">${labelTxt}</span>
-        <div style="font-size:26px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.1">${turnoNombre}</div>
-        <div style="font-size:24px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2;margin-bottom:6px">${puestoNombre}</div>
-        <div style="font-size:13px;color:#999;font-family:'DM Mono',monospace;letter-spacing:0.02em">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+          <div>
+            <div style="font-size:26px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.1">${turnoNombre}</div>
+            <div style="font-size:24px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2">${puestoNombre}</div>
+          </div>
+          <div style="text-align:right;font-size:13px;color:#999;font-family:'DM Mono',monospace;line-height:1.7;flex-shrink:0;padding-top:4px">
+            ${fmtDate(monday)}<br>${fmtDate(sunday)}
+          </div>
+        </div>
       </div>`;
     }
   });
@@ -1067,7 +1073,6 @@ function renderCalendario() {
   const c = document.getElementById('calendario-content');
   const historico = getHistorico();
   const TURNO_COLORS = { M: '#4a7c2f', T: '#c47a00', N: '#1a6eb5', P: '#7c3a8a' };
-  const TURNO_LABELS = { M: 'M', T: 'T', N: 'N', P: 'P' };
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
   // Construir mapa semana->turno
@@ -1076,17 +1081,24 @@ function renderCalendario() {
     const info = findTurnoWorkerInData(currentUser.nombre, data);
     if (!info) return;
     const key = data.ano + '_' + String(data.semana).padStart(2,'0');
-    const { monday } = getWeekDates(parseInt(data.ano), parseInt(data.semana));
-    turnoMap[key] = { turno: info.turno, puesto: info.puesto, monday };
+    turnoMap[key] = { turno: info.turno, puesto: info.puesto };
   });
 
-  // Calcular rango: desde enero del año actual hasta diciembre
   const anoActual = new Date().getFullYear();
 
+  // Calcular número de semana ISO para una fecha
+  function getSemKey(fecha) {
+    const jan4 = new Date(fecha.getFullYear(), 0, 4);
+    const sw1 = new Date(jan4);
+    sw1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+    const sem = Math.ceil((fecha - sw1) / 604800000);
+    return fecha.getFullYear() + '_' + String(sem).padStart(2,'0');
+  }
+
   let html = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Leyenda</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Leyenda</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
         ${Object.entries(TURNO_COLORS).map(([t,col]) => `
           <div style="display:flex;align-items:center;gap:5px">
             <div style="width:12px;height:12px;border-radius:3px;background:${col}"></div>
@@ -1095,50 +1107,68 @@ function renderCalendario() {
       </div>
     </div>`;
 
-  // Renderizar mes a mes
+  // 8 columnas: Línea | L | M | X | J | V | S | D
+  const GRID = 'display:grid;grid-template-columns:28px repeat(7,1fr);gap:1px;text-align:center;align-items:center';
+  const CELL = 'display:flex;align-items:center;justify-content:center';
+  const HDR  = 'font-size:10px;font-weight:600;color:var(--text-3);padding:2px 0';
+
   for (let mes = 0; mes < 12; mes++) {
-    const primerDia = new Date(anoActual, mes, 1);
-    const ultimoDia = new Date(anoActual, mes + 1, 0);
-    const diasEnMes = ultimoDia.getDate();
-    const inicioSemana = (primerDia.getDay() + 6) % 7; // 0=lun
+    const primerDia  = new Date(anoActual, mes, 1);
+    const ultimoDia  = new Date(anoActual, mes + 1, 0);
+    const diasEnMes  = ultimoDia.getDate();
+    const inicioSem  = (primerDia.getDay() + 6) % 7; // 0=lun
 
-    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px">
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px">${MESES[mes]} ${anoActual}</div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center">
-        ${['L','M','X','J','V','S','D'].map(d => `<div style="font-size:10px;font-weight:600;color:var(--text-3);padding:2px 0">${d}</div>`).join('')}`;
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">${MESES[mes]} ${anoActual}</div>
+      <div style="${GRID}">
+        <div style="${HDR}"></div>
+        ${['L','M','X','J','V','S','D'].map(d => `<div style="${HDR}">${d}</div>`).join('')}`;
 
-    // Celdas vacías iniciales
-    for (let v = 0; v < inicioSemana; v++) {
-      html += `<div></div>`;
+    // Celdas vacías primera fila + columna línea vacía
+    if (inicioSem > 0) {
+      html += `<div style="${HDR}"></div>`; // col línea vacía
+      for (let v = 0; v < inicioSem; v++) html += `<div></div>`;
     }
 
+    let colActual = inicioSem; // 0=lun, rastreamos posición en la semana
+
     for (let dia = 1; dia <= diasEnMes; dia++) {
-      const fecha = new Date(anoActual, mes, dia);
-      const hoy = new Date();
-      const esHoy = fecha.toDateString() === hoy.toDateString();
+      const fecha  = new Date(anoActual, mes, dia);
+      const hoy    = new Date();
+      const esHoy  = fecha.toDateString() === hoy.toDateString();
       const diaSem = (fecha.getDay() + 6) % 7; // 0=lun
       const esFinSem = diaSem >= 5;
-
-      // Buscar si este día cae en alguna semana con turno asignado
-      const jan4 = new Date(anoActual, 0, 4);
-      const sw1 = new Date(jan4);
-      sw1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-      const semDia = Math.ceil((fecha - sw1) / 604800000);
-      const mapKey = anoActual + '_' + String(semDia).padStart(2,'0');
+      const mapKey = getSemKey(fecha);
       const t = turnoMap[mapKey];
 
-      // Mostrar puesto solo el lunes (primer día de la semana)
-      const esLunes = diaSem === 0;
-      const puestoLabel = (t && esLunes) ? `<div style="font-size:8px;color:${TURNO_COLORS[t.turno]};font-weight:700;line-height:1;margin-bottom:1px">${t.puesto}</div>` : '';
+      // Al inicio de cada semana (lunes), insertar la columna de línea
+      if (diaSem === 0) {
+        const lineaTxt = t ? t.puesto : '';
+        const lineaCol = t ? TURNO_COLORS[t.turno] : 'var(--text-3)';
+        html += `<div style="font-size:8px;font-weight:800;color:${lineaCol};text-align:center;line-height:1;padding:2px 1px">${lineaTxt}</div>`;
+      }
 
-      const bgColor = t && !esFinSem ? TURNO_COLORS[t.turno] : 'transparent';
-      const textColor = t && !esFinSem ? 'white' : esFinSem ? 'var(--text-3)' : 'var(--text)';
-      const border = esHoy ? '2px solid var(--green)' : '1px solid transparent';
+      const bgColor   = t && !esFinSem ? TURNO_COLORS[t.turno] : 'transparent';
+      const textColor = t && !esFinSem ? 'white' : esFinSem ? '#bbb' : 'var(--text)';
+      const border    = esHoy ? `2px solid var(--green)` : '1px solid transparent';
 
-      html += `<div style="display:flex;flex-direction:column;align-items:center">
-        ${puestoLabel}
-        <div style="width:28px;height:28px;border-radius:6px;background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:${esHoy?700:400};border:${border};box-sizing:border-box">${dia}</div>
+      html += `<div style="${CELL}">
+        <div style="width:24px;height:24px;border-radius:4px;background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:${esHoy?700:400};border:${border};box-sizing:border-box">${dia}</div>
       </div>`;
+
+      // Si es domingo (fin de semana) y quedan días, añadir columna línea del próximo lunes
+      if (diaSem === 6 && dia < diasEnMes) {
+        const nextFecha  = new Date(anoActual, mes, dia + 1);
+        const nextKey    = getSemKey(nextFecha);
+        const nextT      = turnoMap[nextKey];
+        // No insertar aquí — se insertará en el siguiente lunes automáticamente
+      }
+    }
+
+    // Rellenar resto de la última fila si no acaba en domingo
+    const ultimoDiaSem = (ultimoDia.getDay() + 6) % 7;
+    if (ultimoDiaSem !== 6) {
+      for (let r = ultimoDiaSem + 1; r <= 6; r++) html += `<div></div>`;
     }
 
     html += `</div></div>`;
