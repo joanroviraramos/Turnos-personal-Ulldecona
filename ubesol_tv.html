@@ -679,20 +679,15 @@ function getNextWeekKey() {
 }
 
 async function loadFromStorage() {
-  // 1. Intentar leer desde JSONBlob si hay ?id= en la URL
-  const params = new URLSearchParams(window.location.search);
-  const blobId = params.get('id');
-  if (blobId) {
+  // 1. Intentar leer del hash de la URL (datos codificados al publicar)
+  if (window.location.hash && window.location.hash.length > 1) {
     try {
-      const r = await fetch('https://jsonblob.com/api/jsonBlob/' + blobId, {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (r.ok) {
-        const data = await r.json();
-        updateHeader(data);
-        return data;
-      }
-    } catch(e) { console.warn('Error leyendo JSONBlob:', e); }
+      const encoded = window.location.hash.substring(1);
+      const json = decodeURIComponent(escape(atob(encoded)));
+      const data = JSON.parse(json);
+      updateHeader(data);
+      return data;
+    } catch(e) { console.warn('Error leyendo hash:', e); }
   }
 
   // 2. Fallback: leer del localStorage (mismo navegador)
