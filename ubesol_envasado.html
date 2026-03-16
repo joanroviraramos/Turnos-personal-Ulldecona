@@ -622,49 +622,137 @@ td.cell-p { background: var(--p-bg) !important; }
 // ═══════════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════
-//  WORKERS DATA — carga desde trabajadores.csv en el mismo repositorio
+//  WORKERS DATA — embebidos directamente (no requiere servidor)
+//  Para actualizar: sustituir WORKERS_DATA con los datos reales
 // ═══════════════════════════════════════════════════════════════════════
-let allWorkers = [];   // [{nombre, dni, departamento}]
-let usedNames  = new Set(); // nombres ya asignados esta semana
+const WORKERS_DATA = [
+  {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
+  {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
+  {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
+  {nombre:"ANA LOPEZ MARTINEZ",dni:"45678901D",departamento:"Envasado"},
+  {nombre:"PEDRO GONZALEZ RUIZ",dni:"56789012E",departamento:"Envasado"},
+  {nombre:"LUCIA HERNANDEZ JIMENEZ",dni:"67890123F",departamento:"Envasado"},
+  {nombre:"MIGUEL PEREZ MORENO",dni:"78901234G",departamento:"Envasado"},
+  {nombre:"SOFIA MARTIN DIAZ",dni:"89012345H",departamento:"Envasado"},
+  {nombre:"ANTONIO GARCIA ROMERO",dni:"90123456I",departamento:"Envasado"},
+  {nombre:"ELENA FERNANDEZ TORRES",dni:"01234567J",departamento:"Envasado"},
+  {nombre:"DAVID SANCHEZ NAVARRO",dni:"11223344K",departamento:"Envasado"},
+  {nombre:"LAURA JIMENEZ GUERRERO",dni:"22334455L",departamento:"Envasado"},
+  {nombre:"FRANCISCO RUIZ CANO",dni:"33445566M",departamento:"Envasado"},
+  {nombre:"CARMEN MORENO FUENTES",dni:"44556677N",departamento:"Envasado"},
+  {nombre:"RAUL DIAZ MOLINA",dni:"55667788O",departamento:"Envasado"},
+  {nombre:"ISABEL TORRES REYES",dni:"66778899P",departamento:"Envasado"},
+  {nombre:"JAVIER ROMERO CASTILLO",dni:"77889900Q",departamento:"Envasado"},
+  {nombre:"PATRICIA NAVARRO BLANCO",dni:"88990011R",departamento:"Envasado"},
+  {nombre:"SERGIO GUERRERO VARGAS",dni:"99001122S",departamento:"Envasado"},
+  {nombre:"MONICA CANO HERRERA",dni:"00112233T",departamento:"Envasado"},
+  {nombre:"ALBERTO FUENTES MEDINA",dni:"12312312U",departamento:"Envasado"},
+  {nombre:"CRISTINA MOLINA ORTEGA",dni:"23423423V",departamento:"Envasado"},
+  {nombre:"ROBERTO REYES DELGADO",dni:"34534534W",departamento:"Envasado"},
+  {nombre:"SILVIA CASTILLO IBAÑEZ",dni:"45645645X",departamento:"Envasado"},
+  {nombre:"FERNANDO BLANCO MORA",dni:"56756756Y",departamento:"Envasado"},
+  {nombre:"TERESA VARGAS SANTOS",dni:"67867867Z",departamento:"Elaboración"},
+  {nombre:"MANUEL HERRERA MEDINA",dni:"78978978A",departamento:"Elaboración"},
+  {nombre:"ANDREA ORTEGA FLORES",dni:"89089089B",departamento:"Elaboración"},
+  {nombre:"JUAN DELGADO VEGA",dni:"90190190C",departamento:"Elaboración"},
+  {nombre:"BEATRIZ IBAÑEZ BRAVO",dni:"01201201D",departamento:"Elaboración"},
+  {nombre:"PABLO MORA NIETO",dni:"12312312E",departamento:"Elaboración"},
+  {nombre:"ROSA SANTOS MARIN",dni:"23423423F",departamento:"Elaboración"},
+  {nombre:"OSCAR LORENZO GIMENEZ",dni:"34534534G",departamento:"Elaboración"},
+  {nombre:"NURIA FLORES PASCUAL",dni:"45645645H",departamento:"Elaboración"},
+  {nombre:"VICENTE VEGA CABRERA",dni:"56756756I",departamento:"Elaboración"},
+  {nombre:"AMPARO BRAVO SERRANO",dni:"67867867J",departamento:"Elaboración"},
+  {nombre:"EMILIO NIETO MENDEZ",dni:"78978978K",departamento:"Elaboración"},
+  {nombre:"CONSUELO MARIN RUBIO",dni:"89089089L",departamento:"Almacén"},
+  {nombre:"IGNACIO GIMENEZ ALONSO",dni:"90190190M",departamento:"Almacén"},
+  {nombre:"DOLORES PASCUAL PEÑA",dni:"01201201N",departamento:"Almacén"},
+  {nombre:"VICTOR CABRERA RAMOS",dni:"12312344O",departamento:"Almacén"},
+  {nombre:"ALICIA SERRANO GARCIA",dni:"23423455P",departamento:"Almacén"},
+  {nombre:"RAFAEL MENDEZ LOPEZ",dni:"34534566Q",departamento:"Almacén"},
+  {nombre:"PILAR RUBIO MARTINEZ",dni:"45645677R",departamento:"Almacén"},
+  {nombre:"ENRIQUE ALONSO SANCHEZ",dni:"56756788S",departamento:"Almacén"},
+  {nombre:"INMACULADA PEÑA RUIZ",dni:"67867899T",departamento:"Almacén"},
+  {nombre:"JORGE RAMOS HERNANDEZ",dni:"78978900U",departamento:"Almacén"},
+  {nombre:"ROCIO GARCIA PEREZ",dni:"89089011V",departamento:"Almacén"},
+  {nombre:"JAIME LOPEZ MARTIN",dni:"90190122W",departamento:"Almacén"},
+  {nombre:"MAITE MARTINEZ FERNANDEZ",dni:"01201233X",departamento:"Almacén"},
+  {nombre:"ANDRES SANCHEZ GARCIA",dni:"11122233Y",departamento:"Mantenimiento"},
+  {nombre:"YOLANDA RUIZ LOPEZ",dni:"22233344Z",departamento:"Mantenimiento"},
+  {nombre:"TOMAS HERNANDEZ MARTINEZ",dni:"33344455A",departamento:"Mantenimiento"},
+  {nombre:"VIRGINIA JIMENEZ SANCHEZ",dni:"44455566B",departamento:"Mantenimiento"},
+  {nombre:"MARIO MORENO RUIZ",dni:"55566677C",departamento:"Mantenimiento"},
+  {nombre:"ANGELES DIAZ HERNANDEZ",dni:"66677788D",departamento:"Mantenimiento"},
+  {nombre:"NICOLAS TORRES JIMENEZ",dni:"77788899E",departamento:"Mantenimiento"},
+  {nombre:"SUSANA ROMERO MORENO",dni:"88899900F",departamento:"Mantenimiento"},
+  {nombre:"JULIAN NAVARRO DIAZ",dni:"99900011G",departamento:"Mantenimiento"},
+  {nombre:"NATALIA GUERRERO TORRES",dni:"00011122H",departamento:"Mantenimiento"},
+  {nombre:"MARCOS CANO ROMERO",dni:"11122233I",departamento:"Calidad Líneas"},
+  {nombre:"CAROLINA FUENTES NAVARRO",dni:"22233344J",departamento:"Calidad Líneas"},
+  {nombre:"LUCAS MOLINA GUERRERO",dni:"33344455K",departamento:"Calidad Líneas"},
+  {nombre:"PAULA REYES CANO",dni:"44455566L",departamento:"Calidad Líneas"},
+  {nombre:"HUGO CASTILLO FUENTES",dni:"55566677M",departamento:"Calidad Líneas"},
+  {nombre:"SARA BLANCO MOLINA",dni:"66677788N",departamento:"Calidad Líneas"},
+  {nombre:"SAMUEL VARGAS REYES",dni:"77788899O",departamento:"Calidad Fís-Quím"},
+  {nombre:"LORENA HERRERA CASTILLO",dni:"88899900P",departamento:"Calidad Fís-Quím"},
+  {nombre:"RUBEN MEDINA BLANCO",dni:"99900011Q",departamento:"Calidad Fís-Quím"},
+  {nombre:"CLAUDIA ORTEGA VARGAS",dni:"00011122R",departamento:"Calidad Fís-Quím"},
+  {nombre:"AARON DELGADO HERRERA",dni:"11122244S",departamento:"Calidad Microbiología"},
+  {nombre:"MIRIAM IBAÑEZ MEDINA",dni:"22233355T",departamento:"Calidad Microbiología"},
+  {nombre:"IVAN MORA ORTEGA",dni:"33344466U",departamento:"Calidad Microbiología"},
+  {nombre:"DIANA SANTOS DELGADO",dni:"44455577V",departamento:"Calidad Microbiología"},
+  {nombre:"ALEX LORENZO IBAÑEZ",dni:"55566688W",departamento:"Calidad Materiales"},
+  {nombre:"EVA FLORES MORA",dni:"66677799X",departamento:"Calidad Materiales"},
+  {nombre:"DANIEL VEGA SANTOS",dni:"77788800Y",departamento:"Calidad Materiales"},
+  {nombre:"NEREA BRAVO LORENZO",dni:"88899911Z",departamento:"Calidad Materiales"},
+  {nombre:"RODRIGO NIETO FLORES",dni:"99900022A",departamento:"Mejora Continua"},
+  {nombre:"IRENE MARIN VEGA",dni:"00011133B",departamento:"Mejora Continua"},
+  {nombre:"GONZALO GIMENEZ BRAVO",dni:"11122244C",departamento:"Mejora Continua"},
+  {nombre:"REBECA PASCUAL NIETO",dni:"22233355D",departamento:"Mejora Continua"},
+  {nombre:"ALBERTO CABRERA MARIN",dni:"33344466E",departamento:"Soplado"},
+  {nombre:"NOELIA SERRANO GIMENEZ",dni:"44455577F",departamento:"Soplado"},
+  {nombre:"BORJA MENDEZ PASCUAL",dni:"55566688G",departamento:"Soplado"},
+  {nombre:"VERONICA RUBIO CABRERA",dni:"66677799H",departamento:"Soplado"},
+  {nombre:"OSCAR ALONSO SERRANO",dni:"77788800I",departamento:"Soplado"},
+  {nombre:"MARTA PEÑA MENDEZ",dni:"88899911J",departamento:"Soplado"},
+  {nombre:"ALEJANDRO RAMOS RUBIO",dni:"99900022K",departamento:"Soplado"},
+  {nombre:"LARA GARCIA ALONSO",dni:"00011133L",departamento:"Soplado"},
+];
 
-// Nombre del CSV — en GitHub Pages estará en la misma carpeta
-const CSV_URL = 'trabajadores.csv';
-
-async function loadWorkers() {
-  try {
-    const r = await fetch(CSV_URL);
-    if (!r.ok) return;
-    const text = await r.text();
-    const lines = text.trim().split('\n').slice(1); // skip header
-    allWorkers = lines.map(line => {
-      const parts = line.split(',');
-      return {
-        nombre:       (parts[0]||'').trim(),
-        dni:          (parts[1]||'').trim(),
-        departamento: (parts[2]||'').trim(),
-      };
-    }).filter(w => w.nombre);
-  } catch(e) {
-    console.warn('No se pudo cargar trabajadores.csv:', e.message);
-  }
-}
+let allWorkers = WORKERS_DATA;
+let usedNames  = new Set();
 
 function getWorkersForDept(dept) {
-  if (!allWorkers.length) return [];
   return allWorkers.filter(w => w.departamento === dept);
 }
 
 function rebuildUsedNames() {
   usedNames = new Set();
-  // Collect all names currently filled in across ALL departments
-  const collectFrom = (arr) => arr && arr.forEach(w => { if(w && w.n) usedNames.add(w.n.toUpperCase().trim()); });
-  const collectWorkers = (obj) => obj && Object.values(obj).forEach(arr => arr && arr.forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(v => { if(v) usedNames.add(v.toUpperCase().trim()); }); }));
-
-  // Envasado lines
-  lines.forEach(l => l.groups.forEach(g => g.workers.forEach(w => { if(w.n) usedNames.add(w.n.toUpperCase().trim()); })));
-  // Post depts
-  [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers, calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers, specialWorkers].forEach(collectWorkers);
+  // Recolecta todos los nombres ya asignados en el cuadrante completo
+  const add = (v) => { if(v && v.trim()) usedNames.add(v.trim().toUpperCase()); };
+  // Envasado — lines
+  lines.forEach(l => l.groups.forEach(g => g.workers.forEach(w => add(w.n))));
+  // Servicios transversales Envasado
+  Object.values(specialWorkers).forEach(arr => arr && arr.forEach(w => {
+    if(w && w.cells) Object.values(w.cells).forEach(add);
+  }));
+  // Todos los depts tipo post
+  [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers,
+   calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers].forEach(obj => {
+    if (!obj) return;
+    Object.values(obj).forEach(arr => arr && arr.forEach(w => {
+      if(w && w.cells) Object.values(w.cells).forEach(add);
+    }));
+  });
+  // Bajas / vacaciones
+  [bajas, vacaciones, elabBajas, elabVacaciones, almBajas, almVacaciones,
+   mtoBajas, mtoVacaciones, calBajas, calVacaciones, calfqBajas, calfqVacaciones,
+   calmicroBajas, calmicroVacaciones, calmatBajas, calmatVacaciones,
+   mcBajas, mcVacaciones, soplBajas, soplVacaciones].forEach(arr => {
+    arr && arr.forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); });
+  });
 }
+
+async function loadWorkers() { /* datos ya embebidos — no hace falta fetch */ }
 
 // ── AUTOCOMPLETE ENGINE ────────────────────────────────────────────────
 function makeAcInput(currentVal, dept, onSelect) {
@@ -683,42 +771,47 @@ function makeAcInput(currentVal, dept, onSelect) {
 
   function showList(query) {
     rebuildUsedNames();
-    const q = query.toLowerCase().trim();
+    const q = query.trim().toUpperCase();
+    const currentUpper = (currentVal || '').trim().toUpperCase();
     const workers = getWorkersForDept(dept);
     const filtered = workers.filter(w =>
-      !q || w.nombre.toLowerCase().includes(q)
+      !q || w.nombre.toUpperCase().includes(q)
     );
 
     list.innerHTML = '';
     if (!filtered.length) {
       list.innerHTML = `<div class="ac-empty">Sin resultados para "${query}"</div>`;
     } else {
-      filtered.forEach(w => {
+      filtered.slice(0, 30).forEach(w => {
         const item = document.createElement('div');
         item.className = 'ac-item';
-        const nameUpper = w.nombre.toUpperCase().trim();
-        const isUsed = usedNames.has(nameUpper) && nameUpper !== (currentVal||'').toUpperCase().trim();
+        const nameUpper = w.nombre.toUpperCase();
+        // Marcado como usado si está en otro campo (no el propio)
+        const isUsed = usedNames.has(nameUpper) && nameUpper !== currentUpper;
         if (isUsed) item.classList.add('used');
         item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
-        item.onmousedown = (e) => {
-          e.preventDefault();
-          if (isUsed) return;
-          inp.value = w.nombre;
-          onSelect(w.nombre);
-          list.classList.remove('open');
-        };
+        if (!isUsed) {
+          item.onmousedown = (e) => {
+            e.preventDefault();
+            inp.value = w.nombre;
+            currentVal = w.nombre;
+            onSelect(w.nombre);
+            list.classList.remove('open');
+          };
+        }
         list.appendChild(item);
       });
     }
     list.classList.add('open');
   }
 
-  inp.addEventListener('focus', () => { if (allWorkers.length) showList(inp.value); });
+  inp.addEventListener('focus', () => showList(inp.value));
   inp.addEventListener('input', () => {
+    currentVal = inp.value;
     onSelect(inp.value);
-    if (allWorkers.length) showList(inp.value);
+    showList(inp.value);
   });
-  inp.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
+  inp.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 200));
 
   wrap.appendChild(inp);
   wrap.appendChild(list);
@@ -935,28 +1028,14 @@ function renderLineRows(tbody, line) {
 function buildNameCell(worker, turno) {
   const td = document.createElement('td');
   td.className = `name-cell cell-${turno.toLowerCase()}`;
-
   const div = document.createElement('div');
   div.className = 'row-controls';
-
-  if (allWorkers.length) {
-    const { wrap } = makeAcInput(
-      worker.cells[turno] || '',
-      currentTab,
-      (val) => { worker.cells[turno] = val; }
-    );
-    div.appendChild(wrap);
-  } else {
-    const inp = document.createElement('input');
-    inp.className = 'name-inp';
-    inp.type = 'text';
-    inp.value = worker.cells[turno] || '';
-    inp.placeholder = '—';
-    inp.autocomplete = 'off';
-    inp.oninput = () => { worker.cells[turno] = inp.value; };
-    div.appendChild(inp);
-  }
-
+  const { wrap } = makeAcInput(
+    worker.cells[turno] || '',
+    currentTab,
+    (val) => { worker.cells[turno] = val; }
+  );
+  div.appendChild(wrap);
   td.appendChild(div);
   return td;
 }
@@ -1600,22 +1679,12 @@ function buildPostRow(worker, wi, puesto, arr) {
   TURNOS.forEach(t => {
     const td = document.createElement('td');
     td.className = `name-cell cell-${t.toLowerCase()}`;
-    if (allWorkers.length) {
-      const { wrap } = makeAcInput(
-        worker.cells[t] || '',
-        currentTab,
-        (val) => { worker.cells[t] = val; }
-      );
-      td.appendChild(wrap);
-    } else {
-      const inp = document.createElement('input');
-      inp.className = 'name-inp';
-      inp.value = worker.cells[t] || '';
-      inp.placeholder = '—';
-      inp.autocomplete = 'off';
-      inp.oninput = () => { worker.cells[t] = inp.value; };
-      td.appendChild(inp);
-    }
+    const { wrap } = makeAcInput(
+      worker.cells[t] || '',
+      currentTab,
+      (val) => { worker.cells[t] = val; }
+    );
+    td.appendChild(wrap);
     tr.appendChild(td);
   });
 
