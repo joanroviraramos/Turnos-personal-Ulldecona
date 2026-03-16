@@ -831,6 +831,7 @@ function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
           selectedFromList = true;
           inp.value = w.nombre;
           onSelect(w.nombre);
+          autoSave();
           list.classList.remove('open');
         };
         list.appendChild(item);
@@ -860,6 +861,7 @@ function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
           }
         }
       }
+      autoSave();
       selectedFromList = false;
     }, 200);
   });
