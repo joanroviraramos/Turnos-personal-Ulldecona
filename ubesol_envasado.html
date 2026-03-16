@@ -1469,10 +1469,12 @@ function publicar() {
   };
   const safeArr = (a) => Array.isArray(a) ? a : [];
 
-  // Envasado lines
-  safeArr(lines).forEach(l => safeArr(l.groups).forEach(g => safeArr(g.workers).forEach(w => {
-    if (w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / ' + l.name));
-  })));
+  // Envasado lines — tienen maq[] y ops[], no groups[]
+  safeArr(lines).forEach(l => {
+    [...safeArr(l.maq), ...safeArr(l.ops)].forEach(w => {
+      if (w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / ' + l.label));
+    });
+  });
   // Especiales Envasado
   if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
     safeArr(arr).forEach(w => { if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / Especiales')); }));
