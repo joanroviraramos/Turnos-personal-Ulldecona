@@ -606,6 +606,7 @@ td.name-cell { overflow: visible !important; }
     <button class="btn btn-sec" onclick="window.print()">Imprimir / PDF</button>
     <button class="btn btn-sec" onclick="triggerLoad()" title="Carga un fichero JSON guardado anteriormente">Cargar JSON</button>
     <button class="btn btn-sec" onclick="exportJSON()">Exportar JSON</button>
+    <button class="btn btn-sec" onclick="guardarManual()" title="Guardar datos en el navegador" style="color:#1b5e20;font-weight:600">💾 Guardar</button>
     <button class="btn btn-sec" onclick="clearStorage()" title="Borrar datos guardados en este navegador" style="color:#c00">Borrar datos</button>
     <button class="btn btn-pub" onclick="publicar()">Publicar cuadrante ✓</button>
   </div>
@@ -755,10 +756,12 @@ function rebuildUsedNames() {
   const add = (v) => { if(v && v.trim()) usedNames.add(v.trim().toUpperCase()); };
   const safeArr = (a) => Array.isArray(a) ? a : [];
 
-  // Envasado — lines (nombres en w.cells[turno], NO en w.n)
-  safeArr(lines).forEach(l => safeArr(l.groups).forEach(g => safeArr(g.workers).forEach(w => {
-    if(w && w.cells) Object.values(w.cells).forEach(add);
-  })));
+  // Envasado — lines tienen maq[] y ops[], cada worker tiene cells:{M,T,N,P}
+  safeArr(lines).forEach(l => {
+    [...safeArr(l.maq), ...safeArr(l.ops)].forEach(w => {
+      if(w && w.cells) Object.values(w.cells).forEach(add);
+    });
+  });
 
   // Servicios transversales Envasado
   if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
@@ -785,7 +788,7 @@ function rebuildUsedNames() {
 async function loadWorkers() { /* datos ya embebidos — no hace falta fetch */ }
 
 // ── AUTOCOMPLETE ENGINE ────────────────────────────────────────────────
-function makeAcInput(currentVal, dept, onSelect) {
+function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
   const wrap = document.createElement('div');
   wrap.className = 'ac-wrap';
 
@@ -799,21 +802,21 @@ function makeAcInput(currentVal, dept, onSelect) {
   const list = document.createElement('div');
   list.className = 'ac-list';
 
-  function getOwnValue() { return inp.value.trim().toUpperCase(); }
-
   function showList(query) {
     rebuildUsedNames();
-    // Quitar el valor propio para que no se marque como duplicado de sí mismo
     const own = inp.value.trim().toUpperCase();
     if (own) usedNames.delete(own);
 
     const q = query.trim().toUpperCase();
     const workers = getWorkersForDept(dept);
-    // SOLO mostrar trabajadores que NO están ya asignados en otro campo
-    const available = workers.filter(w =>
-      !usedNames.has(w.nombre.toUpperCase()) &&
-      (!q || w.nombre.toUpperCase().includes(q))
-    );
+
+    const available = workers.filter(w => {
+      const nameUpper = w.nombre.toUpperCase();
+      const matchesQuery = !q || nameUpper.includes(q);
+      // Si blockDuplicates: ocultar ya asignados. Si no: mostrar todos
+      const notUsed = !blockDuplicates || !usedNames.has(nameUpper);
+      return matchesQuery && notUsed;
+    });
 
     list.innerHTML = '';
     if (!available.length) {
@@ -825,6 +828,7 @@ function makeAcInput(currentVal, dept, onSelect) {
         item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
         item.onmousedown = (e) => {
           e.preventDefault();
+          selectedFromList = true;
           inp.value = w.nombre;
           onSelect(w.nombre);
           list.classList.remove('open');
@@ -835,24 +839,28 @@ function makeAcInput(currentVal, dept, onSelect) {
     list.classList.add('open');
   }
 
+  let selectedFromList = false;
+
   inp.addEventListener('focus', () => showList(inp.value));
   inp.addEventListener('click', () => showList(inp.value));
-  inp.addEventListener('input', () => { onSelect(inp.value); showList(inp.value); });
+  inp.addEventListener('input', () => { selectedFromList = false; onSelect(inp.value); showList(inp.value); });
   inp.addEventListener('blur', () => {
     setTimeout(() => {
       list.classList.remove('open');
-      // Validar al salir del campo: si escribió a mano un duplicado, borrarlo
-      const v = inp.value.trim().toUpperCase();
-      if (v) {
-        rebuildUsedNames();
-        usedNames.delete(v); // quitar el propio
-        if (usedNames.has(v)) {
-          inp.value = '';
-          onSelect('');
-          inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
-          setTimeout(() => inp.style.boxShadow = '', 1500);
+      if (!selectedFromList && blockDuplicates) {
+        const v = inp.value.trim().toUpperCase();
+        if (v) {
+          rebuildUsedNames();
+          usedNames.delete(v);
+          if (usedNames.has(v)) {
+            inp.value = '';
+            onSelect('');
+            inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
+            setTimeout(() => inp.style.boxShadow = '', 1500);
+          }
         }
       }
+      selectedFromList = false;
     }, 200);
   });
 
@@ -1074,7 +1082,8 @@ function buildNameCell(worker, turno) {
   const { wrap } = makeAcInput(
     worker.cells[turno] || '',
     currentTab,
-    (val) => { worker.cells[turno] = val; }
+    (val) => { worker.cells[turno] = val; },
+    true   // bloquear duplicados igual que el resto de departamentos
   );
   div.appendChild(wrap);
   td.appendChild(div);
@@ -1093,7 +1102,6 @@ function buildDivider(text) {
 }
 
 function buildExpandableRow(worker, wi, puesto, arr) {
-  // puesto: { id, label, type }  OR  type string ('bajas'|'vacaciones')
   const isPuestoObj = typeof puesto === 'object' && puesto.label;
   const label    = isPuestoObj ? puesto.label : (puesto === 'bajas' ? 'BAJA' : 'VACACIONES');
   const rowType  = isPuestoObj ? puesto.type  : puesto;
@@ -1126,18 +1134,18 @@ function buildExpandableRow(worker, wi, puesto, arr) {
   </div>`;
   tr.appendChild(tdP);
 
+  // Usar autocomplete igual que en los turnos
   TURNOS.forEach(t => {
     const td = document.createElement('td');
     td.className = `name-cell cell-${t.toLowerCase()}`;
     const div = document.createElement('div');
     div.className = 'row-controls';
-    const inp = document.createElement('input');
-    inp.className = 'name-inp';
-    inp.value = worker.cells[t] || '';
-    inp.placeholder = '—';
-    inp.autocomplete = 'off';
-    inp.oninput = () => { worker.cells[t] = inp.value; };
-    div.appendChild(inp);
+    const { wrap } = makeAcInput(
+      worker.cells[t] || '',
+      currentTab,
+      (val) => { worker.cells[t] = val; }
+    );
+    div.appendChild(wrap);
     td.appendChild(div);
     tr.appendChild(td);
   });
@@ -1146,8 +1154,12 @@ function buildExpandableRow(worker, wi, puesto, arr) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  MUTATIONS
+//  GUARDAR MANUAL
 // ═══════════════════════════════════════════════════════════════════════
+function guardarManual() {
+  autoSave();
+  toast('💾 Datos guardados — semana ' + document.getElementById('meta-sem').value + '/' + document.getElementById('meta-ano').value);
+}
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
   if(!line) return;
