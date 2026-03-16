@@ -743,22 +743,34 @@ async function init() {
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
 async function loadCuadrante() {
-  // Leer el cuadrante publicado desde localStorage
-  // El cuadrante HTML guarda con la clave 'ubesol_publicado' al pulsar Publicar
   try {
     const saved = localStorage.getItem('ubesol_publicado');
     if (saved) {
-      cuadrante = JSON.parse(saved);
+      const data = JSON.parse(saved);
+      cuadrante = data;
+      // Guardar en histórico si no existe ya
+      if (data.semana && data.ano) {
+        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+        if (!localStorage.getItem(hKey)) {
+          localStorage.setItem(hKey, saved);
+        }
+      }
       if (currentUser) updateHomeInfo();
-      return;
     }
   } catch(e) {}
 
-  // Fallback: intentar leer desde GitHub Pages
+  // Fallback: GitHub Pages
   try {
     const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
-    cuadrante = await r.json();
+    const data = await r.json();
+    cuadrante = data;
+    if (data.semana && data.ano) {
+      const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+      if (!localStorage.getItem(hKey)) {
+        localStorage.setItem(hKey, JSON.stringify(data));
+      }
+    }
     if (currentUser) updateHomeInfo();
   } catch(e) {}
 }
