@@ -947,7 +947,7 @@ function showTurnos() {
   const actKey = anoActual * 100 + semActual;
   historico = historico.filter(d => {
     const k = parseInt(d.ano) * 100 + parseInt(d.semana);
-    return k >= actKey - 500 && k <= actKey + 400;
+    return k >= actKey; // semana actual y futuras
   }).slice(0, 10);
 
   const c = document.getElementById('turnos-content');
@@ -1064,7 +1064,7 @@ function getHistorico() {
   historico.sort((a, b) => {
     const ka = parseInt(a.ano)*100 + parseInt(a.semana);
     const kb = parseInt(b.ano)*100 + parseInt(b.semana);
-    return kb - ka;
+    return ka - kb; // ascendente: actual primero, futuras después
   });
   return historico;
 }
