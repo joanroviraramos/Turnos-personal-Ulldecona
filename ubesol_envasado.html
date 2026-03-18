@@ -1164,27 +1164,35 @@ function buildExpandableRow(worker, wi, puesto, arr) {
 //  GUARDAR MANUAL
 // ═══════════════════════════════════════════════════════════════════════
 function guardarManual() {
+  // 1. Guardar la semana activa
   autoSaveToKey(weekKey());
+
+  // 2. Publicar TODAS las semanas con datos al histórico
   let count = 0;
   try {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith('ubesol_') && !k.startsWith('ubesol_historico_') && !k.startsWith('ubesol_publicado') && !k.startsWith('ubesol_app_')) keys.push(k);
+      if (k && k.startsWith('ubesol_') && !k.startsWith('ubesol_historico_') && k !== 'ubesol_publicado') {
+        keys.push(k);
+      }
     }
     keys.forEach(k => {
       const raw = localStorage.getItem(k);
       if (!raw) return;
       try {
         const d = JSON.parse(raw);
-        if (!d || !d._version || !d.semana || !d.ano) return;
-        const dataDk = d.dept ? normDept(d.dept) : deptKey();
-        localStorage.setItem('ubesol_historico_' + dataDk + '_' + d.ano + '_s' + String(d.semana).padStart(2,'0'), raw);
+        if (!d || !d._version) return;
+        const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        localStorage.setItem(hk, raw);
         count++;
       } catch(e) {}
     });
-  } catch(e) { console.error('guardarManual error:', e); }
-  toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' de ' + currentTab + ' guardada' + (count !== 1 ? 's' : '') + ' y publicadas');
+  } catch(e) {
+    console.error('guardarManual error:', e);
+  }
+
+  toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' guardada' + (count !== 1 ? 's' : '') + ' y publicadas');
 }
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
@@ -1562,11 +1570,8 @@ function publicar() {
   try {
     const json = JSON.stringify(payload, null, 2);
 
-    // Guardar como publicado del dept
-    localStorage.setItem('ubesol_publicado_' + deptKey(), json);
-
-    // Guardar en histórico con clave por dept + semana
-    const historicoKey = 'ubesol_historico_' + deptKey() + '_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
+    // Guardar en histórico (con dept en el JSON para que la app filtre bien)
+    const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
     localStorage.setItem(historicoKey, json);
 
     toast(duplicados.length > 0
@@ -1873,13 +1878,11 @@ function generarProximasSemanas() {
     let ano = anoBase;
     if (sem > 52) { sem = sem - 52; ano++; }
 
-    const dk2 = deptKey();
-    const key = 'ubesol_' + dk2 + '_' + ano + '_s' + String(sem).padStart(2,'0');
+    const key = 'ubesol_' + ano + '_s' + String(sem).padStart(2,'0');
 
     const newPayload = JSON.parse(JSON.stringify(prevPayload));
     newPayload.semana = String(sem);
     newPayload.ano    = String(ano);
-    newPayload.dept   = currentTab;
 
     const { monday, sunday } = getWeekDates(ano, sem);
     newPayload.fecha_inicio = fmtISO(monday);
@@ -1888,18 +1891,17 @@ function generarProximasSemanas() {
     rotarPayload1Paso(newPayload);
 
     localStorage.setItem(key, JSON.stringify(newPayload));
-    const hk = 'ubesol_historico_' + dk2 + '_' + ano + '_s' + String(sem).padStart(2,'0');
+    // Publicar esta semana al histórico inmediatamente
+    const hk = 'ubesol_historico_' + ano + '_s' + String(sem).padStart(2,'0');
     localStorage.setItem(hk, JSON.stringify(newPayload));
     prevPayload = newPayload;
     generadas++;
   }
 
   // Publicar también la semana base
-  const dk2 = deptKey();
-  const baseKey = 'ubesol_' + dk2 + '_' + anoBase + '_s' + String(semBase).padStart(2,'0');
-  autoSaveToKey(baseKey);
-  const hkBase = 'ubesol_historico_' + dk2 + '_' + anoBase + '_s' + String(semBase).padStart(2,'0');
-  localStorage.setItem(hkBase, localStorage.getItem(baseKey));
+  autoSaveToKey('ubesol_' + anoBase + '_s' + String(semBase).padStart(2,'0'));
+  const hkBase = 'ubesol_historico_' + anoBase + '_s' + String(semBase).padStart(2,'0');
+  localStorage.setItem(hkBase, localStorage.getItem('ubesol_' + anoBase + '_s' + String(semBase).padStart(2,'0')));
 
   toast(`✓ ${generadas} semanas generadas y publicadas a partir de la semana ${semBase}`);
 
@@ -1926,22 +1928,16 @@ function clearStorage() {
   const semActual = Math.round((thu - startW1) / 604800000) + 1;
   const claveActual = anoActual * 100 + semActual;
 
-  // Recoger semanas del dept — buscamos tanto en claves principales como en histórico
-  const dk = deptKey();
-  const prefixes = ['ubesol_' + dk + '_', 'ubesol_historico_' + dk + '_'];
-  const seenSemanas = new Map();
+  // Recoger todas las semanas guardadas
   const semanas = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (!k || !prefixes.some(p => k.startsWith(p))) continue;
+    if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
     try {
       const d = JSON.parse(localStorage.getItem(k));
-      if (!d || !d._version || !d.semana || !d.ano) continue;
+      if (!d || !d._version) continue;
       const clave = parseInt(d.ano) * 100 + parseInt(d.semana);
-      if (clave < claveActual) continue;
-      const mapKey = d.ano + '_' + String(d.semana).padStart(2,'0');
-      if (seenSemanas.has(mapKey)) continue;
-      seenSemanas.set(mapKey, true);
+      if (clave < claveActual) continue; // no mostrar semanas pasadas
       const { monday, sunday } = getWeekDates(parseInt(d.ano), parseInt(d.semana));
       semanas.push({ key: k, semana: d.semana, ano: d.ano,
         label: 'S' + String(d.semana).padStart(2,'0') + ' / ' + d.ano + '  ·  ' + fmtDate(monday) + ' – ' + fmtDate(sunday) });
@@ -2021,11 +2017,8 @@ function clearStorage() {
     const savedKey = weekKey();
     sel.forEach(k => {
       localStorage.removeItem(k);
-      // Borrar la versión complementaria (principal↔histórico)
-      const matchHist = k.match(/^ubesol_historico_([a-z]+)_(\d+)_s(\d+)$/);
-      const matchMain = k.match(/^ubesol_([a-z]+)_(\d+)_s(\d+)$/);
-      if (matchHist) localStorage.removeItem('ubesol_' + matchHist[1] + '_' + matchHist[2] + '_s' + matchHist[3]);
-      if (matchMain) localStorage.removeItem('ubesol_historico_' + matchMain[1] + '_' + matchMain[2] + '_s' + matchMain[3]);
+      const match = k.match(/ubesol_(\d+)_s(\d+)/);
+      if (match) localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
     });
 
     cerrar();
@@ -2390,23 +2383,11 @@ function renderCurrent() {
   }
 }
 
-// ── LOCALSTORAGE — guarda por dept + semana ──────────────────────────
-function deptKey() {
-  return normDept(currentTab);
-}
-
-function normDept(dept) {
-  return (dept || '').toLowerCase()
-    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
-    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
-    .replace(/fís-quím/g,'fq').replace(/fis-quim/g,'fq')
-    .replace(/\s+/g,'');
-}
-
+// ── LOCALSTORAGE — guarda por semana ──────────────────────────────────
 function weekKey() {
   const ano = document.getElementById('meta-ano').value || '2026';
   const sem = String(document.getElementById('meta-sem').value || '1').padStart(2,'0');
-  return 'ubesol_' + deptKey() + '_' + ano + '_s' + sem;
+  return 'ubesol_' + ano + '_s' + sem;
 }
 
 function buildPayload() {
@@ -2414,9 +2395,13 @@ function buildPayload() {
   const sem = document.getElementById('meta-sem').value || '1';
   const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
   const base = {
-    _version: 1, semana: sem, ano: ano, dept: currentTab,
-    fecha_inicio: fmtISO(monday), fecha_fin: fmtISO(sunday),
-    responsable: (document.getElementById('responsable') || {value:''}).value,
+    _version: 1,
+    semana:       sem,
+    ano:          ano,
+    dept:         currentTab,
+    fecha_inicio: fmtISO(monday),
+    fecha_fin:    fmtISO(sunday),
+    responsable:  (document.getElementById('responsable') || {value:''}).value,
   };
   const tab = currentTab;
   if (tab === 'Envasado')        return { ...base, envasado:       { specialWorkers, lines, bajas, vacaciones } };
@@ -2448,42 +2433,41 @@ function autoSave() {
   autoPublicarTodasLasSemanas();
 }
 
-// Publica en el histórico todas las semanas del dept activo
+// Publica silenciosamente en el histórico todas las semanas que tengan datos
 function autoPublicarTodasLasSemanas() {
-  const dk = deptKey();
-  const prefix = 'ubesol_' + dk + '_';
-  const histPrefix = 'ubesol_historico_' + dk + '_';
   try {
+    // Construir set de semanas activas en localStorage
     const activas = new Set();
-    // Recoger todas las claves que empiezan por ubesol_ y NO son historico
     const keysToProcess = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k.startsWith('ubesol_publicado') || k.startsWith('ubesol_app_')) continue;
+      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
       keysToProcess.push(k);
     }
+
+    // Publicar cada semana activa al histórico
     keysToProcess.forEach(k => {
       const raw = localStorage.getItem(k);
       if (!raw) return;
       try {
         const d = JSON.parse(raw);
-        if (!d || !d._version || !d.semana || !d.ano) return;
-        // Leer el dept del dato para construir la clave del histórico correctamente
-        const dataDk = d.dept ? normDept(d.dept) : dk;
-        const hk = 'ubesol_historico_' + dataDk + '_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        if (!d || !d._version) return;
+        const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
         localStorage.setItem(hk, raw);
         activas.add(hk);
       } catch(e) {}
     });
-    // Limpiar del histórico solo las del dept activo que ya no tienen datos
+
+    // Eliminar del histórico las semanas que ya no existen en localStorage
     const historicoKeys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(histPrefix)) historicoKeys.push(k);
+      if (k && k.startsWith('ubesol_historico_')) historicoKeys.push(k);
     }
     historicoKeys.forEach(k => {
       if (!activas.has(k)) localStorage.removeItem(k);
     });
+
   } catch(e) {
     console.error('autoPublicar error:', e);
   }
@@ -2491,8 +2475,7 @@ function autoPublicarTodasLasSemanas() {
 
 function applyPayload(d) {
   if (!d || !d._version) return false;
-  // NO sobreescribir el selector de semana — ya lo fija el INIT con la semana actual
-  // Solo restaurar responsable si existe
+  // NO sobreescribir selector de semana — el INIT ya lo fija con la semana actual
   if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
   updateWeekFromSelector();
 
@@ -2518,10 +2501,7 @@ function loadWeekFromStorage(key) {
   initCalidadFQ(); initCalidadMicro(); initCalidad();
   initElaboracion(); initAlmacen(); initMantenimiento();
   try {
-    const mainKey = key || weekKey();
-    // Buscar primero en clave principal, luego en histórico
-    const histKey = mainKey.replace('ubesol_' + deptKey() + '_', 'ubesol_historico_' + deptKey() + '_');
-    const saved = localStorage.getItem(mainKey) || localStorage.getItem(histKey);
+    const saved = localStorage.getItem(key || weekKey());
     if (saved) {
       const d = JSON.parse(saved);
       if (applyPayload(d)) {
@@ -2550,6 +2530,15 @@ setInterval(autoSave, 30000);
 document.addEventListener('input', autoSave);
 document.addEventListener('change', autoSave);
 
+function publicarTodoAhora() {
+  autoSaveToKey(weekKey());
+  autoPublicarTodasLasSemanas();
+}
+window.addEventListener('beforeunload', publicarTodoAhora);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') publicarTodoAhora();
+});
+
 // Al cerrar, cambiar de pestaña o minimizar: guardar y publicar todo
 function publicarTodoAhora() {
   autoSaveToKey(weekKey());
@@ -2570,29 +2559,29 @@ function toast(msg) {
 
 // ── INIT ───────────────────────────────────────────────────────────────
 (function() {
-  // Mapa URL dept → nombre de tab
   const DEPT_MAP = {
     'envasado':'Envasado','elaboracion':'Elaboración','almacen':'Almacén',
     'mantenimiento':'Mantenimiento','calidadlineas':'Calidad Líneas',
     'calidadfq':'Calidad FQ','calidadmicro':'Calidad Micro',
     'calidadmat':'Calidad Mat','mejoracontinua':'Mejora Continua','soplado':'Soplado',
   };
-
   const params = new URLSearchParams(window.location.search);
-  const deptParam = (params.get('dept') || 'envasado').toLowerCase().replace(/\s+/g,'');
+  const deptParam = (params.get('dept') || 'envasado').toLowerCase()
+    .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
+    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
   const deptName = DEPT_MAP[deptParam] || 'Envasado';
 
-  // Establecer tab activo ANTES de cualquier render
+  // Fijar currentTab ANTES de cualquier render
   currentTab = deptName;
 
-  // Ocultar todas las tabs excepto la del dept activo
+  // Ocultar todas las tabs excepto la del dept
   document.querySelectorAll('.tab').forEach(btn => {
     const tabId = btn.id.replace('tab-','');
     if (tabId === deptName) { btn.classList.add('active'); btn.style.display = ''; }
     else { btn.style.display = 'none'; }
   });
 
-  // Actualizar breadcrumb y título
+  // Breadcrumb y título
   const bc = document.getElementById('dept-breadcrumb');
   if (bc) bc.textContent = deptName.toUpperCase();
   document.getElementById('dept-title').textContent = deptName;
@@ -2626,45 +2615,7 @@ initAlmacen();
 initMantenimiento();
 
 // Load workers CSV then restore week data
-// Primero migrar claves antiguas (ubesol_YYYY_sWW) al nuevo formato (ubesol_DEPT_YYYY_sWW)
-function migrarClavesAntiguas() {
-  const keysToMigrate = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k && /^ubesol_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
-    if (k && /^ubesol_historico_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
-  }
-  if (!keysToMigrate.length) return;
-
-  keysToMigrate.forEach(k => {
-    const raw = localStorage.getItem(k);
-    if (!raw) return;
-    try {
-      const d = JSON.parse(raw);
-      if (!d || !d._version || !d.semana || !d.ano) return;
-      const sem = String(d.semana).padStart(2,'0');
-      if (d.dept) {
-        const dk = normDept(d.dept);
-        const mainKey = 'ubesol_' + dk + '_' + d.ano + '_s' + sem;
-        const histKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
-        if (!localStorage.getItem(mainKey)) localStorage.setItem(mainKey, raw);
-        if (!localStorage.getItem(histKey)) localStorage.setItem(histKey, raw);
-      } else {
-        // Sin dept: usar el dept activo actual para el cuadrante
-        const dk = deptKey();
-        const mainKey = 'ubesol_' + dk + '_' + d.ano + '_s' + sem;
-        const histKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
-        if (!localStorage.getItem(mainKey)) localStorage.setItem(mainKey, raw);
-        if (!localStorage.getItem(histKey)) localStorage.setItem(histKey, raw);
-      }
-      localStorage.removeItem(k);
-    } catch(e) {}
-  });
-  console.log('Migradas ' + keysToMigrate.length + ' claves al nuevo formato');
-}
-
 loadWorkers().finally(() => {
-  migrarClavesAntiguas();
   loadWeekFromStorage();
 });
 </script>

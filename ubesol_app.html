@@ -760,29 +760,28 @@ async function init() {
 }
 
 function migrarHistoricoAntiguo() {
-  const keysToMigrate = [];
+  // Migrar claves antiguas ubesol_historico_YYYY_sWW → ubesol_historico_YYYY_sWW
+  // (misma clave, solo eliminamos las que ya no son necesarias)
+  // El nuevo sistema guarda dept en el JSON, no en la clave
+  // No hay nada que migrar en el nuevo formato — solo limpiar claves con dept en la clave
+  const keysToClean = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && /^ubesol_historico_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
-    if (k && /^ubesol_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
+    // Limpiar claves con dept embebido en la clave (formato intermedio fallido)
+    if (k && /^ubesol_historico_[a-z]+_\d{4}_s\d{2}$/.test(k)) {
+      keysToClean.push(k);
+    }
   }
-  keysToMigrate.forEach(k => {
+  keysToClean.forEach(k => {
     const raw = localStorage.getItem(k);
     if (!raw) return;
     try {
       const d = JSON.parse(raw);
       if (!d || !d._version || !d.semana || !d.ano) return;
+      // Mover al formato correcto (sin dept en la clave)
       const sem = String(d.semana).padStart(2,'0');
-      if (d.dept) {
-        // Dato con dept: migrar a la clave correcta
-        const dk = deptKeyFromDept(d.dept);
-        const newHistKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
-        if (!localStorage.getItem(newHistKey)) localStorage.setItem(newHistKey, raw);
-      } else {
-        // Dato sin dept: guardar SIN dept en clave genérica para que getHistorico lo encuentre
-        const newHistKey = 'ubesol_historico_nodept_' + d.ano + '_s' + sem;
-        if (!localStorage.getItem(newHistKey)) localStorage.setItem(newHistKey, raw);
-      }
+      const newKey = 'ubesol_historico_' + d.ano + '_s' + sem;
+      if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, raw);
       localStorage.removeItem(k);
     } catch(e) {}
   });
@@ -1041,40 +1040,22 @@ function deptKeyFromDept(dept) {
 }
 
 function getHistorico() {
-  // Recoger todos los históricos y quedarnos con los que tienen datos
-  // para este trabajador (buscamos su nombre en los datos)
   const userDept = currentUser ? deptKeyFromDept(currentUser.departamento) : null;
-
-  const seen = new Map(); // clave ano+semana → data
+  const seen = new Map();
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith('ubesol_historico_')) continue;
-    // Incluir claves nodept (datos migrados sin dept conocido)
     try {
       const data = JSON.parse(localStorage.getItem(key));
       if (!data || !data.semana || !data.ano) continue;
-
-      // Filtrar por dept si el dato tiene dept definido
-      if (data.dept && userDept) {
-        const dataDept = deptKeyFromDept(data.dept);
-        if (dataDept !== userDept) continue;
-      }
-
+      // Filtrar por dept del JSON (no por la clave)
+      if (data.dept && userDept && deptKeyFromDept(data.dept) !== userDept) continue;
       const k = String(data.ano) + '_' + String(data.semana).padStart(2,'0');
-      // Preferir datos que tienen dept (formato nuevo) sobre los sin dept
-      if (!seen.has(k)) {
-        seen.set(k, data);
-      } else if (data.dept && !seen.get(k).dept) {
-        seen.set(k, data); // reemplazar dato viejo sin dept por nuevo con dept
-      }
+      if (!seen.has(k) || (data.dept && !seen.get(k).dept)) seen.set(k, data);
     } catch(e) {}
   }
   const historico = Array.from(seen.values());
-  historico.sort((a, b) => {
-    const ka = parseInt(a.ano)*100 + parseInt(a.semana);
-    const kb = parseInt(b.ano)*100 + parseInt(b.semana);
-    return ka - kb;
-  });
+  historico.sort((a,b) => (parseInt(a.ano)*100+parseInt(a.semana)) - (parseInt(b.ano)*100+parseInt(b.semana)));
   return historico;
 }
 
