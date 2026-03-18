@@ -2642,13 +2642,21 @@ function migrarClavesAntiguas() {
     try {
       const d = JSON.parse(raw);
       if (!d || !d._version || !d.semana || !d.ano) return;
-      const dk = d.dept ? normDept(d.dept) : deptKey();
       const sem = String(d.semana).padStart(2,'0');
-      // Crear SIEMPRE ambas claves: principal e histórico
-      const mainKey = 'ubesol_' + dk + '_' + d.ano + '_s' + sem;
-      const histKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
-      if (!localStorage.getItem(mainKey)) localStorage.setItem(mainKey, raw);
-      if (!localStorage.getItem(histKey)) localStorage.setItem(histKey, raw);
+      if (d.dept) {
+        const dk = normDept(d.dept);
+        const mainKey = 'ubesol_' + dk + '_' + d.ano + '_s' + sem;
+        const histKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
+        if (!localStorage.getItem(mainKey)) localStorage.setItem(mainKey, raw);
+        if (!localStorage.getItem(histKey)) localStorage.setItem(histKey, raw);
+      } else {
+        // Sin dept: usar el dept activo actual para el cuadrante
+        const dk = deptKey();
+        const mainKey = 'ubesol_' + dk + '_' + d.ano + '_s' + sem;
+        const histKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
+        if (!localStorage.getItem(mainKey)) localStorage.setItem(mainKey, raw);
+        if (!localStorage.getItem(histKey)) localStorage.setItem(histKey, raw);
+      }
       localStorage.removeItem(k);
     } catch(e) {}
   });
