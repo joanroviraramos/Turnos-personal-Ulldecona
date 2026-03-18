@@ -2008,7 +2008,11 @@ function clearStorage() {
 
     const estaActiva = sel.includes(weekKey());
 
+    // Bloquear autoSave para que no reescriba lo que vamos a borrar
+    _autoSaveBlocked = true;
+
     // 1. Borrar del localStorage principal Y del histórico
+    const savedKey = weekKey();
     sel.forEach(k => {
       localStorage.removeItem(k);
       const match = k.match(/ubesol_(\d+)_s(\d+)/);
@@ -2017,9 +2021,11 @@ function clearStorage() {
 
     cerrar();
 
-    // 2. Guardar semana activa y sincronizar todo lo que queda
-    autoSaveToKey(weekKey());
+    // 2. Solo guardar la semana activa si NO estaba entre las borradas
+    if (!estaActiva) autoSaveToKey(savedKey);
     autoPublicarTodasLasSemanas();
+
+    _autoSaveBlocked = false;
 
     toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · restantes guardadas y publicadas');
     if (estaActiva) loadWeekFromStorage(weekKey());
@@ -2414,7 +2420,10 @@ function autoSaveToKey(key) {
   }
 }
 
+let _autoSaveBlocked = false;
+
 function autoSave() {
+  if (_autoSaveBlocked) return;
   autoSaveToKey(weekKey());
   autoPublicarTodasLasSemanas();
 }
