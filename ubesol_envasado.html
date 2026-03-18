@@ -1889,9 +1889,17 @@ function generarProximasSemanas() {
     rotarPayload1Paso(newPayload);
 
     localStorage.setItem(key, JSON.stringify(newPayload));
+    // Publicar esta semana al histórico inmediatamente
+    const hk = 'ubesol_historico_' + ano + '_s' + String(sem).padStart(2,'0');
+    localStorage.setItem(hk, JSON.stringify(newPayload));
     prevPayload = newPayload;
     generadas++;
   }
+
+  // Publicar también la semana base
+  autoSaveToKey('ubesol_' + anoBase + '_s' + String(semBase).padStart(2,'0'));
+  const hkBase = 'ubesol_historico_' + anoBase + '_s' + String(semBase).padStart(2,'0');
+  localStorage.setItem(hkBase, localStorage.getItem('ubesol_' + anoBase + '_s' + String(semBase).padStart(2,'0')));
 
   toast(`✓ ${generadas} semanas generadas y publicadas a partir de la semana ${semBase}`);
 
@@ -1904,9 +1912,6 @@ function generarProximasSemanas() {
     document.getElementById('meta-ano').value = anoSig;
     loadWeekFromStorage(weekKey());
   }
-
-  // Publicar DESPUÉS del salto, así la semana 13 ya está en localStorage cuando se publica
-  autoPublicarTodasLasSemanas();
 }
 
 function clearStorage() {
