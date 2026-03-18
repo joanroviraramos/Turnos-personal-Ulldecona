@@ -754,9 +754,12 @@ async function loadCuadrante() {
     if (saved) {
       const data = JSON.parse(saved);
       cuadrante = data;
+      // Guardar en histórico si no existe ya
       if (data.semana && data.ano) {
         const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
-        localStorage.setItem(hKey, saved); // siempre actualizar
+        if (!localStorage.getItem(hKey)) {
+          localStorage.setItem(hKey, saved);
+        }
       }
       if (currentUser) updateHomeInfo();
     }
@@ -770,7 +773,9 @@ async function loadCuadrante() {
     cuadrante = data;
     if (data.semana && data.ano) {
       const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
-      localStorage.setItem(hKey, JSON.stringify(data)); // siempre actualizar
+      if (!localStorage.getItem(hKey)) {
+        localStorage.setItem(hKey, JSON.stringify(data));
+      }
     }
     if (currentUser) updateHomeInfo();
   } catch(e) {}
@@ -892,15 +897,13 @@ function showTurnos() {
   turnosTab = 'lista';
   const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
 
-  // Calcular semana actual (ISO)
+  // Calcular semana actual
   const now = new Date();
-  const thu = new Date(now);
-  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
-  const anoActual = thu.getFullYear();
-  const jan4 = new Date(anoActual, 0, 4);
+  const jan4 = new Date(now.getFullYear(), 0, 4);
   const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
-  const semActual = Math.round((thu - startW1) / 604800000) + 1;
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const semActual = Math.ceil((now - startW1) / 604800000);
+  const anoActual = now.getFullYear();
 
   // Recoger histórico, máximo 10 semanas
   let historico = getHistorico();
