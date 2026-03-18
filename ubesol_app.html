@@ -485,17 +485,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
-
-.no-turno {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 32px 20px;
-  text-align: center;
-  color: var(--text-3);
-  font-size: 14px;
-  line-height: 1.6;
-}
 </style>
 </head>
 <body>
@@ -715,18 +704,18 @@ const WORKERS_EMBEDDED = [
   {nombre:"PAULA REYES CANO",dni:"44455566L",departamento:"Calidad Líneas"},
   {nombre:"HUGO CASTILLO FUENTES",dni:"55566677M",departamento:"Calidad Líneas"},
   {nombre:"SARA BLANCO MOLINA",dni:"66677788N",departamento:"Calidad Líneas"},
-  {nombre:"SAMUEL VARGAS REYES",dni:"77788899O",departamento:"Calidad FQ"},
-  {nombre:"LORENA HERRERA CASTILLO",dni:"88899900P",departamento:"Calidad FQ"},
-  {nombre:"RUBEN MEDINA BLANCO",dni:"99900011Q",departamento:"Calidad FQ"},
-  {nombre:"CLAUDIA ORTEGA VARGAS",dni:"00011122R",departamento:"Calidad FQ"},
-  {nombre:"AARON DELGADO HERRERA",dni:"11122244S",departamento:"Calidad Micro"},
-  {nombre:"MIRIAM IBAÑEZ MEDINA",dni:"22233355T",departamento:"Calidad Micro"},
-  {nombre:"IVAN MORA ORTEGA",dni:"33344466U",departamento:"Calidad Micro"},
-  {nombre:"DIANA SANTOS DELGADO",dni:"44455577V",departamento:"Calidad Micro"},
-  {nombre:"ALEX LORENZO IBAÑEZ",dni:"55566688W",departamento:"Calidad Mat"},
-  {nombre:"EVA FLORES MORA",dni:"66677799X",departamento:"Calidad Mat"},
-  {nombre:"DANIEL VEGA SANTOS",dni:"77788800Y",departamento:"Calidad Mat"},
-  {nombre:"NEREA BRAVO LORENZO",dni:"88899911Z",departamento:"Calidad Mat"},
+  {nombre:"SAMUEL VARGAS REYES",dni:"77788899O",departamento:"Calidad Fís-Quím"},
+  {nombre:"LORENA HERRERA CASTILLO",dni:"88899900P",departamento:"Calidad Fís-Quím"},
+  {nombre:"RUBEN MEDINA BLANCO",dni:"99900011Q",departamento:"Calidad Fís-Quím"},
+  {nombre:"CLAUDIA ORTEGA VARGAS",dni:"00011122R",departamento:"Calidad Fís-Quím"},
+  {nombre:"AARON DELGADO HERRERA",dni:"11122244S",departamento:"Calidad Microbiología"},
+  {nombre:"MIRIAM IBAÑEZ MEDINA",dni:"22233355T",departamento:"Calidad Microbiología"},
+  {nombre:"IVAN MORA ORTEGA",dni:"33344466U",departamento:"Calidad Microbiología"},
+  {nombre:"DIANA SANTOS DELGADO",dni:"44455577V",departamento:"Calidad Microbiología"},
+  {nombre:"ALEX LORENZO IBAÑEZ",dni:"55566688W",departamento:"Calidad Materiales"},
+  {nombre:"EVA FLORES MORA",dni:"66677799X",departamento:"Calidad Materiales"},
+  {nombre:"DANIEL VEGA SANTOS",dni:"77788800Y",departamento:"Calidad Materiales"},
+  {nombre:"NEREA BRAVO LORENZO",dni:"88899911Z",departamento:"Calidad Materiales"},
   {nombre:"RODRIGO NIETO FLORES",dni:"99900022A",departamento:"Mejora Continua"},
   {nombre:"IRENE MARIN VEGA",dni:"00011133B",departamento:"Mejora Continua"},
   {nombre:"GONZALO GIMENEZ BRAVO",dni:"11122244C",departamento:"Mejora Continua"},
@@ -748,8 +737,6 @@ let workersLoaded = true;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
-  // Migrar claves antiguas del histórico al nuevo formato con dept
-  migrarHistoricoAntiguo();
   // Restaurar sesión si existe
   try {
     const sess = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
@@ -759,44 +746,37 @@ async function init() {
   loadCuadrante();
 }
 
-function migrarHistoricoAntiguo() {
-  // Migrar claves antiguas ubesol_historico_YYYY_sWW → ubesol_historico_YYYY_sWW
-  // (misma clave, solo eliminamos las que ya no son necesarias)
-  // El nuevo sistema guarda dept en el JSON, no en la clave
-  // No hay nada que migrar en el nuevo formato — solo limpiar claves con dept en la clave
-  const keysToClean = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    // Limpiar claves con dept embebido en la clave (formato intermedio fallido)
-    if (k && /^ubesol_historico_[a-z]+_\d{4}_s\d{2}$/.test(k)) {
-      keysToClean.push(k);
-    }
-  }
-  keysToClean.forEach(k => {
-    const raw = localStorage.getItem(k);
-    if (!raw) return;
-    try {
-      const d = JSON.parse(raw);
-      if (!d || !d._version || !d.semana || !d.ano) return;
-      // Mover al formato correcto (sin dept en la clave)
-      const sem = String(d.semana).padStart(2,'0');
-      const newKey = 'ubesol_historico_' + d.ano + '_s' + sem;
-      if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, raw);
-      localStorage.removeItem(k);
-    } catch(e) {}
-  });
-}
-
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
 async function loadCuadrante() {
-  // La app lee el historico directamente — no necesita ubesol_publicado
-  // Solo usa el fallback de GitHub como ultimo recurso
+  try {
+    const saved = localStorage.getItem('ubesol_publicado');
+    if (saved) {
+      const data = JSON.parse(saved);
+      cuadrante = data;
+      // Guardar en histórico si no existe ya
+      if (data.semana && data.ano) {
+        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+        if (!localStorage.getItem(hKey)) {
+          localStorage.setItem(hKey, saved);
+        }
+      }
+      if (currentUser) updateHomeInfo();
+    }
+  } catch(e) {}
+
+  // Fallback: GitHub Pages
   try {
     const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
     const data = await r.json();
     cuadrante = data;
+    if (data.semana && data.ano) {
+      const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+      if (!localStorage.getItem(hKey)) {
+        localStorage.setItem(hKey, JSON.stringify(data));
+      }
+    }
     if (currentUser) updateHomeInfo();
   } catch(e) {}
 }
@@ -917,14 +897,14 @@ function showTurnos() {
   turnosTab = 'lista';
   const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
 
-  // Calcular semana actual (ISO)
+  // Calcular semana actual ISO
   const now = new Date();
   const thu = new Date(now);
-  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
+  thu.setDate(now.getDate() - ((now.getDay()+6)%7) + 3);
   const anoActual = thu.getFullYear();
   const jan4 = new Date(anoActual, 0, 4);
   const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
   const semActual = Math.round((thu - startW1) / 604800000) + 1;
 
   // Recoger histórico, máximo 10 semanas
@@ -1032,30 +1012,25 @@ function switchTurnosTab(tab) {
   }
 }
 
-function deptKeyFromDept(dept) {
-  return (dept || '').toLowerCase()
-    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
-    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
-    .replace(/\s+/g,'');
-}
-
 function getHistorico() {
-  const userDept = currentUser ? deptKeyFromDept(currentUser.departamento) : null;
-  const seen = new Map();
+  const historico = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith('ubesol_historico_')) continue;
     try {
       const data = JSON.parse(localStorage.getItem(key));
-      if (!data || !data.semana || !data.ano) continue;
-      // Filtrar por dept del JSON (no por la clave)
-      if (data.dept && userDept && deptKeyFromDept(data.dept) !== userDept) continue;
-      const k = String(data.ano) + '_' + String(data.semana).padStart(2,'0');
-      if (!seen.has(k) || (data.dept && !seen.get(k).dept)) seen.set(k, data);
+      if (data) historico.push(data);
     } catch(e) {}
   }
-  const historico = Array.from(seen.values());
-  historico.sort((a,b) => (parseInt(a.ano)*100+parseInt(a.semana)) - (parseInt(b.ano)*100+parseInt(b.semana)));
+  if (cuadrante) {
+    const yaEsta = historico.some(h => h.semana == cuadrante.semana && h.ano == cuadrante.ano);
+    if (!yaEsta) historico.push(cuadrante);
+  }
+  historico.sort((a, b) => {
+    const ka = parseInt(a.ano)*100 + parseInt(a.semana);
+    const kb = parseInt(b.ano)*100 + parseInt(b.semana);
+    return ka - kb; // ascendente: actual primero, futuras después
+  });
   return historico;
 }
 
@@ -1179,23 +1154,6 @@ function findTurnoWorkerInData(nombre, data) {
   const TURNOS = ['M','T','N','P'];
   const safeArr = a => Array.isArray(a) ? a : [];
 
-  // Mapa pid → etiqueta legible (igual que PLABELS en el cuadrante)
-  const PLABELS = {
-    elab_sup:'Supervisor/A', elab_elab:'Elaborador/A', elab_pes:'Pesadas',
-    elab_hig:'Higiene', elab_desc:'Descarga Cisternas',
-    mto_coord:'Coordinador', mto_back:'Backoffice', mto_sup:'Supervisor/A', mto_tec:'Técnico Mto.',
-    alm_sup:'Supervisor/A', alm_desc:'Descarga/Ubicar', alm_sopl:'Soplado/Ubicar',
-    alm_ab3:'Abast. Nave 3', alm_ab1:'Abast. Nave 1', alm_res:'Residuos/Destruc.',
-    alm_ubi:'Ubicar', alm_mmpp:'MMPP', alm_sala:'Sala Blanca', alm_cargas:'Cargas',
-    alm_silo:'Silo', alm_destr:'Destrucciones',
-    cal_nave1:'Nave 1-MK1', cal_nave3:'Nave 3-Nave 4', cal_tec:'Técnico',
-    calfq_tec:'Técnico Lab.', calmicro_tec:'Técnico Micro.',
-    calmat_tec:'Técnico Mat.', mc_tec:'Técnico Procesos',
-    sopl_sup:'Supervisor/A', sopl_s12:'Sopladora 1 y 2', sopl_s3:'Sopladora 3',
-    sopl_s46:'Sopladora 4 y 6', sopl_s5t:'Sopladora 5 y Trk.',
-    sopl_pal:'Paletizadores', sopl_ref:'Refuerzo Turno',
-  };
-
   const env = data.envasado;
   if (env) {
     if (env.specialWorkers) {
@@ -1229,7 +1187,7 @@ function findTurnoWorkerInData(nombre, data) {
         if (!w || !w.cells) continue;
         for (const t of TURNOS) {
           if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-            return { turno: t, puesto: PLABELS[pid] || pid };
+            return { turno: t, puesto: pid };
         }
       }
     }
