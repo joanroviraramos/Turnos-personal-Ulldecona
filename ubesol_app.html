@@ -748,6 +748,8 @@ let workersLoaded = true;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
+  // Migrar claves antiguas del histórico al nuevo formato con dept
+  migrarHistoricoAntiguo();
   // Restaurar sesión si existe
   try {
     const sess = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
@@ -755,6 +757,30 @@ async function init() {
   } catch(e) {}
   // Cargar cuadrante publicado
   loadCuadrante();
+}
+
+function migrarHistoricoAntiguo() {
+  // Migra ubesol_historico_YYYY_sWW → ubesol_historico_DEPT_YYYY_sWW
+  const keysToMigrate = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && /^ubesol_historico_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
+    // También migrar claves principales antiguas al histórico
+    if (k && /^ubesol_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
+  }
+  keysToMigrate.forEach(k => {
+    const raw = localStorage.getItem(k);
+    if (!raw) return;
+    try {
+      const d = JSON.parse(raw);
+      if (!d || !d._version || !d.semana || !d.ano) return;
+      const dk = deptKeyFromDept(d.dept || 'Envasado');
+      const sem = String(d.semana).padStart(2,'0');
+      const newKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
+      if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, raw);
+      localStorage.removeItem(k);
+    } catch(e) {}
+  });
 }
 
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }

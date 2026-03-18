@@ -2616,7 +2616,41 @@ initAlmacen();
 initMantenimiento();
 
 // Load workers CSV then restore week data
+// Primero migrar claves antiguas (ubesol_YYYY_sWW) al nuevo formato (ubesol_DEPT_YYYY_sWW)
+function migrarClavesAntiguas() {
+  const keysToMigrate = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    // Clave antigua: ubesol_2026_s12 (sin dept entre ubesol_ y el año)
+    if (k && /^ubesol_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
+    // Histórico antiguo: ubesol_historico_2026_s12
+    if (k && /^ubesol_historico_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
+  }
+  if (!keysToMigrate.length) return;
+
+  keysToMigrate.forEach(k => {
+    const raw = localStorage.getItem(k);
+    if (!raw) return;
+    try {
+      const d = JSON.parse(raw);
+      if (!d || !d._version || !d.semana || !d.ano) return;
+      const dk = d.dept ? normDept(d.dept) : deptKey();
+      const sem = String(d.semana).padStart(2,'0');
+      if (k.startsWith('ubesol_historico_')) {
+        const newKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
+        if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, raw);
+      } else {
+        const newKey = 'ubesol_' + dk + '_' + d.ano + '_s' + sem;
+        if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, raw);
+      }
+      localStorage.removeItem(k); // eliminar la clave antigua
+    } catch(e) {}
+  });
+  console.log('Migradas ' + keysToMigrate.length + ' claves al nuevo formato');
+}
+
 loadWorkers().finally(() => {
+  migrarClavesAntiguas();
   loadWeekFromStorage();
 });
 </script>
