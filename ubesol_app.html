@@ -196,27 +196,6 @@ body {
 .home-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
 
 /* semana banner */
-.semana-banner {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sb-label { font-size: 11px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-.sb-value { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
-.sb-badge {
-  background: var(--green-pale);
-  color: var(--green-dark);
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-}
-
 /* main 3 buttons */
 .main-actions { display: flex; flex-direction: column; gap: 12px; }
 
@@ -551,14 +530,6 @@ body {
   </div>
 
   <div class="home-body">
-    <div class="semana-banner">
-      <div>
-        <div class="sb-label">Próxima semana publicada</div>
-        <div class="sb-value" id="home-semana-fechas">—</div>
-      </div>
-      <div class="sb-badge" id="home-semana-num">S—</div>
-    </div>
-
     <div class="section-title">Acceso rápido</div>
 
     <div class="main-actions">
@@ -899,14 +870,7 @@ function showHome() {
 }
 
 function updateHomeInfo() {
-  if (!cuadrante) return;
-  const sem = cuadrante.semana;
-  const ano = cuadrante.ano;
-  if (sem && ano) {
-    document.getElementById('home-semana-num').textContent = 'S' + sem;
-    const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
-    document.getElementById('home-semana-fechas').textContent = fmtDate(monday) + ' — ' + fmtDate(sunday);
-  }
+  // banner de semana eliminado
 }
 
 function updateBadges() {
