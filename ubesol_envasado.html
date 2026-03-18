@@ -1893,7 +1893,11 @@ function generarProximasSemanas() {
     generadas++;
   }
 
-  toast(`✓ 10 semanas generadas a partir de la semana ${semBase}`);
+  // Guardar semana activa y publicar todas al histórico
+  autoSaveToKey(weekKey());
+  autoPublicarTodasLasSemanas();
+
+  toast(`✓ ${generadas} semanas generadas y publicadas a partir de la semana ${semBase}`);
 
   // Ir a la semana siguiente para que el usuario pueda revisarla
   if (generadas > 0) {
