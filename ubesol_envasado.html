@@ -2526,6 +2526,16 @@ setInterval(autoSave, 30000);
 document.addEventListener('input', autoSave);
 document.addEventListener('change', autoSave);
 
+// Al cerrar, cambiar de pestaña o minimizar: guardar y publicar todo
+function publicarTodoAhora() {
+  autoSaveToKey(weekKey());
+  autoPublicarTodasLasSemanas();
+}
+window.addEventListener('beforeunload', publicarTodoAhora);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') publicarTodoAhora();
+});
+
 // ── TOAST ──────────────────────────────────────────────────────────────
 function toast(msg) {
   const t = document.getElementById('toast');
