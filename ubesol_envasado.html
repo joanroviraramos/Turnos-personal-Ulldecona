@@ -527,9 +527,9 @@ td.name-cell { overflow: visible !important; }
       <span class="logo-grupo">GRUPO</span><span class="logo-ubesol">UBESOL</span>
     </div>
     <div style="margin-top:3px">
-      <a href="index.html" style="font-size:10px;color:#888;text-decoration:none;letter-spacing:.05em">&#8249; Portal</a>
+      <a href="index.html" style="font-size:10px;color:#888;text-decoration:none">&#8249; Portal</a>
       <span style="font-size:10px;color:#bbb;margin:0 4px">/</span>
-      <span id="dept-breadcrumb" style="font-size:10px;color:#6a8a3a;font-weight:600;letter-spacing:.05em"></span>
+      <span id="dept-breadcrumb" style="font-size:10px;color:#6a8a3a;font-weight:600"></span>
     </div>
   </div>
 
@@ -1570,7 +1570,10 @@ function publicar() {
   try {
     const json = JSON.stringify(payload, null, 2);
 
-    // Guardar en histórico (con dept en el JSON para que la app filtre bien)
+    // Guardar como publicado actual
+    localStorage.setItem('ubesol_publicado', json);
+
+    // Guardar en histórico con clave por semana
     const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
     localStorage.setItem(historicoKey, json);
 
@@ -2395,25 +2398,21 @@ function buildPayload() {
   const sem = document.getElementById('meta-sem').value || '1';
   const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
   const base = {
-    _version: 1,
-    semana:       sem,
-    ano:          ano,
-    dept:         currentTab,
-    fecha_inicio: fmtISO(monday),
-    fecha_fin:    fmtISO(sunday),
-    responsable:  (document.getElementById('responsable') || {value:''}).value,
+    _version: 1, semana: sem, ano: ano, dept: currentTab,
+    fecha_inicio: fmtISO(monday), fecha_fin: fmtISO(sunday),
+    responsable: (document.getElementById('responsable') || {value:''}).value,
   };
-  const tab = currentTab;
-  if (tab === 'Envasado')        return { ...base, envasado:       { specialWorkers, lines, bajas, vacaciones } };
-  if (tab === 'Elaboración')     return { ...base, elaboracion:    { workers: elabWorkers,     bajas: elabBajas,      vacaciones: elabVacaciones } };
-  if (tab === 'Almacén')         return { ...base, almacen:        { workers: almWorkers,      bajas: almBajas,       vacaciones: almVacaciones } };
-  if (tab === 'Mantenimiento')   return { ...base, mantenimiento:  { workers: mtoWorkers,      bajas: mtoBajas,       vacaciones: mtoVacaciones } };
-  if (tab === 'Calidad Líneas')  return { ...base, calidadLineas:  { workers: calWorkers,      bajas: calBajas,       vacaciones: calVacaciones } };
-  if (tab === 'Calidad FQ')      return { ...base, calidadFQ:      { workers: calfqWorkers,    bajas: calfqBajas,     vacaciones: calfqVacaciones } };
-  if (tab === 'Calidad Micro')   return { ...base, calidadMicro:   { workers: calmicroWorkers, bajas: calmicroBajas,  vacaciones: calmicroVacaciones } };
-  if (tab === 'Calidad Mat')     return { ...base, calidadMat:     { workers: calmatWorkers,   bajas: calmatBajas,    vacaciones: calmatVacaciones } };
-  if (tab === 'Mejora Continua') return { ...base, mejoraContinua: { workers: mcWorkers,       bajas: mcBajas,        vacaciones: mcVacaciones } };
-  if (tab === 'Soplado')         return { ...base, soplado:        { workers: soplWorkers,     bajas: soplBajas,      vacaciones: soplVacaciones } };
+  const t = currentTab;
+  if (t==='Envasado')        return {...base, envasado:      {specialWorkers, lines, bajas, vacaciones}};
+  if (t==='Elaboración')     return {...base, elaboracion:   {workers:elabWorkers,    bajas:elabBajas,     vacaciones:elabVacaciones}};
+  if (t==='Almacén')         return {...base, almacen:       {workers:almWorkers,     bajas:almBajas,      vacaciones:almVacaciones}};
+  if (t==='Mantenimiento')   return {...base, mantenimiento: {workers:mtoWorkers,     bajas:mtoBajas,      vacaciones:mtoVacaciones}};
+  if (t==='Calidad Líneas')  return {...base, calidadLineas: {workers:calWorkers,     bajas:calBajas,      vacaciones:calVacaciones}};
+  if (t==='Calidad FQ')      return {...base, calidadFQ:     {workers:calfqWorkers,   bajas:calfqBajas,    vacaciones:calfqVacaciones}};
+  if (t==='Calidad Micro')   return {...base, calidadMicro:  {workers:calmicroWorkers,bajas:calmicroBajas, vacaciones:calmicroVacaciones}};
+  if (t==='Calidad Mat')     return {...base, calidadMat:    {workers:calmatWorkers,  bajas:calmatBajas,   vacaciones:calmatVacaciones}};
+  if (t==='Mejora Continua') return {...base, mejoraContinua:{workers:mcWorkers,      bajas:mcBajas,       vacaciones:mcVacaciones}};
+  if (t==='Soplado')         return {...base, soplado:       {workers:soplWorkers,    bajas:soplBajas,     vacaciones:soplVacaciones}};
   return base;
 }
 
@@ -2475,7 +2474,7 @@ function autoPublicarTodasLasSemanas() {
 
 function applyPayload(d) {
   if (!d || !d._version) return false;
-  // NO sobreescribir selector de semana — el INIT ya lo fija con la semana actual
+  // NO tocar el selector de semana — el INIT ya lo calcula correctamente
   if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
   updateWeekFromSelector();
 
@@ -2530,15 +2529,6 @@ setInterval(autoSave, 30000);
 document.addEventListener('input', autoSave);
 document.addEventListener('change', autoSave);
 
-function publicarTodoAhora() {
-  autoSaveToKey(weekKey());
-  autoPublicarTodasLasSemanas();
-}
-window.addEventListener('beforeunload', publicarTodoAhora);
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'hidden') publicarTodoAhora();
-});
-
 // Al cerrar, cambiar de pestaña o minimizar: guardar y publicar todo
 function publicarTodoAhora() {
   autoSaveToKey(weekKey());
@@ -2566,35 +2556,35 @@ function toast(msg) {
     'calidadmat':'Calidad Mat','mejoracontinua':'Mejora Continua','soplado':'Soplado',
   };
   const params = new URLSearchParams(window.location.search);
-  const deptParam = (params.get('dept') || 'envasado').toLowerCase()
-    .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
-    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
-  const deptName = DEPT_MAP[deptParam] || 'Envasado';
+  const raw = (params.get('dept')||'envasado').toLowerCase()
+    .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+    .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+  const deptName = DEPT_MAP[raw] || 'Envasado';
 
-  // Fijar currentTab ANTES de cualquier render
+  // 1. Fijar currentTab ANTES de cualquier render
   currentTab = deptName;
 
-  // Ocultar todas las tabs excepto la del dept
+  // 2. Ocultar todas las tabs excepto la del dept
   document.querySelectorAll('.tab').forEach(btn => {
-    const tabId = btn.id.replace('tab-','');
-    if (tabId === deptName) { btn.classList.add('active'); btn.style.display = ''; }
-    else { btn.style.display = 'none'; }
+    const id = btn.id.replace('tab-','');
+    if (id === deptName) { btn.classList.add('active'); btn.style.display=''; }
+    else btn.style.display='none';
   });
 
-  // Breadcrumb y título
+  // 3. Breadcrumb y título
   const bc = document.getElementById('dept-breadcrumb');
   if (bc) bc.textContent = deptName.toUpperCase();
   document.getElementById('dept-title').textContent = deptName;
   document.title = 'Cuadrante ' + deptName + ' — GrupoUbesol';
 
-  // Semana actual ISO
+  // 4. Semana actual ISO (mismo cálculo de siempre)
   const now = new Date();
   const thu = new Date(now);
-  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
+  thu.setDate(now.getDate() - ((now.getDay()+6)%7) + 3);
   const ano = thu.getFullYear();
   const jan4 = new Date(ano, 0, 4);
   const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
   const wk = Math.round((thu - startW1) / 604800000) + 1;
   document.getElementById('meta-sem').value = wk;
   document.getElementById('meta-ano').value = ano;
