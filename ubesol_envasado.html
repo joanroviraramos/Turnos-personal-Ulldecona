@@ -1893,10 +1893,6 @@ function generarProximasSemanas() {
     generadas++;
   }
 
-  // Guardar semana activa y publicar todas al histórico
-  autoSaveToKey(weekKey());
-  autoPublicarTodasLasSemanas();
-
   toast(`✓ ${generadas} semanas generadas y publicadas a partir de la semana ${semBase}`);
 
   // Ir a la semana siguiente para que el usuario pueda revisarla
@@ -1908,6 +1904,9 @@ function generarProximasSemanas() {
     document.getElementById('meta-ano').value = anoSig;
     loadWeekFromStorage(weekKey());
   }
+
+  // Publicar DESPUÉS del salto, así la semana 13 ya está en localStorage cuando se publica
+  autoPublicarTodasLasSemanas();
 }
 
 function clearStorage() {
