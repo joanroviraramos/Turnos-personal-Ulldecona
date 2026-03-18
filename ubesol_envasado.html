@@ -1178,9 +1178,7 @@ function guardarManual() {
       try {
         const d = JSON.parse(raw);
         if (!d || !d._version || !d.semana || !d.ano) return;
-        const dataDk = d.dept
-          ? d.dept.toLowerCase().replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
-          : deptKey();
+        const dataDk = d.dept ? normDept(d.dept) : deptKey();
         localStorage.setItem('ubesol_historico_' + dataDk + '_' + d.ano + '_s' + String(d.semana).padStart(2,'0'), raw);
         count++;
       } catch(e) {}
@@ -2387,10 +2385,15 @@ function renderCurrent() {
 
 // ── LOCALSTORAGE — guarda por dept + semana ──────────────────────────
 function deptKey() {
-  return currentTab.toLowerCase()
-    .replace(/\s+/g,'')
+  return normDept(currentTab);
+}
+
+function normDept(dept) {
+  return (dept || '').toLowerCase()
     .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
-    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
+    .replace(/fís-quím/g,'fq').replace(/fis-quim/g,'fq')
+    .replace(/\s+/g,'');
 }
 
 function weekKey() {
@@ -2459,9 +2462,7 @@ function autoPublicarTodasLasSemanas() {
         const d = JSON.parse(raw);
         if (!d || !d._version || !d.semana || !d.ano) return;
         // Leer el dept del dato para construir la clave del histórico correctamente
-        const dataDk = d.dept
-          ? d.dept.toLowerCase().replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
-          : dk; // fallback al dept activo si no tiene dept en el dato
+        const dataDk = d.dept ? normDept(d.dept) : dk;
         const hk = 'ubesol_historico_' + dataDk + '_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
         localStorage.setItem(hk, raw);
         activas.add(hk);
