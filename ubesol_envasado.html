@@ -1916,7 +1916,7 @@ function clearStorage() {
   const startW1 = new Date(jan4);
   startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
   const semActual = Math.round((thu - startW1) / 604800000) + 1;
-  const claveActual = String(anoActual) + String(semActual).padStart(2,'0');
+  const claveActual = anoActual * 100 + semActual;
 
   // Recoger todas las semanas guardadas
   const semanas = [];
@@ -1926,7 +1926,7 @@ function clearStorage() {
     try {
       const d = JSON.parse(localStorage.getItem(k));
       if (!d || !d._version) continue;
-      const clave = String(d.ano) + String(d.semana).padStart(2,'0');
+      const clave = parseInt(d.ano) * 100 + parseInt(d.semana);
       if (clave < claveActual) continue; // no mostrar semanas pasadas
       const { monday, sunday } = getWeekDates(parseInt(d.ano), parseInt(d.semana));
       semanas.push({ key: k, semana: d.semana, ano: d.ano,
