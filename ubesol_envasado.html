@@ -526,6 +526,11 @@ td.name-cell { overflow: visible !important; }
     <div class="logo-text">
       <span class="logo-grupo">GRUPO</span><span class="logo-ubesol">UBESOL</span>
     </div>
+    <div style="margin-top:3px">
+      <a href="index.html" style="font-size:10px;color:#888;text-decoration:none">&#8249; Portal</a>
+      <span style="font-size:10px;color:#bbb;margin:0 4px">/</span>
+      <span id="dept-breadcrumb" style="font-size:10px;color:#6a8a3a;font-weight:600"></span>
+    </div>
   </div>
 
   <div class="doc-title">
@@ -2393,26 +2398,24 @@ function buildPayload() {
   const ano = document.getElementById('meta-ano').value || '2026';
   const sem = document.getElementById('meta-sem').value || '1';
   const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
-  return {
-    _version: 1,
-    semana:        sem,
-    ano:           ano,
-    fecha_inicio:  fmtISO(monday),
-    fecha_fin:     fmtISO(sunday),
-    responsable:   (document.getElementById('responsable') || {value:''}).value,
-    envasado:       { specialWorkers, lines, bajas, vacaciones },
-    elaboracion:    { workers: elabWorkers,    bajas: elabBajas,      vacaciones: elabVacaciones },
-    almacen:        { workers: almWorkers,     bajas: almBajas,       vacaciones: almVacaciones },
-    mantenimiento:  { workers: mtoWorkers,     bajas: mtoBajas,       vacaciones: mtoVacaciones },
-    calidadLineas:  { workers: calWorkers,     bajas: calBajas,       vacaciones: calVacaciones },
-    calidadFQ:      { workers: calfqWorkers,   bajas: calfqBajas,     vacaciones: calfqVacaciones },
-    calidadMicro:   { workers: calmicroWorkers,bajas: calmicroBajas,  vacaciones: calmicroVacaciones },
-    calidadMat:     { workers: calmatWorkers,  bajas: calmatBajas,    vacaciones: calmatVacaciones },
-    mejoraContinua: { workers: mcWorkers,      bajas: mcBajas,        vacaciones: mcVacaciones },
-    soplado:        { workers: soplWorkers,    bajas: soplBajas,      vacaciones: soplVacaciones },
+  const base = {
+    _version: 1, semana: sem, ano: ano, dept: currentTab,
+    fecha_inicio: fmtISO(monday), fecha_fin: fmtISO(sunday),
+    responsable: (document.getElementById('responsable') || {value:''}).value,
   };
+  const t = currentTab;
+  if (t==='Envasado')        return {...base, envasado:      {specialWorkers, lines, bajas, vacaciones}};
+  if (t==='Elaboración')     return {...base, elaboracion:   {workers:elabWorkers,    bajas:elabBajas,     vacaciones:elabVacaciones}};
+  if (t==='Almacén')         return {...base, almacen:       {workers:almWorkers,     bajas:almBajas,      vacaciones:almVacaciones}};
+  if (t==='Mantenimiento')   return {...base, mantenimiento: {workers:mtoWorkers,     bajas:mtoBajas,      vacaciones:mtoVacaciones}};
+  if (t==='Calidad Líneas')  return {...base, calidadLineas: {workers:calWorkers,     bajas:calBajas,      vacaciones:calVacaciones}};
+  if (t==='Calidad FQ')      return {...base, calidadFQ:     {workers:calfqWorkers,   bajas:calfqBajas,    vacaciones:calfqVacaciones}};
+  if (t==='Calidad Micro')   return {...base, calidadMicro:  {workers:calmicroWorkers,bajas:calmicroBajas, vacaciones:calmicroVacaciones}};
+  if (t==='Calidad Mat')     return {...base, calidadMat:    {workers:calmatWorkers,  bajas:calmatBajas,   vacaciones:calmatVacaciones}};
+  if (t==='Mejora Continua') return {...base, mejoraContinua:{workers:mcWorkers,      bajas:mcBajas,       vacaciones:mcVacaciones}};
+  if (t==='Soplado')         return {...base, soplado:       {workers:soplWorkers,    bajas:soplBajas,     vacaciones:soplVacaciones}};
+  return base;
 }
-
 function autoSaveToKey(key) {
   try {
     localStorage.setItem(key, JSON.stringify(buildPayload()));
@@ -2545,12 +2548,39 @@ function toast(msg) {
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────
-// Arrancar siempre en la semana actual (cálculo ISO igual que getWeekDates)
 (function() {
+  // 1. Leer dept de URL y configurar tab
+  const DEPT_MAP = {
+    'envasado':'Envasado','elaboracion':'Elaboración','almacen':'Almacén',
+    'mantenimiento':'Mantenimiento','calidadlineas':'Calidad Líneas',
+    'calidadfq':'Calidad FQ','calidadmicro':'Calidad Micro',
+    'calidadmat':'Calidad Mat','mejoracontinua':'Mejora Continua','soplado':'Soplado',
+  };
+  const params = new URLSearchParams(window.location.search);
+  const raw = (params.get('dept')||'envasado').toLowerCase()
+    .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+    .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+  const deptName = DEPT_MAP[raw] || 'Envasado';
+  currentTab = deptName;
+
+  // 2. Ocultar todas las tabs excepto la activa
+  document.querySelectorAll('.tab').forEach(btn => {
+    const id = btn.id.replace('tab-','');
+    if (id === deptName) { btn.classList.add('active'); btn.style.display=''; }
+    else btn.style.display='none';
+  });
+
+  // 3. Actualizar breadcrumb y título
+  const bc = document.getElementById('dept-breadcrumb');
+  if (bc) bc.textContent = deptName.toUpperCase();
+  document.getElementById('dept-title').textContent = deptName;
+  document.title = 'Cuadrante ' + deptName + ' — GrupoUbesol';
+
+  // 4. Semana actual ISO con fecha local (evita bug zona horaria)
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
-  const localNow = new Date(y, m, d); // medianoche local, sin UTC
-  const dow = localNow.getDay(); // 0=dom
+  const localNow = new Date(y, m, d);
+  const dow = localNow.getDay();
   const thu = new Date(y, m, d - ((dow + 6) % 7) + 3);
   const ano = thu.getFullYear();
   const jan4 = new Date(ano, 0, 4);

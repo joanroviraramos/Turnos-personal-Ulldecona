@@ -1014,27 +1014,31 @@ function switchTurnosTab(tab) {
 }
 
 function getHistorico() {
-  const historico = [];
+  // Función para normalizar nombre de dept a clave comparable
+  function normDept(dept) {
+    return (dept||'').toLowerCase()
+      .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+      .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+  }
+  const userDept = currentUser ? normDept(currentUser.departamento) : null;
+  const seen = new Map();
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith('ubesol_historico_')) continue;
     try {
       const data = JSON.parse(localStorage.getItem(key));
-      if (data) historico.push(data);
+      if (!data || !data.semana || !data.ano) continue;
+      // Si el dato tiene dept, filtrar por el del usuario
+      if (data.dept && userDept && normDept(data.dept) !== userDept) continue;
+      const k = String(data.ano) + '_' + String(data.semana).padStart(2,'0');
+      // Preferir datos con dept (más recientes) sobre sin dept
+      if (!seen.has(k) || (data.dept && !seen.get(k).dept)) seen.set(k, data);
     } catch(e) {}
   }
-  if (cuadrante) {
-    const yaEsta = historico.some(h => h.semana == cuadrante.semana && h.ano == cuadrante.ano);
-    if (!yaEsta) historico.push(cuadrante);
-  }
-  historico.sort((a, b) => {
-    const ka = parseInt(a.ano)*100 + parseInt(a.semana);
-    const kb = parseInt(b.ano)*100 + parseInt(b.semana);
-    return ka - kb; // ascendente: actual primero, futuras después
-  });
+  const historico = Array.from(seen.values());
+  historico.sort((a,b) => (parseInt(a.ano)*100+parseInt(a.semana))-(parseInt(b.ano)*100+parseInt(b.semana)));
   return historico;
 }
-
 function renderCalendario() {
   const c = document.getElementById('calendario-content');
   const historico = getHistorico();
@@ -1154,6 +1158,21 @@ function findTurnoWorkerInData(nombre, data) {
   const nameUpper = nombre.toUpperCase().trim();
   const TURNOS = ['M','T','N','P'];
   const safeArr = a => Array.isArray(a) ? a : [];
+  const PLABELS = {
+    elab_sup:'Supervisor/A',elab_elab:'Elaborador/A',elab_pes:'Pesadas',
+    elab_hig:'Higiene',elab_desc:'Descarga Cisternas',
+    mto_coord:'Coordinador',mto_back:'Backoffice',mto_sup:'Supervisor/A',mto_tec:'Técnico Mto.',
+    alm_sup:'Supervisor/A',alm_desc:'Descarga/Ubicar',alm_sopl:'Soplado/Ubicar',
+    alm_ab3:'Abast. Nave 3',alm_ab1:'Abast. Nave 1',alm_res:'Residuos/Destruc.',
+    alm_ubi:'Ubicar',alm_mmpp:'MMPP',alm_sala:'Sala Blanca',alm_cargas:'Cargas',
+    alm_silo:'Silo',alm_destr:'Destrucciones',
+    cal_nave1:'Nave 1-MK1',cal_nave3:'Nave 3-Nave 4',cal_tec:'Técnico',
+    calfq_tec:'Técnico Lab.',calmicro_tec:'Técnico Micro.',
+    calmat_tec:'Técnico Mat.',mc_tec:'Técnico Procesos',
+    sopl_sup:'Supervisor/A',sopl_s12:'Sopladora 1 y 2',sopl_s3:'Sopladora 3',
+    sopl_s46:'Sopladora 4 y 6',sopl_s5t:'Sopladora 5 y Trk.',
+    sopl_pal:'Paletizadores',sopl_ref:'Refuerzo Turno',
+  };
 
   const env = data.envasado;
   if (env) {
@@ -1188,7 +1207,7 @@ function findTurnoWorkerInData(nombre, data) {
         if (!w || !w.cells) continue;
         for (const t of TURNOS) {
           if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-            return { turno: t, puesto: pid };
+            return { turno: t, puesto: PLABELS[pid] || pid };
         }
       }
     }
