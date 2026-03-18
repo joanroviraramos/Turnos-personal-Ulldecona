@@ -1917,12 +1917,13 @@ function generarProximasSemanas() {
 function clearStorage() {
   // Calcular semana actual para bloquear semanas pasadas
   const now = new Date();
-  const thu = new Date(now);
-  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const localNow = new Date(y, m, d);
+  const dow = localNow.getDay();
+  const thu = new Date(y, m, d - ((dow + 6) % 7) + 3);
   const anoActual = thu.getFullYear();
   const jan4 = new Date(anoActual, 0, 4);
-  const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const startW1 = new Date(jan4.getFullYear(), 0, jan4.getDate() - ((jan4.getDay() + 6) % 7));
   const semActual = Math.round((thu - startW1) / 604800000) + 1;
   const claveActual = anoActual * 100 + semActual;
 
@@ -2547,12 +2548,13 @@ function toast(msg) {
 // Arrancar siempre en la semana actual (cálculo ISO igual que getWeekDates)
 (function() {
   const now = new Date();
-  const thu = new Date(now);
-  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const localNow = new Date(y, m, d); // medianoche local, sin UTC
+  const dow = localNow.getDay(); // 0=dom
+  const thu = new Date(y, m, d - ((dow + 6) % 7) + 3);
   const ano = thu.getFullYear();
   const jan4 = new Date(ano, 0, 4);
-  const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const startW1 = new Date(jan4.getFullYear(), 0, jan4.getDate() - ((jan4.getDay() + 6) % 7));
   const wk = Math.round((thu - startW1) / 604800000) + 1;
   document.getElementById('meta-sem').value = wk;
   document.getElementById('meta-ano').value = ano;
