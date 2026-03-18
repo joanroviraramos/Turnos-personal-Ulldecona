@@ -1159,8 +1159,35 @@ function buildExpandableRow(worker, wi, puesto, arr) {
 //  GUARDAR MANUAL
 // ═══════════════════════════════════════════════════════════════════════
 function guardarManual() {
-  autoSave();
-  toast('💾 Datos guardados — semana ' + document.getElementById('meta-sem').value + '/' + document.getElementById('meta-ano').value);
+  // 1. Guardar la semana activa en localStorage
+  autoSaveToKey(weekKey());
+
+  // 2. Publicar TODAS las semanas con datos al histórico
+  let count = 0;
+  try {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ubesol_') && !k.startsWith('ubesol_historico_') && k !== 'ubesol_publicado') {
+        keys.push(k);
+      }
+    }
+    keys.forEach(k => {
+      const raw = localStorage.getItem(k);
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (!d || !d._version) return;
+        const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        localStorage.setItem(hk, raw);
+        count++;
+      } catch(e) {}
+    });
+  } catch(e) {
+    console.error('guardarManual error:', e);
+  }
+
+  toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' guardada' + (count !== 1 ? 's' : '') + ' y publicadas');
 }
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
@@ -1881,11 +1908,84 @@ function generarProximasSemanas() {
 }
 
 function clearStorage() {
-  const k = weekKey();
-  if (!confirm('¿Borrar los datos de la semana ' + document.getElementById('meta-sem').value + '? Esta acción no se puede deshacer.')) return;
-  localStorage.removeItem(k);
-  loadWeekFromStorage(k);
-  toast('Datos de la semana borrados.');
+  // Recoger todas las semanas guardadas
+  const semanas = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (!d || !d._version) continue;
+      const { monday, sunday } = getWeekDates(parseInt(d.ano), parseInt(d.semana));
+      semanas.push({ key: k, semana: d.semana, ano: d.ano,
+        label: 'S' + String(d.semana).padStart(2,'0') + ' / ' + d.ano + '  ·  ' + fmtDate(monday) + ' – ' + fmtDate(sunday) });
+    } catch(e) {}
+  }
+
+  if (!semanas.length) { toast('No hay semanas guardadas.'); return; }
+
+  // Ordenar cronológicamente
+  semanas.sort((a, b) => (a.ano + String(a.semana).padStart(2,'0')) < (b.ano + String(b.semana).padStart(2,'0')) ? -1 : 1);
+
+  // Construir modal
+  const old = document.getElementById('clear-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'clear-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:12px;padding:28px;max-width:520px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-height:80vh;display:flex;flex-direction:column;gap:16px';
+
+  modal.innerHTML = `
+    <h3 style="font-size:15px;font-weight:700;color:#1a1a1a;margin:0">🗑️ Borrar semanas</h3>
+    <p style="font-size:12px;color:#888;margin:0">Selecciona las semanas que quieres eliminar. Esta acción no se puede deshacer.</p>
+    <div style="display:flex;gap:8px;margin-bottom:2px">
+      <button id="cm-all" style="font-size:11px;font-weight:600;padding:4px 10px;border:1px solid #d0cdc5;border-radius:4px;background:#f5f5f5;cursor:pointer;color:#333">Seleccionar todo</button>
+      <button id="cm-none" style="font-size:11px;font-weight:600;padding:4px 10px;border:1px solid #d0cdc5;border-radius:4px;background:#f5f5f5;cursor:pointer;color:#333">Deseleccionar todo</button>
+    </div>
+    <div id="cm-list" style="overflow-y:auto;flex:1;border:1px solid #e0ddd6;border-radius:6px;padding:4px 0"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+      <button id="cm-cancel" style="padding:8px 20px;background:#f0ede6;color:#333;border:1px solid #d0cdc5;border-radius:6px;cursor:pointer;font-size:13px">Cancelar</button>
+      <button id="cm-confirm" style="padding:8px 20px;background:#c62828;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Borrar seleccionadas</button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Rellenar lista
+  const list = document.getElementById('cm-list');
+  semanas.forEach(s => {
+    const row = document.createElement('label');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;border-bottom:1px solid #f0ede6;font-size:13px;color:#222';
+    row.innerHTML = `<input type="checkbox" data-key="${s.key}" style="width:15px;height:15px;accent-color:#c62828;cursor:pointer"> ${s.label}`;
+    row.onmouseover = () => row.style.background = '#fff5f5';
+    row.onmouseout  = () => row.style.background = '';
+    list.appendChild(row);
+  });
+
+  // Seleccionar / deseleccionar todo
+  document.getElementById('cm-all').onclick  = () => list.querySelectorAll('input').forEach(cb => cb.checked = true);
+  document.getElementById('cm-none').onclick = () => list.querySelectorAll('input').forEach(cb => cb.checked = false);
+
+  // Cancelar
+  const cerrar = () => overlay.remove();
+  document.getElementById('cm-cancel').onclick = cerrar;
+  overlay.onclick = (e) => { if (e.target === overlay) cerrar(); };
+
+  // Confirmar borrado
+  document.getElementById('cm-confirm').onclick = () => {
+    const seleccionadas = [...list.querySelectorAll('input:checked')].map(cb => cb.dataset.key);
+    if (!seleccionadas.length) { toast('No has seleccionado ninguna semana.'); return; }
+
+    const estaActiva = seleccionadas.includes(weekKey());
+    seleccionadas.forEach(k => localStorage.removeItem(k));
+    cerrar();
+    toast('🗑️ ' + seleccionadas.length + ' semana' + (seleccionadas.length !== 1 ? 's' : '') + ' eliminada' + (seleccionadas.length !== 1 ? 's' : ''));
+    if (estaActiva) loadWeekFromStorage(weekKey());
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2368,17 +2468,18 @@ function toast(msg) {
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────
-// Arrancar en la semana SIGUIENTE a la actual (es lo que interesa planificar)
+// Arrancar siempre en la semana actual (cálculo ISO igual que getWeekDates)
 (function() {
   const now = new Date();
-  const jan4 = new Date(now.getFullYear(), 0, 4);
+  // Semana ISO: el jueves de la semana marca el año
+  const thu = new Date(now);
+  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3); // jueves de esta semana
+  const ano = thu.getFullYear();
+  const jan4 = new Date(ano, 0, 4);
   const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-  const wkActual = Math.ceil((now - startW1) / 604800000) + 1;
-  let wkSig = wkActual + 1;
-  let ano = now.getFullYear();
-  if (wkSig > 52) { wkSig = 1; ano++; }
-  document.getElementById('meta-sem').value = wkSig;
+  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const wk = Math.round((thu - startW1) / 604800000) + 1;
+  document.getElementById('meta-sem').value = wk;
   document.getElementById('meta-ano').value = ano;
 })();
 
