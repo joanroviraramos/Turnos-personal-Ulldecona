@@ -228,17 +228,19 @@ function showApp() {
 
 // ── DATOS ─────────────────────────────────────────────────────────────
 function getSolicitudes() {
-  // Iterar sobre los DNIs que tienen EPIs en localStorage
   const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
   const esAdmin = currentUser.user === 'admin';
   const miDept = (currentUser.departamento || '').trim();
   const result = [];
   Object.keys(all).forEach(dni => {
+    // Buscar en WORKERS — si no está, usar datos del propio EPI o DNI como nombre
     const worker = WORKERS.find(w => w.dni === dni);
-    if (!worker) return; // DNI no reconocido
-    if (!esAdmin && worker.departamento.trim() !== miDept) return;
+    const nombre = worker ? worker.nombre : 'DNI: ' + dni;
+    const departamento = worker ? worker.departamento : miDept;
+    // Filtrar por dept — si no hay worker asumimos que es del dept del responsable
+    if (!esAdmin && departamento.trim() !== miDept) return;
     (all[dni] || []).forEach((e, idx) => {
-      result.push({ ...e, dni, nombre: worker.nombre, departamento: worker.departamento, idx });
+      result.push({ ...e, dni, nombre, departamento, idx });
     });
   });
   result.sort((a,b) => {
