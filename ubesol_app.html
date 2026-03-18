@@ -760,12 +760,10 @@ async function init() {
 }
 
 function migrarHistoricoAntiguo() {
-  // Migra ubesol_historico_YYYY_sWW → ubesol_historico_DEPT_YYYY_sWW
   const keysToMigrate = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (k && /^ubesol_historico_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
-    // También migrar claves principales antiguas al histórico
     if (k && /^ubesol_\d{4}_s\d{2}$/.test(k)) keysToMigrate.push(k);
   }
   keysToMigrate.forEach(k => {
@@ -776,8 +774,9 @@ function migrarHistoricoAntiguo() {
       if (!d || !d._version || !d.semana || !d.ano) return;
       const dk = deptKeyFromDept(d.dept || 'Envasado');
       const sem = String(d.semana).padStart(2,'0');
-      const newKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
-      if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, raw);
+      // Crear siempre la clave del histórico con el nuevo formato
+      const newHistKey = 'ubesol_historico_' + dk + '_' + d.ano + '_s' + sem;
+      if (!localStorage.getItem(newHistKey)) localStorage.setItem(newHistKey, raw);
       localStorage.removeItem(k);
     } catch(e) {}
   });
