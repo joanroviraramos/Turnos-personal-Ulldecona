@@ -1999,10 +1999,17 @@ function clearStorage() {
     if (!confirm('¿Seguro que quieres borrar estas ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + '?\n\n' + labels.join('\n') + '\n\nEsta acción no se puede deshacer.')) return;
 
     const estaActiva = sel.includes(weekKey());
-    sel.forEach(k => localStorage.removeItem(k));
+
+    // 1. Borrar del localStorage principal Y del histórico
+    sel.forEach(k => {
+      localStorage.removeItem(k);
+      const match = k.match(/ubesol_(\d+)_s(\d+)/);
+      if (match) localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
+    });
+
     cerrar();
 
-    // Siempre guardar la semana activa y publicar todas las restantes
+    // 2. Guardar semana activa y sincronizar todo lo que queda
     autoSaveToKey(weekKey());
     autoPublicarTodasLasSemanas();
 
