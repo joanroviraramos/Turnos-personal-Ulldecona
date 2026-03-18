@@ -386,6 +386,25 @@ body {
 .epi-tab { flex: 1; padding: 8px 4px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text-3); font-size: 12px; font-weight: 600; font-family: 'DM Sans',sans-serif; cursor: pointer; text-align: center; transition: all .15s; }
 .epi-tab.active { background: var(--green); color: white; border-color: var(--green); }
 
+/* Pantalla nuevo pedido EPI */
+.pedido-screen { display: flex; flex-direction: column; gap: 0; }
+.pedido-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.pedido-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+.pedido-back { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--green); padding: 0; line-height: 1; }
+.pedido-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; }
+.pedido-linea { display: grid; grid-template-columns: 1fr 90px 36px; gap: 8px; align-items: center; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.pedido-linea select, .pedido-linea input { font-family: 'DM Sans',sans-serif; font-size: 13px; border: none; background: transparent; outline: none; color: var(--text); width: 100%; }
+.pedido-linea input::placeholder { color: var(--text-3); }
+.pedido-linea-sep { width: 1px; background: var(--border); height: 24px; }
+.pedido-del { background: none; border: none; cursor: pointer; font-size: 18px; color: #ccc; line-height: 1; padding: 0; }
+.pedido-del:hover { color: var(--red, #c62828); }
+.pedido-add { background: none; border: 1.5px dashed var(--border); border-radius: 10px; padding: 12px; font-size: 13px; font-weight: 600; color: var(--green); cursor: pointer; font-family: 'DM Sans',sans-serif; width: 100%; text-align: center; }
+.pedido-add:hover { background: var(--green-l, #e8f5e4); }
+.pedido-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--surface); }
+.pedido-enviar { width: 100%; background: var(--green); color: white; border: none; border-radius: 10px; padding: 15px; font-size: 15px; font-weight: 700; font-family: 'DM Sans',sans-serif; cursor: pointer; }
+.pedido-enviar:hover { opacity: .9; }
+.pedido-enviar:disabled { opacity: .5; cursor: not-allowed; }
+
 .btn-nueva-epi {
   background: var(--green);
   color: white;
@@ -608,6 +627,25 @@ body {
   <div class="screen-body">
     <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
     <div id="epi-content"></div>
+  </div>
+</div>
+
+<div id="screen-nuevo-pedido" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Nueva solicitud</div>
+    <div class="header-dept">EPIs a solicitar</div>
+  </div>
+  <div class="screen-body" style="padding-bottom:0;display:flex;flex-direction:column;gap:0">
+    <button class="back-btn" onclick="goScreen('epi');renderEpi()">‹ Volver</button>
+    <div id="nuevo-pedido-content" style="display:flex;flex-direction:column;gap:10px;padding:4px 0 12px"></div>
+    <button class="pedido-add" onclick="addPedidoLinea()">+ Añadir otro EPI</button>
+    <div style="padding:16px 0 8px">
+      <button class="pedido-enviar" onclick="enviarPedido()">Enviar pedido</button>
+    </div>
   </div>
 </div>
 
@@ -1243,14 +1281,16 @@ function showEpi() {
 }
 
 let epiTabActual = 'pendiente';
+let pedidoLineas = []; // líneas del pedido en curso
 
 function setEpiTab(tab) {
   epiTabActual = tab;
   renderEpi();
 }
 
+// ── Vista principal EPIs ──────────────────────────────────────────────
 function renderEpi() {
-  const epis = getEpis();
+  const epis = getEpis(); // array plano de líneas individuales
   const c = document.getElementById('epi-content');
 
   const pend  = epis.filter(e => e.estado === 'pendiente');
@@ -1261,23 +1301,36 @@ function renderEpi() {
     pendiente: { label: 'Pendiente', cls: 'tag-pend' },
     aprobado:  { label: 'Aprobado',  cls: 'tag-ok'   },
     rechazado: { label: 'Rechazado', cls: 'tag-rech'  },
-    entregado: { label: 'Entregado', cls: 'tag-ok'    },
   };
 
   const filtrados = epis.filter(e => e.estado === epiTabActual);
 
-  const lista = filtrados.length ? filtrados.map(e => {
-    const cfg = ESTADO_CFG[e.estado] || { label: e.estado, cls: 'tag-pend' };
-    const info = e.fechaGestion ? ` · Gestionado ${e.fechaGestion}` : ` · ${e.fecha}`;
-    return `<div class="epi-item">
-      <div class="epi-ico">🦺</div>
-      <div class="epi-info">
-        <div class="epi-name">${e.tipo}</div>
-        <div class="epi-meta">${e.nota || ''}</div>
-        <span class="tag ${cfg.cls}">${cfg.label}${info}</span>
-      </div>
+  // Agrupar filtrados por pedidoId para mostrarlos juntos
+  const pedidos = {};
+  filtrados.forEach(e => {
+    const pid = e.pedidoId || e.fecha;
+    if (!pedidos[pid]) pedidos[pid] = { fecha: e.fecha, lineas: [] };
+    pedidos[pid].lineas.push(e);
+  });
+
+  const lista = Object.values(pedidos).length ? Object.values(pedidos).map(p => {
+    const linesHtml = p.lineas.map(e => {
+      const cfg = ESTADO_CFG[e.estado] || { label: e.estado, cls: 'tag-pend' };
+      const extra = e.fechaGestion ? ` · ${e.fechaGestion}` : '';
+      return `<div class="epi-item" style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px">
+        <div class="epi-ico" style="font-size:16px">🦺</div>
+        <div class="epi-info">
+          <div class="epi-name">${e.tipo}${e.talla ? ' <span style="color:var(--text-3);font-weight:400">— ${e.talla}</span>' : ''}</div>
+          ${e.nota ? `<div class="epi-meta">${e.nota}</div>` : ''}
+          <span class="tag ${cfg.cls}">${cfg.label}${extra}</span>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:4px">
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:10px;font-weight:600">PEDIDO · ${p.fecha}</div>
+      ${linesHtml}
     </div>`;
-  }).join('') : `<div class="no-turno" style="margin-bottom:12px">No hay solicitudes ${epiTabActual === 'pendiente' ? 'pendientes' : epiTabActual === 'aprobado' ? 'aprobadas' : 'rechazadas'}</div>`;
+  }).join('') : `<div class="no-turno" style="margin-bottom:12px">No hay solicitudes ${epiTabActual==='pendiente'?'pendientes':epiTabActual==='aprobado'?'aprobadas':'rechazadas'}</div>`;
 
   c.innerHTML = `
     <div class="epi-tabs">
@@ -1286,45 +1339,59 @@ function renderEpi() {
       <button class="epi-tab ${epiTabActual==='rechazado'?'active':''}" onclick="setEpiTab('rechazado')">Rechazadas <span class="epi-tab-count">${rech.length}</span></button>
     </div>
     <div class="epi-list">${lista}</div>
-    <button class="btn-nueva-epi" onclick="showEpiForm()" style="margin-top:12px">+ Nueva solicitud</button>
-    <div id="epi-form-wrap" style="display:none;margin-top:12px">
-      <div class="epi-form">
-        <h3>Nueva solicitud</h3>
-        <select id="epi-tipo">
-          <option value="">Selecciona el EPI...</option>
-          ${EPI_TIPOS.map(t => `<option value="${t}">${t}</option>`).join('')}
-        </select>
-        <textarea id="epi-nota" placeholder="Motivo o comentario (opcional)"></textarea>
-        <div class="form-btns">
-          <button class="btn-cancel" onclick="hideEpiForm()">Cancelar</button>
-          <button class="btn-send" onclick="submitEpi()">Enviar solicitud</button>
-        </div>
-      </div>
-    </div>
+    <button class="btn-nueva-epi" onclick="showNuevoPedido()" style="margin-top:8px">+ Nueva solicitud</button>
   `;
 }
 
-function showEpiForm() {
-  document.getElementById('epi-form-wrap').style.display = 'block';
-  document.querySelector('.btn-nueva-epi').style.display = 'none';
+// ── Pantalla nuevo pedido ─────────────────────────────────────────────
+function showNuevoPedido() {
+  pedidoLineas = [{ tipo: '', talla: '' }];
+  goScreen('nuevo-pedido');
+  renderPedido();
 }
 
-function hideEpiForm() {
-  document.getElementById('epi-form-wrap').style.display = 'none';
-  document.querySelector('.btn-nueva-epi').style.display = 'block';
+function renderPedido() {
+  const c = document.getElementById('nuevo-pedido-content');
+  if (!c) return;
+  c.innerHTML = pedidoLineas.map((l, i) => `
+    <div class="pedido-linea">
+      <select onchange="pedidoLineas[${i}].tipo=this.value">
+        <option value="">EPI...</option>
+        ${EPI_TIPOS.map(t => `<option value="${t}" ${l.tipo===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <input type="text" placeholder="Talla / Nº" value="${l.talla||''}"
+        oninput="pedidoLineas[${i}].talla=this.value">
+      <button class="pedido-del" onclick="deletePedidoLinea(${i})" ${pedidoLineas.length===1?'style="opacity:.3;pointer-events:none"':''}>✕</button>
+    </div>
+  `).join('');
 }
 
-function submitEpi() {
-  const tipo = document.getElementById('epi-tipo').value;
-  const nota = document.getElementById('epi-nota').value.trim();
-  if (!tipo) { showToast('Selecciona el tipo de EPI'); return; }
+function addPedidoLinea() {
+  pedidoLineas.push({ tipo: '', talla: '' });
+  renderPedido();
+}
 
+function deletePedidoLinea(i) {
+  if (pedidoLineas.length === 1) return;
+  pedidoLineas.splice(i, 1);
+  renderPedido();
+}
+
+function enviarPedido() {
+  const validas = pedidoLineas.filter(l => l.tipo);
+  if (!validas.length) { showToast('Añade al menos un EPI'); return; }
+  const fecha = fmtDateShort(new Date());
+  const pedidoId = Date.now().toString();
   const epis = getEpis();
-  epis.unshift({ tipo, nota, estado: 'pendiente', fecha: fmtDateShort(new Date()) });
+  validas.forEach(l => {
+    epis.unshift({ tipo: l.tipo, talla: l.talla||'', nota: '', estado: 'pendiente', fecha, pedidoId });
+  });
   saveEpis(epis);
-  showToast('✓ Solicitud enviada correctamente');
-  renderEpi();
+  showToast('✓ Pedido enviado — ' + validas.length + ' EPI' + (validas.length>1?'s':''));
   updateBadges();
+  epiTabActual = 'pendiente';
+  goScreen('epi');
+  renderEpi();
 }
 
 // ─── AVISOS ──────────────────────────────────────────

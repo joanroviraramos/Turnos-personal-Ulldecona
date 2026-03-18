@@ -126,8 +126,8 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
           <tr>
             <th>Trabajador</th>
             <th>EPI solicitado</th>
-            <th>Comentario</th>
-            <th>Fecha</th>
+            <th>Talla / Nº</th>
+            <th>Fecha pedido</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -293,7 +293,7 @@ function renderTabla() {
     return `<tr>
       <td><div style="font-weight:600">${s.nombre}</div><div style="font-size:11px;color:var(--faint)">${s.departamento}</div></td>
       <td>${s.tipo}</td>
-      <td style="color:var(--muted);font-size:12px">${s.nota || '—'}</td>
+      <td style="color:var(--muted);font-size:12px">${s.talla || '—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${s.fecha}</td>
       <td><span class="badge ${badgeClass}">${badgeText}</span></td>
       <td>
@@ -324,14 +324,14 @@ function rechazar(dni, idx) {
 // ── EXCEL RECEPCION (última petición aprobada) ────────────────────────
 function descargarExcelRecepcion(worker, epi) {
   const csv = [
-    ['SOLICITUD EPI — RECEPCIÓN', '', '', ''],
-    ['Generado por:', currentUser.nombre, 'Fecha:', hoy()],
+    ['SOLICITUD EPI — RECEPCIÓN', '', '', '', ''],
+    ['Generado por:', currentUser.nombre, 'Fecha:', hoy(), ''],
     [''],
-    ['TRABAJADOR', 'DNI', 'DEPARTAMENTO', ''],
-    [worker.nombre, worker.dni, worker.departamento, ''],
+    ['TRABAJADOR', 'DNI', 'DEPARTAMENTO', '', ''],
+    [worker.nombre, worker.dni, worker.departamento, '', ''],
     [''],
-    ['EPI SOLICITADO', 'COMENTARIO', 'FECHA SOLICITUD', 'APROBADO POR'],
-    [epi.tipo, epi.nota || '', epi.fecha, currentUser.nombre],
+    ['EPI SOLICITADO', 'TALLA / Nº', 'COMENTARIO', 'FECHA SOLICITUD', 'APROBADO POR'],
+    [epi.tipo, epi.talla||'', epi.nota||'', epi.fecha, currentUser.nombre],
   ].map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
 
   const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
