@@ -214,24 +214,25 @@ function doLogout() {
 }
 
 function showApp() {
-  document.getElementById('hdr-dept').textContent = currentUser.dept === 'Todos' ? 'Todos los departamentos' : currentUser.dept;
+  document.getElementById('hdr-dept').textContent = currentUser.user === 'admin' ? 'Todos los departamentos' : currentUser.departamento;
   renderTabla();
 }
 
 // ── DATOS ─────────────────────────────────────────────────────────────
 function getSolicitudes() {
-  // Leer todas las solicitudes del localStorage
+  // Iterar sobre los DNIs que tienen EPIs en localStorage
   const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  const esAdmin = currentUser.user === 'admin';
+  const miDept = (currentUser.departamento || '').trim();
   const result = [];
-  WORKERS.forEach(w => {
-    // Filtrar por dept del responsable
-    if (currentUser.dept !== 'Todos' && w.departamento !== currentUser.dept) return;
-    const epis = all[w.dni] || [];
-    epis.forEach((e, idx) => {
-      result.push({ ...e, dni: w.dni, nombre: w.nombre, departamento: w.departamento, idx });
+  Object.keys(all).forEach(dni => {
+    const worker = WORKERS.find(w => w.dni === dni);
+    if (!worker) return; // DNI no reconocido
+    if (!esAdmin && worker.departamento.trim() !== miDept) return;
+    (all[dni] || []).forEach((e, idx) => {
+      result.push({ ...e, dni, nombre: worker.nombre, departamento: worker.departamento, idx });
     });
   });
-  // Ordenar: pendientes primero, luego por fecha desc
   result.sort((a,b) => {
     if (a.estado === 'pendiente' && b.estado !== 'pendiente') return -1;
     if (b.estado === 'pendiente' && a.estado !== 'pendiente') return 1;
