@@ -408,6 +408,25 @@ footer {
   .portal-grid { grid-template-columns: 1fr; }
   footer { padding: 20px 24px; }
 }
+
+/* Badge pendientes en card EPI */
+.card-badge {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: #c62828;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  box-shadow: 0 2px 6px rgba(198,40,40,.4);
+}
+.portal-card { position: relative; }
 </style>
 </head>
 <body>
@@ -470,7 +489,7 @@ footer {
           <div class="card-arrow">›</div>
         </a>
 
-        <a class="portal-card" href="panel_epi.html">
+        <a class="portal-card" id="card-epi" href="panel_epi.html">
           <div class="card-icon">🦺</div>
           <div>
             <div class="card-label">Seguridad</div>
@@ -478,6 +497,7 @@ footer {
           </div>
           <div class="card-desc">Revisa y aprueba las solicitudes de equipos de protección individual.</div>
           <div class="card-arrow">›</div>
+          <div class="card-badge" id="epi-badge" style="display:none">0</div>
         </a>
       </div>
 
@@ -549,6 +569,37 @@ function doLogout() {
   document.getElementById('inp-pass').value = '';
 }
 
+function contarEpisPendientes(responsable) {
+  try {
+    const WORKERS_DEPT = {
+      'Envasado':['12345678A','23456789B','34567890C','45678901D','56789012E','67890123F','78901234G','89012345H','90123456I','01234567J','11223344K','22334455L','33445566M','44556677N','55667788O','66778899P','77889900Q','88990011R','99001122S','00112233T'],
+      'Elaboración':['67867867Z','78978978A','89089089B','90190190C'],
+      'Almacén':['89089089L','90190190M','01201201N','12312344O'],
+      'Mantenimiento':['11122233Y','22233344Z'],
+      'Calidad Líneas':['11122233I','22233344J'],
+      'Calidad FQ':['77788899O','88899900P'],
+      'Calidad Micro':['11122244S','22233355T'],
+      'Calidad Mat.':['55566688W','66677799X'],
+      'Mejora Continua':['99900022A','00011133B'],
+      'Soplado':['33344466E','44455577F'],
+    };
+    const all = JSON.parse(localStorage.getItem('ubesol_app_epis') || '{}');
+    const miDept = responsable.departamento;
+    const dnis = responsable.user === 'admin'
+      ? Object.keys(all)
+      : (WORKERS_DEPT[miDept] || []);
+    let count = 0;
+    dnis.forEach(dni => {
+      (all[dni] || []).forEach(e => { if (e.estado === 'pendiente') count++; });
+    });
+    const badge = document.getElementById('epi-badge');
+    if (badge) {
+      if (count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
+      else { badge.style.display = 'none'; }
+    }
+  } catch(e) {}
+}
+
 function showPortal(responsable) {
   document.getElementById('login-section').style.display = 'none';
   document.getElementById('portal-name').textContent = responsable.nombre;
@@ -556,6 +607,7 @@ function showPortal(responsable) {
   // Actualizar enlace al cuadrante con el dept del responsable
   const dept = responsable.dept || 'envasado';
   document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
+  contarEpisPendientes(responsable);
   document.getElementById('portal-section').classList.add('active');
 }
 
