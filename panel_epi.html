@@ -7,223 +7,181 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --green: #4a7c2f; --green-l: #e8f5e4; --green-d: #2d5a1a;
-  --amber: #e07b00; --amber-l: #fff8ec;
-  --red: #c62828; --red-l: #fdecea;
-  --blue: #1565c0; --blue-l: #e3f2fd;
-  --bg: #f0f4f0; --white: #fff;
-  --border: #c8d9ba; --border-l: #dde8d4;
-  --text: #1a2012; --muted: #556; --faint: #889;
+  --green:#4a7c2f; --green-l:#e8f5e4; --green-d:#2d5a1a;
+  --amber:#e07b00; --amber-l:#fff8ec;
+  --red:#c62828;   --red-l:#fdecea;
+  --blue:#1565c0;  --blue-l:#e3f2fd;
+  --bg:#f0f4f0; --white:#fff;
+  --border:#c8d9ba; --border-l:#dde8d4;
+  --text:#1a2012; --muted:#556; --faint:#999;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
 
 /* HEADER */
-.header {
-  background: var(--green-d);
-  color: white;
-  padding: 14px 28px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.header-left { display: flex; flex-direction: column; gap: 2px; }
-.header-logo { font-size: 11px; font-weight: 600; letter-spacing: .1em; opacity: .7; }
-.header-back { font-size: 11px; color: rgba(255,255,255,.6); text-decoration: none; }
-.header-back:hover { color: white; }
-.header-title { font-size: 18px; font-weight: 700; }
-.header-dept { font-size: 12px; opacity: .75; }
-.header-user { font-size: 12px; background: rgba(255,255,255,.15); padding: 6px 14px; border-radius: 6px; cursor: pointer; border: none; color: white; font-family: 'Inter', sans-serif; }
+.header{background:var(--green-d);color:white;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.header-logo{font-size:11px;font-weight:600;letter-spacing:.1em;opacity:.7;}
+.header-back{font-size:11px;color:rgba(255,255,255,.7);text-decoration:none;}
+.header-back:hover{color:white;}
+.header-title{font-size:18px;font-weight:700;}
+.header-dept{font-size:12px;opacity:.75;margin-top:2px;}
+.btn-logout{font-family:'Inter',sans-serif;font-size:12px;background:rgba(255,255,255,.15);padding:6px 14px;border-radius:6px;cursor:pointer;border:none;color:white;}
 
 /* MAIN */
-.main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+.main{max-width:1100px;margin:0 auto;padding:24px 20px;}
 
 /* STATS */
-.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--white); border: 1px solid var(--border-l); border-radius: 10px; padding: 16px 20px; }
-.stat-num { font-size: 28px; font-weight: 700; line-height: 1; }
-.stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
-.stat-pend .stat-num { color: var(--amber); }
-.stat-ok   .stat-num { color: var(--green); }
-.stat-all  .stat-num { color: var(--blue); }
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--white);border:1px solid var(--border-l);border-radius:10px;padding:16px 20px;}
+.stat-num{font-size:28px;font-weight:700;line-height:1;}
+.stat-label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em;}
+.stat-pend .stat-num{color:var(--amber);}
+.stat-ok   .stat-num{color:var(--green);}
+.stat-all  .stat-num{color:var(--blue);}
 
 /* FILTERS */
-.filters { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
-.filter-btn { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--white); color: var(--muted); cursor: pointer; transition: all .15s; }
-.filter-btn.active { background: var(--green); color: white; border-color: var(--green); }
-.filter-btn:hover:not(.active) { border-color: var(--green); color: var(--green); }
-.search-inp { flex: 1; min-width: 180px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; }
-.search-inp:focus { border-color: var(--green); }
+.filters{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.filter-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--white);color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-btn.active{background:var(--green);color:white;border-color:var(--green);}
+.filter-btn:hover:not(.active){border-color:var(--green);color:var(--green);}
+.search-inp{flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;outline:none;}
+.search-inp:focus{border-color:var(--green);}
+.btn-export{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:7px 16px;border-radius:20px;border:none;cursor:pointer;background:var(--green);color:white;white-space:nowrap;}
+.btn-export:hover{background:var(--green-d);}
 
 /* TABLE */
-.table-wrap { background: var(--white); border: 1px solid var(--border-l); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-table { width: 100%; border-collapse: collapse; }
-thead th { background: #f5f8f3; padding: 10px 14px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--border-l); text-align: left; }
-tbody tr { border-bottom: 1px solid var(--border-l); transition: background .1s; }
-tbody tr:last-child { border-bottom: none; }
-tbody tr:hover { background: #fafcf8; }
-tbody td { padding: 10px 14px; vertical-align: middle; }
+.table-wrap{background:var(--white);border:1px solid var(--border-l);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+table{width:100%;border-collapse:collapse;}
+thead th{background:#f5f8f3;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border-l);text-align:left;}
+tbody tr{border-bottom:1px solid var(--border-l);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#fafcf8;}
+tbody td{padding:10px 14px;vertical-align:middle;}
+.empty{padding:40px;text-align:center;color:var(--faint);font-size:14px;}
 
-.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-.badge-pend { background: var(--amber-l); color: var(--amber); }
-.badge-ok   { background: var(--green-l); color: var(--green-d); }
-.badge-rech { background: var(--red-l); color: var(--red); }
+/* BADGES */
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.badge-pend{background:var(--amber-l);color:var(--amber);}
+.badge-ok  {background:var(--green-l);color:var(--green-d);}
+.badge-rech{background:var(--red-l);color:var(--red);}
 
-.btn-aprobar { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 5px; border: none; cursor: pointer; background: var(--green); color: white; margin-right: 4px; transition: all .15s; }
-.btn-aprobar:hover { background: var(--green-d); }
-.btn-rechazar { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 5px; border: 1px solid var(--red); cursor: pointer; background: white; color: var(--red); transition: all .15s; }
-.btn-rechazar:hover { background: var(--red-l); }
-.btn-export {
-  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
-  padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer;
-  background: var(--green); color: white; white-space: nowrap;
-  transition: all .15s;
-}
-.btn-export:hover { background: var(--green-d); }
-.btn-historial { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer; background: white; color: var(--muted); transition: all .15s; }
-.btn-historial:hover { border-color: var(--blue); color: var(--blue); }
-
-.empty { padding: 40px; text-align: center; color: var(--faint); font-size: 14px; }
+/* BOTONES ACCIÓN */
+.btn-aprobar{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;background:var(--green);color:white;margin-right:4px;}
+.btn-aprobar:hover{background:var(--green-d);}
+.btn-rechazar{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;border:1px solid var(--red);cursor:pointer;background:white;color:var(--red);}
+.btn-rechazar:hover{background:var(--red-l);}
+.btn-hist{font-family:'Inter',sans-serif;font-size:11px;padding:5px 10px;border-radius:5px;border:1px solid var(--border);cursor:pointer;background:white;color:var(--muted);margin-left:4px;}
+.btn-hist:hover{border-color:var(--blue);color:var(--blue);}
 
 /* TOAST */
-.toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; z-index: 999; }
-.toast.show { opacity: 1; transform: translateY(0); }
-
-/* LOGIN overlay */
-/* login externo via portal */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:white;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateY(0);}
 </style>
 </head>
 <body>
 
-<!-- Sin login propio — usa sesión del portal -->
+<div class="header">
+  <div>
+    <div class="header-logo">GRUPOUBESOL</div>
+    <a href="index.html" class="header-back">‹ Volver al portal</a>
+  </div>
+  <div style="text-align:center">
+    <div class="header-title">Aprobación de EPIs</div>
+    <div class="header-dept" id="hdr-dept"></div>
+  </div>
+  <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+</div>
 
-<!-- APP -->
-<div id="app">
-  <div class="header">
-    <div class="header-left">
-      <span class="header-logo">GRUPOUBESOL</span>
-      <a href="index.html" class="header-back">‹ Volver al portal</a>
-    </div>
-    <div style="text-align:center">
-      <div class="header-title">Panel de Aprobación de EPIs</div>
-      <div class="header-dept" id="hdr-dept"></div>
-    </div>
-    <button class="header-user" onclick="doLogout()">Cerrar sesión</button>
+<div class="main">
+  <div class="stats">
+    <div class="stat-card stat-pend"><div class="stat-num" id="stat-pend">0</div><div class="stat-label">Pendientes</div></div>
+    <div class="stat-card stat-ok">  <div class="stat-num" id="stat-ok">0</div>  <div class="stat-label">Aprobadas</div></div>
+    <div class="stat-card stat-all"> <div class="stat-num" id="stat-all">0</div> <div class="stat-label">Total</div></div>
   </div>
 
-  <div class="main">
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat-card stat-pend"><div class="stat-num" id="stat-pend">0</div><div class="stat-label">Pendientes</div></div>
-      <div class="stat-card stat-ok">  <div class="stat-num" id="stat-ok">0</div>  <div class="stat-label">Aprobadas</div></div>
-      <div class="stat-card stat-all"> <div class="stat-num" id="stat-all">0</div> <div class="stat-label">Total solicitudes</div></div>
-    </div>
+  <div class="filters">
+    <button class="filter-btn active" id="fb-todas"    onclick="setFiltro('todas',this)">Todas</button>
+    <button class="filter-btn"        id="fb-pendiente" onclick="setFiltro('pendiente',this)">Pendientes</button>
+    <button class="filter-btn"        id="fb-aprobado"  onclick="setFiltro('aprobado',this)">Aprobadas</button>
+    <button class="filter-btn"        id="fb-rechazado" onclick="setFiltro('rechazado',this)">Rechazadas</button>
+    <input class="search-inp" type="text" id="search-inp" placeholder="Buscar trabajador o EPI..." oninput="renderTabla()">
+    <button class="btn-export" onclick="exportarExcel()">⬇ Exportar Excel</button>
+  </div>
 
-    <!-- Filtros -->
-    <div class="filters">
-      <button class="filter-btn active" onclick="setFiltro('todas',this)">Todas</button>
-      <button class="filter-btn" onclick="setFiltro('pendiente',this)">Pendientes</button>
-      <button class="filter-btn" onclick="setFiltro('aprobado',this)">Aprobadas</button>
-      <button class="filter-btn" onclick="setFiltro('rechazado',this)">Rechazadas</button>
-      <input class="search-inp" type="text" id="search-inp" placeholder="Buscar trabajador o EPI..." oninput="renderTabla()">
-      <button class="btn-export" onclick="exportarExcel()">⬇ Exportar Excel</button>
-    </div>
-
-    <!-- Tabla -->
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Trabajador</th>
-            <th>EPI solicitado</th>
-            <th>Talla / Nº</th>
-            <th>Fecha pedido</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-body"></tbody>
-      </table>
-    </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Trabajador</th>
+          <th>EPI</th>
+          <th>Talla / Nº</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── RESPONSABLES (mismos que en index.html) ───────────────────────────
-const RESPONSABLES = [
-  { user:'admin',       pass:'ubesol2026', nombre:'Administrador',             dept:'Todos' },
-  { user:'envasado',    pass:'env2026',    nombre:'Responsable Envasado',      dept:'Envasado' },
-  { user:'elaboracion', pass:'elab2026',   nombre:'Responsable Elaboración',   dept:'Elaboración' },
-  { user:'almacen',     pass:'alm2026',    nombre:'Responsable Almacén',       dept:'Almacén' },
-  { user:'mto',         pass:'mto2026',    nombre:'Responsable Mantenimiento', dept:'Mantenimiento' },
-  { user:'callineas',   pass:'cal2026',    nombre:'Resp. Calidad Líneas',      dept:'Calidad Líneas' },
-  { user:'calfq',       pass:'calfq2026',  nombre:'Resp. Calidad FQ',          dept:'Calidad FQ' },
-  { user:'calmicro',    pass:'micro2026',  nombre:'Resp. Calidad Micro',       dept:'Calidad Micro' },
-  { user:'calmat',      pass:'calmat2026', nombre:'Resp. Calidad Mat.',        dept:'Calidad Mat.' },
-  { user:'mejora',      pass:'mc2026',     nombre:'Resp. Mejora Continua',     dept:'Mejora Continua' },
-  { user:'soplado',     pass:'sopl2026',   nombre:'Responsable Soplado',       dept:'Soplado' },
-];
-
-// ── WORKERS (mismos que en la app) ───────────────────────────────────
+// ── DATOS ─────────────────────────────────────────────────────────────
+const LS_EPIS = 'ubesol_app_epis';
 const WORKERS = [
-  {nombre:"CARLOS MARTINEZ LOPEZ",     dni:"12345678A", departamento:"Envasado"},
-  {nombre:"MARIA GARCIA FERNANDEZ",    dni:"23456789B", departamento:"Envasado"},
-  {nombre:"JOSE RODRIGUEZ SANCHEZ",    dni:"34567890C", departamento:"Envasado"},
-  {nombre:"ANA LOPEZ MARTINEZ",        dni:"45678901D", departamento:"Envasado"},
-  {nombre:"PEDRO GONZALEZ RUIZ",       dni:"56789012E", departamento:"Envasado"},
-  {nombre:"LUCIA HERNANDEZ JIMENEZ",   dni:"67890123F", departamento:"Envasado"},
-  {nombre:"MIGUEL PEREZ MORENO",       dni:"78901234G", departamento:"Envasado"},
-  {nombre:"SOFIA MARTIN DIAZ",         dni:"89012345H", departamento:"Envasado"},
-  {nombre:"ANTONIO GARCIA ROMERO",     dni:"90123456I", departamento:"Envasado"},
-  {nombre:"ELENA FERNANDEZ TORRES",    dni:"01234567J", departamento:"Envasado"},
-  {nombre:"DAVID SANCHEZ NAVARRO",     dni:"11223344K", departamento:"Envasado"},
-  {nombre:"LAURA JIMENEZ GUERRERO",    dni:"22334455L", departamento:"Envasado"},
-  {nombre:"FRANCISCO RUIZ CANO",       dni:"33445566M", departamento:"Envasado"},
-  {nombre:"CARMEN MORENO FUENTES",     dni:"44556677N", departamento:"Envasado"},
-  {nombre:"RAUL DIAZ MOLINA",          dni:"55667788O", departamento:"Envasado"},
-  {nombre:"ISABEL TORRES REYES",       dni:"66778899P", departamento:"Envasado"},
-  {nombre:"JAVIER ROMERO CASTILLO",    dni:"77889900Q", departamento:"Envasado"},
-  {nombre:"PATRICIA NAVARRO BLANCO",   dni:"88990011R", departamento:"Envasado"},
-  {nombre:"SERGIO GUERRERO VARGAS",    dni:"99001122S", departamento:"Envasado"},
-  {nombre:"MONICA CANO HERRERA",       dni:"00112233T", departamento:"Envasado"},
-  {nombre:"TERESA VARGAS SANTOS",      dni:"67867867Z", departamento:"Elaboración"},
-  {nombre:"MANUEL HERRERA MEDINA",     dni:"78978978A", departamento:"Elaboración"},
-  {nombre:"ANDREA ORTEGA FLORES",      dni:"89089089B", departamento:"Elaboración"},
-  {nombre:"JUAN DELGADO VEGA",         dni:"90190190C", departamento:"Elaboración"},
-  {nombre:"CONSUELO MARIN RUBIO",      dni:"89089089L", departamento:"Almacén"},
-  {nombre:"IGNACIO GIMENEZ ALONSO",    dni:"90190190M", departamento:"Almacén"},
-  {nombre:"DOLORES PASCUAL PEÑA",      dni:"01201201N", departamento:"Almacén"},
-  {nombre:"VICTOR CABRERA RAMOS",      dni:"12312344O", departamento:"Almacén"},
-  {nombre:"ANDRES SANCHEZ GARCIA",     dni:"11122233Y", departamento:"Mantenimiento"},
-  {nombre:"YOLANDA RUIZ LOPEZ",        dni:"22233344Z", departamento:"Mantenimiento"},
-  {nombre:"MARCOS CANO ROMERO",        dni:"11122233I", departamento:"Calidad Líneas"},
-  {nombre:"CAROLINA FUENTES NAVARRO",  dni:"22233344J", departamento:"Calidad Líneas"},
-  {nombre:"SAMUEL VARGAS REYES",       dni:"77788899O", departamento:"Calidad FQ"},
-  {nombre:"LORENA HERRERA CASTILLO",   dni:"88899900P", departamento:"Calidad FQ"},
-  {nombre:"AARON DELGADO HERRERA",     dni:"11122244S", departamento:"Calidad Micro"},
-  {nombre:"MIRIAM IBAÑEZ MEDINA",      dni:"22233355T", departamento:"Calidad Micro"},
-  {nombre:"ALEX LORENZO IBAÑEZ",       dni:"55566688W", departamento:"Calidad Mat."},
-  {nombre:"EVA FLORES MORA",           dni:"66677799X", departamento:"Calidad Mat."},
-  {nombre:"RODRIGO NIETO FLORES",      dni:"99900022A", departamento:"Mejora Continua"},
-  {nombre:"IRENE MARIN VEGA",          dni:"00011133B", departamento:"Mejora Continua"},
-  {nombre:"ALBERTO CABRERA MARIN",     dni:"33344466E", departamento:"Soplado"},
-  {nombre:"NOELIA SERRANO GIMENEZ",    dni:"44455577F", departamento:"Soplado"},
+  {nombre:"CARLOS MARTINEZ LOPEZ",     dni:"12345678A",departamento:"Envasado"},
+  {nombre:"MARIA GARCIA FERNANDEZ",    dni:"23456789B",departamento:"Envasado"},
+  {nombre:"JOSE RODRIGUEZ SANCHEZ",    dni:"34567890C",departamento:"Envasado"},
+  {nombre:"ANA LOPEZ MARTINEZ",        dni:"45678901D",departamento:"Envasado"},
+  {nombre:"PEDRO GONZALEZ RUIZ",       dni:"56789012E",departamento:"Envasado"},
+  {nombre:"LUCIA HERNANDEZ JIMENEZ",   dni:"67890123F",departamento:"Envasado"},
+  {nombre:"MIGUEL PEREZ MORENO",       dni:"78901234G",departamento:"Envasado"},
+  {nombre:"SOFIA MARTIN DIAZ",         dni:"89012345H",departamento:"Envasado"},
+  {nombre:"ANTONIO GARCIA ROMERO",     dni:"90123456I",departamento:"Envasado"},
+  {nombre:"ELENA FERNANDEZ TORRES",    dni:"01234567J",departamento:"Envasado"},
+  {nombre:"DAVID SANCHEZ NAVARRO",     dni:"11223344K",departamento:"Envasado"},
+  {nombre:"LAURA JIMENEZ GUERRERO",    dni:"22334455L",departamento:"Envasado"},
+  {nombre:"FRANCISCO RUIZ CANO",       dni:"33445566M",departamento:"Envasado"},
+  {nombre:"CARMEN MORENO FUENTES",     dni:"44556677N",departamento:"Envasado"},
+  {nombre:"RAUL DIAZ MOLINA",          dni:"55667788O",departamento:"Envasado"},
+  {nombre:"ISABEL TORRES REYES",       dni:"66778899P",departamento:"Envasado"},
+  {nombre:"JAVIER ROMERO CASTILLO",    dni:"77889900Q",departamento:"Envasado"},
+  {nombre:"PATRICIA NAVARRO BLANCO",   dni:"88990011R",departamento:"Envasado"},
+  {nombre:"SERGIO GUERRERO VARGAS",    dni:"99001122S",departamento:"Envasado"},
+  {nombre:"MONICA CANO HERRERA",       dni:"00112233T",departamento:"Envasado"},
+  {nombre:"TERESA VARGAS SANTOS",      dni:"67867867Z",departamento:"Elaboración"},
+  {nombre:"MANUEL HERRERA MEDINA",     dni:"78978978A",departamento:"Elaboración"},
+  {nombre:"ANDREA ORTEGA FLORES",      dni:"89089089B",departamento:"Elaboración"},
+  {nombre:"JUAN DELGADO VEGA",         dni:"90190190C",departamento:"Elaboración"},
+  {nombre:"CONSUELO MARIN RUBIO",      dni:"89089089L",departamento:"Almacén"},
+  {nombre:"IGNACIO GIMENEZ ALONSO",    dni:"90190190M",departamento:"Almacén"},
+  {nombre:"DOLORES PASCUAL PEÑA",      dni:"01201201N",departamento:"Almacén"},
+  {nombre:"VICTOR CABRERA RAMOS",      dni:"12312344O",departamento:"Almacén"},
+  {nombre:"ANDRES SANCHEZ GARCIA",     dni:"11122233Y",departamento:"Mantenimiento"},
+  {nombre:"YOLANDA RUIZ LOPEZ",        dni:"22233344Z",departamento:"Mantenimiento"},
+  {nombre:"MARCOS CANO ROMERO",        dni:"11122233I",departamento:"Calidad Líneas"},
+  {nombre:"CAROLINA FUENTES NAVARRO",  dni:"22233344J",departamento:"Calidad Líneas"},
+  {nombre:"SAMUEL VARGAS REYES",       dni:"77788899O",departamento:"Calidad FQ"},
+  {nombre:"LORENA HERRERA CASTILLO",   dni:"88899900P",departamento:"Calidad FQ"},
+  {nombre:"AARON DELGADO HERRERA",     dni:"11122244S",departamento:"Calidad Micro"},
+  {nombre:"MIRIAM IBAÑEZ MEDINA",      dni:"22233355T",departamento:"Calidad Micro"},
+  {nombre:"ALEX LORENZO IBAÑEZ",       dni:"55566688W",departamento:"Calidad Mat."},
+  {nombre:"EVA FLORES MORA",           dni:"66677799X",departamento:"Calidad Mat."},
+  {nombre:"RODRIGO NIETO FLORES",      dni:"99900022A",departamento:"Mejora Continua"},
+  {nombre:"IRENE MARIN VEGA",          dni:"00011133B",departamento:"Mejora Continua"},
+  {nombre:"ALBERTO CABRERA MARIN",     dni:"33344466E",departamento:"Soplado"},
+  {nombre:"NOELIA SERRANO GIMENEZ",    dni:"44455577F",departamento:"Soplado"},
 ];
-
-const LS_EPIS    = 'ubesol_app_epis';
 
 let currentUser = null;
 let filtroActual = 'todas';
 
-// ── AUTH — lee sesión del portal, no pide login propio ───────────────
+// ── AUTH ──────────────────────────────────────────────────────────────
 function doLogout() {
   localStorage.removeItem('ubesol_portal_session');
   window.location.href = 'index.html';
-}
-
-function showApp() {
-  document.getElementById('hdr-dept').textContent = currentUser.user === 'admin' ? 'Todos los departamentos' : currentUser.departamento;
-  renderTabla();
 }
 
 // ── DATOS ─────────────────────────────────────────────────────────────
@@ -232,29 +190,44 @@ function getSolicitudes() {
   const esAdmin = currentUser.user === 'admin';
   const miDept = (currentUser.departamento || '').trim();
   const result = [];
-  Object.keys(all).forEach(dni => {
-    // Buscar en WORKERS — si no está, usar datos del propio EPI o DNI como nombre
-    const worker = WORKERS.find(w => w.dni === dni);
-    const nombre = worker ? worker.nombre : 'DNI: ' + dni;
-    const departamento = worker ? worker.departamento : miDept;
-    // Filtrar por dept — si no hay worker asumimos que es del dept del responsable
-    if (!esAdmin && departamento.trim() !== miDept) return;
-    (all[dni] || []).forEach((e, idx) => {
-      result.push({ ...e, dni, nombre, departamento, idx });
+  Object.keys(all).forEach(function(dni) {
+    // Buscar trabajador — si no está en WORKERS mostrar igualmente
+    var worker = WORKERS.find(function(w){ return w.dni === dni; });
+    var nombre = worker ? worker.nombre : 'DNI: ' + dni;
+    var dept   = worker ? worker.departamento : miDept;
+    // Filtrar por dept del responsable
+    if (!esAdmin && dept !== miDept) return;
+    var epis = all[dni] || [];
+    epis.forEach(function(e, idx) {
+      result.push({
+        tipo:         e.tipo         || '',
+        talla:        e.talla        || '',
+        nota:         e.nota         || '',
+        estado:       e.estado       || 'pendiente',
+        fecha:        e.fecha        || '',
+        fechaGestion: e.fechaGestion || '',
+        gestionadoPor:e.gestionadoPor|| '',
+        pedidoId:     e.pedidoId    || '',
+        dni:   dni,
+        nombre: nombre,
+        departamento: dept,
+        idx:   idx,
+      });
     });
   });
-  result.sort((a,b) => {
-    if (a.estado === 'pendiente' && b.estado !== 'pendiente') return -1;
-    if (b.estado === 'pendiente' && a.estado !== 'pendiente') return 1;
+  // Pendientes primero
+  result.sort(function(a,b){
+    if (a.estado==='pendiente' && b.estado!=='pendiente') return -1;
+    if (b.estado==='pendiente' && a.estado!=='pendiente') return 1;
     return 0;
   });
   return result;
 }
 
 function saveSolicitud(dni, idx, nuevoEstado) {
-  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
-  if (all[dni] && all[dni][idx]) {
-    all[dni][idx].estado = nuevoEstado;
+  var all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  if (all[dni] && all[dni][idx] !== undefined) {
+    all[dni][idx].estado       = nuevoEstado;
     all[dni][idx].fechaGestion = hoy();
     all[dni][idx].gestionadoPor = currentUser.nombre;
     localStorage.setItem(LS_EPIS, JSON.stringify(all));
@@ -264,63 +237,63 @@ function saveSolicitud(dni, idx, nuevoEstado) {
 // ── RENDER ────────────────────────────────────────────────────────────
 function setFiltro(f, btn) {
   filtroActual = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   renderTabla();
 }
 
 function renderTabla() {
-  const busqueda = document.getElementById('search-inp').value.toLowerCase();
-  let solicitudes = getSolicitudes();
+  var busqueda = (document.getElementById('search-inp').value || '').toLowerCase();
+  var todas = getSolicitudes();
 
-  // Filtrar por estado
-  if (filtroActual !== 'todas') solicitudes = solicitudes.filter(s => s.estado === filtroActual);
-
-  // Filtrar por búsqueda
-  if (busqueda) solicitudes = solicitudes.filter(s =>
-    s.nombre.toLowerCase().includes(busqueda) || s.tipo.toLowerCase().includes(busqueda)
-  );
-
-  // Stats (sobre todas sin filtro de búsqueda ni estado)
-  const todas = getSolicitudes();
-  document.getElementById('stat-pend').textContent = todas.filter(s => s.estado === 'pendiente').length;
-  document.getElementById('stat-ok').textContent   = todas.filter(s => s.estado === 'aprobado').length;
+  // Stats
+  document.getElementById('stat-pend').textContent = todas.filter(function(s){ return s.estado==='pendiente'; }).length;
+  document.getElementById('stat-ok').textContent   = todas.filter(function(s){ return s.estado==='aprobado';  }).length;
   document.getElementById('stat-all').textContent  = todas.length;
 
-  const tbody = document.getElementById('tabla-body');
-  if (!solicitudes.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty">No hay solicitudes${filtroActual !== 'todas' ? ' ' + filtroActual + 's' : ''}</div></td></tr>`;
+  // Filtrar
+  var lista = todas;
+  if (filtroActual !== 'todas') {
+    lista = lista.filter(function(s){ return s.estado === filtroActual; });
+  }
+  if (busqueda) {
+    lista = lista.filter(function(s){
+      return s.nombre.toLowerCase().indexOf(busqueda) >= 0 ||
+             s.tipo.toLowerCase().indexOf(busqueda) >= 0;
+    });
+  }
+
+  var tbody = document.getElementById('tbody');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No hay solicitudes</div></td></tr>';
     return;
   }
 
-  tbody.innerHTML = solicitudes.map(s => {
-    const badgeClass = s.estado === 'pendiente' ? 'badge-pend' : s.estado === 'aprobado' ? 'badge-ok' : 'badge-rech';
-    const badgeText  = s.estado === 'pendiente' ? 'Pendiente' : s.estado === 'aprobado' ? 'Aprobado' : 'Rechazado';
-    const acciones = s.estado === 'pendiente'
-      ? `<button class="btn-aprobar"  onclick="aprobar('${s.dni}',${s.idx})">✓ Aprobar</button>
-         <button class="btn-rechazar" onclick="rechazar('${s.dni}',${s.idx})">✗ Rechazar</button>`
-      : `<span style="font-size:11px;color:var(--faint)">${s.fechaGestion || ''}</span>`;
-    return `<tr>
-      <td><div style="font-weight:600">${s.nombre}</div><div style="font-size:11px;color:var(--faint)">${s.departamento}</div></td>
-      <td>${s.tipo}</td>
-      <td style="color:var(--muted);font-size:12px">${s.talla || '—'}</td>
-      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${s.fecha}</td>
-      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-      <td>
-        ${acciones}
-        <button class="btn-historial" onclick="descargarHistorial('${s.dni}')" title="Historial completo">📄</button>
-      </td>
-    </tr>`;
+  tbody.innerHTML = lista.map(function(s) {
+    var badgeCls  = s.estado==='pendiente' ? 'badge-pend' : s.estado==='aprobado' ? 'badge-ok' : 'badge-rech';
+    var badgeTxt  = s.estado==='pendiente' ? 'Pendiente'  : s.estado==='aprobado' ? 'Aprobado'  : 'Rechazado';
+    var acciones  = s.estado==='pendiente'
+      ? '<button class="btn-aprobar"  onclick="aprobar(\'' + s.dni + '\',' + s.idx + ')">✓ Aprobar</button>' +
+        '<button class="btn-rechazar" onclick="rechazar(\'' + s.dni + '\',' + s.idx + ')">✗ Rechazar</button>'
+      : '<span style="font-size:11px;color:var(--faint)">' + (s.fechaGestion||'') + '</span>';
+    return '<tr>' +
+      '<td><div style="font-weight:600">' + s.nombre + '</div><div style="font-size:11px;color:var(--faint)">' + s.departamento + '</div></td>' +
+      '<td>' + s.tipo + '</td>' +
+      '<td style="color:var(--muted)">' + (s.talla||'—') + '</td>' +
+      '<td style="font-family:\'IBM Plex Mono\',monospace;font-size:12px">' + s.fecha + '</td>' +
+      '<td><span class="badge ' + badgeCls + '">' + badgeTxt + '</span></td>' +
+      '<td>' + acciones + '<button class="btn-hist" onclick="descargarHistorial(\'' + s.dni + '\')" title="Historial">📄</button></td>' +
+      '</tr>';
   }).join('');
 }
 
 function aprobar(dni, idx) {
   saveSolicitud(dni, idx, 'aprobado');
-  const w = WORKERS.find(w => w.dni === dni);
-  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
-  const epi = all[dni][idx];
-  descargarExcelRecepcion(w, epi);
-  toast('✓ Aprobado — Excel para recepción generado');
+  var all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  var epi = all[dni][idx];
+  var worker = WORKERS.find(function(w){ return w.dni===dni; }) || {nombre:'DNI:'+dni, dni:dni, departamento:''};
+  descargarRecepcion(worker, epi);
+  toast('✓ Aprobado — CSV generado');
   renderTabla();
 }
 
@@ -331,140 +304,89 @@ function rechazar(dni, idx) {
   renderTabla();
 }
 
-// ── EXCEL RECEPCION (última petición aprobada) ────────────────────────
-function descargarExcelRecepcion(worker, epi) {
-  const csv = [
-    ['SOLICITUD EPI — RECEPCIÓN', '', '', '', ''],
-    ['Generado por:', currentUser.nombre, 'Fecha:', hoy(), ''],
-    [''],
-    ['TRABAJADOR', 'DNI', 'DEPARTAMENTO', '', ''],
-    [worker.nombre, worker.dni, worker.departamento, '', ''],
-    [''],
-    ['EPI SOLICITADO', 'TALLA / Nº', 'COMENTARIO', 'FECHA SOLICITUD', 'APROBADO POR'],
-    [epi.tipo, epi.talla||'', epi.nota||'', epi.fecha, currentUser.nombre],
-  ].map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+// ── DESCARGAS ─────────────────────────────────────────────────────────
+function csvEsc(v) { return '"' + String(v||'').replace(/"/g,'""') + '"'; }
 
-  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'EPI_Recepcion_' + worker.nombre.replace(/\s+/g,'_') + '_' + hoy().replace(/\//g,'-') + '.csv';
-  a.click();
+function descargarRecepcion(worker, epi) {
+  var rows = [
+    ['SOLICITUD EPI — RECEPCIÓN','','','',''],
+    ['Generado por:',currentUser.nombre,'Fecha:',hoy(),''],
+    ['','','','',''],
+    ['TRABAJADOR','DNI','DEPARTAMENTO','',''],
+    [worker.nombre,worker.dni,worker.departamento,'',''],
+    ['','','','',''],
+    ['EPI','TALLA / Nº','COMENTARIO','FECHA SOLICITUD','APROBADO POR'],
+    [epi.tipo,epi.talla||'',epi.nota||'',epi.fecha,currentUser.nombre],
+  ];
+  descargarCSV(rows, 'EPI_Recepcion_' + worker.nombre.replace(/\s+/g,'_') + '_' + hoy().replace(/\//g,'-'));
 }
 
-// ── EXCEL HISTORIAL (todas las peticiones del trabajador) ─────────────
 function descargarHistorial(dni) {
-  const worker = WORKERS.find(w => w.dni === dni);
-  if (!worker) return;
-  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
-  const epis = all[dni] || [];
-  if (!epis.length) { toast('Este trabajador no tiene solicitudes'); return; }
-
-  const rows = [
-    ['HISTORIAL EPIs — ' + worker.nombre, '', '', '', ''],
-    ['DNI:', worker.dni, 'Departamento:', worker.departamento, ''],
-    ['Generado:', hoy(), '', '', ''],
-    [''],
-    ['EPI', 'COMENTARIO', 'FECHA SOLICITUD', 'ESTADO', 'FECHA GESTIÓN'],
-    ...epis.map(e => [e.tipo, e.nota||'', e.fecha, e.estado, e.fechaGestion||''])
-  ].map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
-
-  const blob = new Blob(['\uFEFF' + rows], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'Historial_EPI_' + worker.nombre.replace(/\s+/g,'_') + '.csv';
-  a.click();
+  var worker = WORKERS.find(function(w){ return w.dni===dni; }) || {nombre:'DNI:'+dni,dni:dni,departamento:''};
+  var all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  var epis = all[dni] || [];
+  if (!epis.length) { toast('Sin solicitudes para este trabajador'); return; }
+  var rows = [
+    ['HISTORIAL EPIs — ' + worker.nombre,'','','',''],
+    ['DNI:',worker.dni,'Departamento:',worker.departamento,''],
+    ['Generado:',hoy(),'','',''],
+    ['','','','',''],
+    ['EPI','TALLA / Nº','COMENTARIO','FECHA','ESTADO','FECHA GESTIÓN'],
+  ];
+  epis.forEach(function(e){
+    rows.push([e.tipo,e.talla||'',e.nota||'',e.fecha,e.estado,e.fechaGestion||'']);
+  });
+  descargarCSV(rows, 'Historial_EPI_' + worker.nombre.replace(/\s+/g,'_'));
   toast('📄 Historial descargado');
 }
 
-// ── EXPORTAR EXCEL (CSV con BOM para Excel) ──────────────────────────
 function exportarExcel() {
-  // Coger TODAS las solicitudes sin filtro de búsqueda ni estado
-  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
-  const esAdmin = currentUser.user === 'admin';
-  const miDept = (currentUser.departamento || '').trim();
-  const rows = [];
-
-  Object.keys(all).forEach(dni => {
-    const worker = WORKERS.find(w => w.dni === dni);
-    if (!worker) return;
-    if (!esAdmin && worker.departamento.trim() !== miDept) return;
-    (all[dni] || []).forEach(e => {
-      rows.push({
-        nombre:      worker.nombre,
-        dni:         worker.dni,
-        departamento:worker.departamento,
-        tipo:        e.tipo,
-        talla:       e.talla || '',
-        nota:        e.nota  || '',
-        estado:      e.estado,
-        fecha:       e.fecha,
-        fechaGestion:e.fechaGestion || '',
-        gestionadoPor:e.gestionadoPor || '',
-        pedidoId:    e.pedidoId || '',
-      });
-    });
-  });
-
-  if (!rows.length) { toast('No hay solicitudes para exportar'); return; }
-
-  // Ordenar: dept → nombre → fecha
-  rows.sort((a,b) => {
-    if (a.departamento !== b.departamento) return a.departamento.localeCompare(b.departamento);
-    if (a.nombre !== b.nombre) return a.nombre.localeCompare(b.nombre);
-    return a.fecha.localeCompare(b.fecha);
-  });
-
-  const COLS = [
-    ['TRABAJADOR',     r => r.nombre],
-    ['DNI',            r => r.dni],
-    ['DEPARTAMENTO',   r => r.departamento],
-    ['EPI',            r => r.tipo],
-    ['TALLA / Nº',     r => r.talla],
-    ['COMENTARIO',     r => r.nota],
-    ['ESTADO',         r => r.estado.toUpperCase()],
-    ['FECHA SOLICITUD',r => r.fecha],
-    ['FECHA GESTIÓN',  r => r.fechaGestion],
-    ['GESTIONADO POR', r => r.gestionadoPor],
-    ['ID PEDIDO',      r => r.pedidoId],
+  var todas = getSolicitudes();
+  if (!todas.length) { toast('No hay solicitudes para exportar'); return; }
+  var esAdmin = currentUser.user === 'admin';
+  var miDept  = currentUser.departamento;
+  var rows = [
+    ['INFORME EPIs — ' + (esAdmin ? 'TODOS LOS DEPARTAMENTOS' : miDept.toUpperCase()),'','','','','','','',''],
+    ['Generado:',hoy(),'Generado por:',currentUser.nombre,'','','','',''],
+    ['','','','','','','','',''],
+    ['TRABAJADOR','DNI','DEPARTAMENTO','EPI','TALLA / Nº','COMENTARIO','ESTADO','FECHA SOLICITUD','FECHA GESTIÓN','GESTIONADO POR'],
   ];
+  todas.forEach(function(s){
+    rows.push([s.nombre,s.dni,s.departamento,s.tipo,s.talla,s.nota,s.estado.toUpperCase(),s.fecha,s.fechaGestion,s.gestionadoPor]);
+  });
+  descargarCSV(rows, 'Informe_EPIs_' + (esAdmin?'Global':miDept.replace(/\s+/g,'_')) + '_' + hoy().replace(/\//g,'-'));
+  toast('✅ Excel exportado — ' + (rows.length-4) + ' solicitudes');
+}
 
-  const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
-
-  // Cabecera del informe
-  const titulo  = esc('INFORME EPIs — ' + (esAdmin ? 'TODOS LOS DEPARTAMENTOS' : miDept.toUpperCase()));
-  const fechaHoy= esc('Generado: ' + hoy() + '  ·  Generado por: ' + currentUser.nombre);
-  const vacio   = COLS.map(() => '""').join(',');
-  const header  = COLS.map(col => esc(col[0])).join(',');
-  const dataRows= rows.map(r => COLS.map(col => esc(col[1](r))).join(','));
-
-  const csv = [titulo, fechaHoy, vacio, header, ...dataRows].join('
-');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
+function descargarCSV(rows, nombre) {
+  var csv = rows.map(function(r){ return r.map(csvEsc).join(','); }).join('\n');
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'Informe_EPIs_' + (esAdmin ? 'Global' : miDept.replace(/\s+/g,'_')) + '_' + hoy().replace(/\//g,'-') + '.csv';
+  a.download = nombre + '.csv';
   a.click();
-  toast('✅ Excel exportado — ' + rows.length + ' solicitudes');
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────
 function hoy() {
-  const d = new Date();
+  var d = new Date();
   return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
 }
 
 function toast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
 }
 
-// ── INIT — leer sesión del portal ────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────
 (function() {
-  const sess = JSON.parse(localStorage.getItem('ubesol_portal_session') || 'null');
+  var sess = null;
+  try { sess = JSON.parse(localStorage.getItem('ubesol_portal_session') || 'null'); } catch(e){}
   if (!sess) { window.location.href = 'index.html'; return; }
   currentUser = sess;
-  showApp();
+  document.getElementById('hdr-dept').textContent = currentUser.user==='admin' ? 'Todos los departamentos' : currentUser.departamento;
+  renderTabla();
 })();
 </script>
 </body>
