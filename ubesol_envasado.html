@@ -2002,11 +2002,11 @@ function clearStorage() {
     sel.forEach(k => localStorage.removeItem(k));
     cerrar();
 
-    // Guardar semana activa y publicar todas las restantes
-    if (!estaActiva) autoSaveToKey(weekKey());
+    // Siempre guardar la semana activa y publicar todas las restantes
+    autoSaveToKey(weekKey());
     autoPublicarTodasLasSemanas();
 
-    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · restantes publicadas');
+    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · restantes guardadas y publicadas');
     if (estaActiva) loadWeekFromStorage(weekKey());
   };
 }
@@ -2407,18 +2407,38 @@ function autoSave() {
 // Publica silenciosamente en el histórico todas las semanas que tengan datos
 function autoPublicarTodasLasSemanas() {
   try {
+    // Construir set de semanas activas en localStorage
+    const activas = new Set();
+    const keysToProcess = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+      keysToProcess.push(k);
+    }
+
+    // Publicar cada semana activa al histórico
+    keysToProcess.forEach(k => {
       const raw = localStorage.getItem(k);
-      if (!raw) continue;
+      if (!raw) return;
       try {
         const d = JSON.parse(raw);
-        if (!d || !d._version) continue;
-        const historicoKey = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
-        localStorage.setItem(historicoKey, raw);
+        if (!d || !d._version) return;
+        const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        localStorage.setItem(hk, raw);
+        activas.add(hk);
       } catch(e) {}
+    });
+
+    // Eliminar del histórico las semanas que ya no existen en localStorage
+    const historicoKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ubesol_historico_')) historicoKeys.push(k);
     }
+    historicoKeys.forEach(k => {
+      if (!activas.has(k)) localStorage.removeItem(k);
+    });
+
   } catch(e) {
     console.error('autoPublicar error:', e);
   }
