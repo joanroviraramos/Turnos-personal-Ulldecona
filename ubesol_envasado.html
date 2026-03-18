@@ -1926,18 +1926,22 @@ function clearStorage() {
   const semActual = Math.round((thu - startW1) / 604800000) + 1;
   const claveActual = anoActual * 100 + semActual;
 
-  // Recoger todas las semanas guardadas
+  // Recoger semanas del dept — buscamos tanto en claves principales como en histórico
+  const dk = deptKey();
+  const prefixes = ['ubesol_' + dk + '_', 'ubesol_historico_' + dk + '_'];
+  const seenSemanas = new Map();
   const semanas = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    const _ck_prefix = 'ubesol_' + deptKey() + '_';
-    const _ck_hist = 'ubesol_historico_' + deptKey() + '_';
-    if (!k || !k.startsWith(_ck_prefix) || k.startsWith(_ck_hist)) continue;
+    if (!k || !prefixes.some(p => k.startsWith(p))) continue;
     try {
       const d = JSON.parse(localStorage.getItem(k));
-      if (!d || !d._version) continue;
+      if (!d || !d._version || !d.semana || !d.ano) continue;
       const clave = parseInt(d.ano) * 100 + parseInt(d.semana);
-      if (clave < claveActual) continue; // no mostrar semanas pasadas
+      if (clave < claveActual) continue;
+      const mapKey = d.ano + '_' + String(d.semana).padStart(2,'0');
+      if (seenSemanas.has(mapKey)) continue;
+      seenSemanas.set(mapKey, true);
       const { monday, sunday } = getWeekDates(parseInt(d.ano), parseInt(d.semana));
       semanas.push({ key: k, semana: d.semana, ano: d.ano,
         label: 'S' + String(d.semana).padStart(2,'0') + ' / ' + d.ano + '  ·  ' + fmtDate(monday) + ' – ' + fmtDate(sunday) });
@@ -2017,8 +2021,11 @@ function clearStorage() {
     const savedKey = weekKey();
     sel.forEach(k => {
       localStorage.removeItem(k);
-      const match = k.match(/ubesol_([a-z]+)_(\d+)_s(\d+)$/);
-      if (match) localStorage.removeItem('ubesol_historico_' + match[1] + '_' + match[2] + '_s' + match[3]);
+      // Borrar la versión complementaria (principal↔histórico)
+      const matchHist = k.match(/^ubesol_historico_([a-z]+)_(\d+)_s(\d+)$/);
+      const matchMain = k.match(/^ubesol_([a-z]+)_(\d+)_s(\d+)$/);
+      if (matchHist) localStorage.removeItem('ubesol_' + matchHist[1] + '_' + matchHist[2] + '_s' + matchHist[3]);
+      if (matchMain) localStorage.removeItem('ubesol_historico_' + matchMain[1] + '_' + matchMain[2] + '_s' + matchMain[3]);
     });
 
     cerrar();
@@ -2511,7 +2518,10 @@ function loadWeekFromStorage(key) {
   initCalidadFQ(); initCalidadMicro(); initCalidad();
   initElaboracion(); initAlmacen(); initMantenimiento();
   try {
-    const saved = localStorage.getItem(key || weekKey());
+    const mainKey = key || weekKey();
+    // Buscar primero en clave principal, luego en histórico
+    const histKey = mainKey.replace('ubesol_' + deptKey() + '_', 'ubesol_historico_' + deptKey() + '_');
+    const saved = localStorage.getItem(mainKey) || localStorage.getItem(histKey);
     if (saved) {
       const d = JSON.parse(saved);
       if (applyPayload(d)) {
