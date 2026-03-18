@@ -1165,23 +1165,23 @@ function buildExpandableRow(worker, wi, puesto, arr) {
 // ═══════════════════════════════════════════════════════════════════════
 function guardarManual() {
   autoSaveToKey(weekKey());
-  const dk = deptKey();
-  const prefix = 'ubesol_' + dk + '_';
-  const histPrefix = 'ubesol_historico_' + dk + '_';
   let count = 0;
   try {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(prefix) && !k.startsWith(histPrefix)) keys.push(k);
+      if (k && k.startsWith('ubesol_') && !k.startsWith('ubesol_historico_') && !k.startsWith('ubesol_publicado') && !k.startsWith('ubesol_app_')) keys.push(k);
     }
     keys.forEach(k => {
       const raw = localStorage.getItem(k);
       if (!raw) return;
       try {
         const d = JSON.parse(raw);
-        if (!d || !d._version) return;
-        localStorage.setItem(histPrefix + d.ano + '_s' + String(d.semana).padStart(2,'0'), raw);
+        if (!d || !d._version || !d.semana || !d.ano) return;
+        const dataDk = d.dept
+          ? d.dept.toLowerCase().replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
+          : deptKey();
+        localStorage.setItem('ubesol_historico_' + dataDk + '_' + d.ano + '_s' + String(d.semana).padStart(2,'0'), raw);
         count++;
       } catch(e) {}
     });
@@ -2445,10 +2445,11 @@ function autoPublicarTodasLasSemanas() {
   const histPrefix = 'ubesol_historico_' + dk + '_';
   try {
     const activas = new Set();
+    // Recoger todas las claves que empiezan por ubesol_ y NO son historico
     const keysToProcess = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (!k || !k.startsWith(prefix) || k.startsWith(histPrefix)) continue;
+      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k.startsWith('ubesol_publicado') || k.startsWith('ubesol_app_')) continue;
       keysToProcess.push(k);
     }
     keysToProcess.forEach(k => {
@@ -2456,12 +2457,17 @@ function autoPublicarTodasLasSemanas() {
       if (!raw) return;
       try {
         const d = JSON.parse(raw);
-        if (!d || !d._version) return;
-        const hk = histPrefix + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        if (!d || !d._version || !d.semana || !d.ano) return;
+        // Leer el dept del dato para construir la clave del histórico correctamente
+        const dataDk = d.dept
+          ? d.dept.toLowerCase().replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
+          : dk; // fallback al dept activo si no tiene dept en el dato
+        const hk = 'ubesol_historico_' + dataDk + '_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
         localStorage.setItem(hk, raw);
         activas.add(hk);
       } catch(e) {}
     });
+    // Limpiar del histórico solo las del dept activo que ya no tienen datos
     const historicoKeys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
