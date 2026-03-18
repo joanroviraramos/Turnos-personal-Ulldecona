@@ -1764,88 +1764,6 @@ function generarProximasSemanas() {
 
   let generadas = 0;
 
-  // rotarTurno aplica N pasos a un turno (M→N→T→M...)
-  function rotarTurno(turno, pasos) {
-    let t = turno;
-    for (let p = 0; p < pasos; p++) t = ROTACION[t] || t;
-    return t;
-  }
-
-  const safeArr = a => Array.isArray(a) ? a : [];
-
-  // Función que rota los workers de un payload 1 solo paso
-  function rotarPayload1Paso(payload) {
-    // Envasado
-    if (payload.envasado) {
-      if (payload.envasado.specialWorkers) {
-        Object.values(payload.envasado.specialWorkers).forEach(arr => {
-          safeArr(arr).forEach(w => {
-            if (!w || !w.cells) return;
-            const newCells = { M:'', T:'', N:'', P:'' };
-            Object.entries(w.cells).forEach(([t, nombre]) => {
-              if (nombre) newCells[rotarTurno(t, 1)] = nombre;
-            });
-            w.cells = newCells;
-          });
-        });
-      }
-      safeArr(payload.envasado.lines).forEach(line => {
-        [...safeArr(line.maq), ...safeArr(line.ops)].forEach(w => {
-          if (!w || !w.cells) return;
-          const newCells = { M:'', T:'', N:'', P:'' };
-          Object.entries(w.cells).forEach(([t, nombre]) => {
-            if (nombre) newCells[rotarTurno(t, 1)] = nombre;
-          });
-          w.cells = newCells;
-        });
-      });
-      ['bajas','vacaciones'].forEach(k => {
-        safeArr(payload.envasado[k]).forEach(w => {
-          if (!w || !w.cells) return;
-          const newCells = { M:'', T:'', N:'', P:'' };
-          Object.entries(w.cells).forEach(([t, nombre]) => {
-            if (nombre) newCells[rotarTurno(t, 1)] = nombre;
-          });
-          w.cells = newCells;
-        });
-      });
-    }
-    // Resto de departamentos
-    const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ',
-      'calidadMicro','calidadMat','mejoraContinua','soplado'];
-    POST_KEYS.forEach(depKey => {
-      const dep = payload[depKey];
-      if (!dep) return;
-      if (dep.workers) {
-        Object.values(dep.workers).forEach(arr => {
-          safeArr(arr).forEach(w => {
-            if (!w || !w.cells) return;
-            const newCells = { M:'', T:'', N:'', P:'' };
-            Object.entries(w.cells).forEach(([t, nombre]) => {
-              if (nombre) newCells[rotarTurno(t, 1)] = nombre;
-            });
-            w.cells = newCells;
-          });
-        });
-      }
-      ['bajas','vacaciones'].forEach(k => {
-        safeArr(dep[k]).forEach(w => {
-          if (!w || !w.cells) return;
-          const newCells = { M:'', T:'', N:'', P:'' };
-          Object.entries(w.cells).forEach(([t, nombre]) => {
-            if (nombre) newCells[rotarTurno(t, 1)] = nombre;
-          });
-          w.cells = newCells;
-        });
-      });
-    });
-  }
-
-  // Generamos semana a semana aplicando 1 rotación respecto a la anterior
-  // Así la secuencia continúa desde donde estaba, independientemente de
-  // cuántas semanas se hayan generado antes.
-  let prevPayload = basePayload;
-
   for (let i = 1; i <= 10; i++) {
     let sem = semBase + i;
     let ano = anoBase;
@@ -1853,8 +1771,10 @@ function generarProximasSemanas() {
 
     const key = 'ubesol_' + ano + '_s' + String(sem).padStart(2,'0');
 
-    // Clonar el payload de la semana anterior y aplicar 1 rotación
-    const newPayload = JSON.parse(JSON.stringify(prevPayload));
+    // Siempre sobreescribir
+
+    // Clonar payload profundo y rotar turnos
+    const newPayload = JSON.parse(JSON.stringify(basePayload));
     newPayload.semana = String(sem);
     newPayload.ano    = String(ano);
 
@@ -1863,10 +1783,87 @@ function generarProximasSemanas() {
     newPayload.fecha_inicio = fmtISO(monday);
     newPayload.fecha_fin    = fmtISO(sunday);
 
-    rotarPayload1Paso(newPayload);
+    // Aplicar i rotaciones al turno base
+    function rotarTurno(turno, pasos) {
+      let t = turno;
+      for (let p = 0; p < pasos; p++) t = ROTACION[t] || t;
+      return t;
+    }
+
+    const safeArr = a => Array.isArray(a) ? a : [];
+
+    // Rotar Envasado
+    if (newPayload.envasado) {
+      // Especiales
+      if (newPayload.envasado.specialWorkers) {
+        Object.values(newPayload.envasado.specialWorkers).forEach(arr => {
+          safeArr(arr).forEach(w => {
+            if (!w || !w.cells) return;
+            const newCells = { M:'', T:'', N:'', P:'' };
+            Object.entries(w.cells).forEach(([t, nombre]) => {
+              if (nombre) newCells[rotarTurno(t, i)] = nombre;
+            });
+            w.cells = newCells;
+          });
+        });
+      }
+      // Líneas
+      safeArr(newPayload.envasado.lines).forEach(line => {
+        [...safeArr(line.maq), ...safeArr(line.ops)].forEach(w => {
+          if (!w || !w.cells) return;
+          const newCells = { M:'', T:'', N:'', P:'' };
+          Object.entries(w.cells).forEach(([t, nombre]) => {
+            if (nombre) newCells[rotarTurno(t, i)] = nombre;
+          });
+          w.cells = newCells;
+        });
+      });
+      // Bajas/vacaciones
+      ['bajas','vacaciones'].forEach(k => {
+        safeArr(newPayload.envasado[k]).forEach(w => {
+          if (!w || !w.cells) return;
+          const newCells = { M:'', T:'', N:'', P:'' };
+          Object.entries(w.cells).forEach(([t, nombre]) => {
+            if (nombre) newCells[rotarTurno(t, i)] = nombre;
+          });
+          w.cells = newCells;
+        });
+      });
+    }
+
+    // Rotar todos los demás departamentos
+    const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ',
+      'calidadMicro','calidadMat','mejoraContinua','soplado'];
+    POST_KEYS.forEach(depKey => {
+      const dep = newPayload[depKey];
+      if (!dep) return;
+      // workers
+      if (dep.workers) {
+        Object.values(dep.workers).forEach(arr => {
+          safeArr(arr).forEach(w => {
+            if (!w || !w.cells) return;
+            const newCells = { M:'', T:'', N:'', P:'' };
+            Object.entries(w.cells).forEach(([t, nombre]) => {
+              if (nombre) newCells[rotarTurno(t, i)] = nombre;
+            });
+            w.cells = newCells;
+          });
+        });
+      }
+      // bajas/vacaciones
+      ['bajas','vacaciones'].forEach(k => {
+        safeArr(dep[k]).forEach(w => {
+          if (!w || !w.cells) return;
+          const newCells = { M:'', T:'', N:'', P:'' };
+          Object.entries(w.cells).forEach(([t, nombre]) => {
+            if (nombre) newCells[rotarTurno(t, i)] = nombre;
+          });
+          w.cells = newCells;
+        });
+      });
+    });
 
     localStorage.setItem(key, JSON.stringify(newPayload));
-    prevPayload = newPayload;
     generadas++;
   }
 
@@ -2281,6 +2278,27 @@ function autoSaveToKey(key) {
 
 function autoSave() {
   autoSaveToKey(weekKey());
+  autoPublicarTodasLasSemanas();
+}
+
+// Publica silenciosamente en el histórico todas las semanas que tengan datos
+function autoPublicarTodasLasSemanas() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      try {
+        const d = JSON.parse(raw);
+        if (!d || !d._version) continue;
+        const historicoKey = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        localStorage.setItem(historicoKey, raw);
+      } catch(e) { /* ignorar semanas con JSON inválido */ }
+    }
+  } catch(e) {
+    console.error('autoPublicar error:', e);
+  }
 }
 
 function applyPayload(d) {
