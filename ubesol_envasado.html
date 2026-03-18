@@ -1907,6 +1907,17 @@ function generarProximasSemanas() {
 }
 
 function clearStorage() {
+  // Calcular semana actual para bloquear semanas pasadas
+  const now = new Date();
+  const thu = new Date(now);
+  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
+  const anoActual = thu.getFullYear();
+  const jan4 = new Date(anoActual, 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const semActual = Math.round((thu - startW1) / 604800000) + 1;
+  const claveActual = String(anoActual) + String(semActual).padStart(2,'0');
+
   // Recoger todas las semanas guardadas
   const semanas = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -1915,6 +1926,8 @@ function clearStorage() {
     try {
       const d = JSON.parse(localStorage.getItem(k));
       if (!d || !d._version) continue;
+      const clave = String(d.ano) + String(d.semana).padStart(2,'0');
+      if (clave < claveActual) continue; // no mostrar semanas pasadas
       const { monday, sunday } = getWeekDates(parseInt(d.ano), parseInt(d.semana));
       semanas.push({ key: k, semana: d.semana, ano: d.ano,
         label: 'S' + String(d.semana).padStart(2,'0') + ' / ' + d.ano + '  ·  ' + fmtDate(monday) + ' – ' + fmtDate(sunday) });
@@ -1977,10 +1990,23 @@ function clearStorage() {
   document.getElementById('cm-confirm').onclick = () => {
     const sel = [...list.querySelectorAll('input:checked')].map(c => c.dataset.key);
     if (!sel.length) { toast('No has seleccionado ninguna semana.'); return; }
+
+    // Obtener labels para el mensaje de confirmación
+    const labels = sel.map(k => {
+      const s = semanas.find(s => s.key === k);
+      return s ? 'S' + String(s.semana).padStart(2,'0') + '/' + s.ano : k;
+    });
+    if (!confirm('¿Seguro que quieres borrar estas ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + '?\n\n' + labels.join('\n') + '\n\nEsta acción no se puede deshacer.')) return;
+
     const estaActiva = sel.includes(weekKey());
     sel.forEach(k => localStorage.removeItem(k));
     cerrar();
-    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : ''));
+
+    // Guardar semana activa y publicar todas las restantes
+    if (!estaActiva) autoSaveToKey(weekKey());
+    autoPublicarTodasLasSemanas();
+
+    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · restantes publicadas');
     if (estaActiva) loadWeekFromStorage(weekKey());
   };
 }
