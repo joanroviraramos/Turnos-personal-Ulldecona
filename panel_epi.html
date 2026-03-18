@@ -71,6 +71,13 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
 .btn-aprobar:hover { background: var(--green-d); }
 .btn-rechazar { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 5px; border: 1px solid var(--red); cursor: pointer; background: white; color: var(--red); transition: all .15s; }
 .btn-rechazar:hover { background: var(--red-l); }
+.btn-export {
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+  padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer;
+  background: var(--green); color: white; white-space: nowrap;
+  transition: all .15s;
+}
+.btn-export:hover { background: var(--green-d); }
 .btn-historial { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer; background: white; color: var(--muted); transition: all .15s; }
 .btn-historial:hover { border-color: var(--blue); color: var(--blue); }
 
@@ -117,6 +124,7 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
       <button class="filter-btn" onclick="setFiltro('aprobado',this)">Aprobadas</button>
       <button class="filter-btn" onclick="setFiltro('rechazado',this)">Rechazadas</button>
       <input class="search-inp" type="text" id="search-inp" placeholder="Buscar trabajador o EPI..." oninput="renderTabla()">
+      <button class="btn-export" onclick="exportarExcel()">⬇ Exportar Excel</button>
     </div>
 
     <!-- Tabla -->
@@ -364,6 +372,77 @@ function descargarHistorial(dni) {
   a.download = 'Historial_EPI_' + worker.nombre.replace(/\s+/g,'_') + '.csv';
   a.click();
   toast('📄 Historial descargado');
+}
+
+// ── EXPORTAR EXCEL (CSV con BOM para Excel) ──────────────────────────
+function exportarExcel() {
+  // Coger TODAS las solicitudes sin filtro de búsqueda ni estado
+  const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+  const esAdmin = currentUser.user === 'admin';
+  const miDept = (currentUser.departamento || '').trim();
+  const rows = [];
+
+  Object.keys(all).forEach(dni => {
+    const worker = WORKERS.find(w => w.dni === dni);
+    if (!worker) return;
+    if (!esAdmin && worker.departamento.trim() !== miDept) return;
+    (all[dni] || []).forEach(e => {
+      rows.push({
+        nombre:      worker.nombre,
+        dni:         worker.dni,
+        departamento:worker.departamento,
+        tipo:        e.tipo,
+        talla:       e.talla || '',
+        nota:        e.nota  || '',
+        estado:      e.estado,
+        fecha:       e.fecha,
+        fechaGestion:e.fechaGestion || '',
+        gestionadoPor:e.gestionadoPor || '',
+        pedidoId:    e.pedidoId || '',
+      });
+    });
+  });
+
+  if (!rows.length) { toast('No hay solicitudes para exportar'); return; }
+
+  // Ordenar: dept → nombre → fecha
+  rows.sort((a,b) => {
+    if (a.departamento !== b.departamento) return a.departamento.localeCompare(b.departamento);
+    if (a.nombre !== b.nombre) return a.nombre.localeCompare(b.nombre);
+    return a.fecha.localeCompare(b.fecha);
+  });
+
+  const COLS = [
+    ['TRABAJADOR',     r => r.nombre],
+    ['DNI',            r => r.dni],
+    ['DEPARTAMENTO',   r => r.departamento],
+    ['EPI',            r => r.tipo],
+    ['TALLA / Nº',     r => r.talla],
+    ['COMENTARIO',     r => r.nota],
+    ['ESTADO',         r => r.estado.toUpperCase()],
+    ['FECHA SOLICITUD',r => r.fecha],
+    ['FECHA GESTIÓN',  r => r.fechaGestion],
+    ['GESTIONADO POR', r => r.gestionadoPor],
+    ['ID PEDIDO',      r => r.pedidoId],
+  ];
+
+  const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
+
+  // Cabecera del informe
+  const titulo  = esc('INFORME EPIs — ' + (esAdmin ? 'TODOS LOS DEPARTAMENTOS' : miDept.toUpperCase()));
+  const fechaHoy= esc('Generado: ' + hoy() + '  ·  Generado por: ' + currentUser.nombre);
+  const vacio   = COLS.map(() => '""').join(',');
+  const header  = COLS.map(col => esc(col[0])).join(',');
+  const dataRows= rows.map(r => COLS.map(col => esc(col[1](r))).join(','));
+
+  const csv = [titulo, fechaHoy, vacio, header, ...dataRows].join('
+');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Informe_EPIs_' + (esAdmin ? 'Global' : miDept.replace(/\s+/g,'_')) + '_' + hoy().replace(/\//g,'-') + '.csv';
+  a.click();
+  toast('✅ Excel exportado — ' + rows.length + ' solicitudes');
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────
