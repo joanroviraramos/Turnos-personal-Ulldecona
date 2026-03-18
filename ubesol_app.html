@@ -485,6 +485,17 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.07em;
 }
+
+.no-turno {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 14px;
+  line-height: 1.6;
+}
 </style>
 </head>
 <body>
@@ -749,34 +760,13 @@ async function init() {
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
 async function loadCuadrante() {
-  try {
-    const saved = localStorage.getItem('ubesol_publicado');
-    if (saved) {
-      const data = JSON.parse(saved);
-      cuadrante = data;
-      // Guardar en histórico si no existe ya
-      if (data.semana && data.ano) {
-        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
-        if (!localStorage.getItem(hKey)) {
-          localStorage.setItem(hKey, saved);
-        }
-      }
-      if (currentUser) updateHomeInfo();
-    }
-  } catch(e) {}
-
-  // Fallback: GitHub Pages
+  // La app lee el historico directamente — no necesita ubesol_publicado
+  // Solo usa el fallback de GitHub como ultimo recurso
   try {
     const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
     const data = await r.json();
     cuadrante = data;
-    if (data.semana && data.ano) {
-      const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
-      if (!localStorage.getItem(hKey)) {
-        localStorage.setItem(hKey, JSON.stringify(data));
-      }
-    }
     if (currentUser) updateHomeInfo();
   } catch(e) {}
 }
@@ -897,13 +887,15 @@ function showTurnos() {
   turnosTab = 'lista';
   const TURNO_NOMBRES = { M: 'Mañana', T: 'Tarde', N: 'Noche', P: 'Partido / Especial' };
 
-  // Calcular semana actual
+  // Calcular semana actual (ISO)
   const now = new Date();
-  const jan4 = new Date(now.getFullYear(), 0, 4);
+  const thu = new Date(now);
+  thu.setDate(now.getDate() - ((now.getDay() + 6) % 7) + 3);
+  const anoActual = thu.getFullYear();
+  const jan4 = new Date(anoActual, 0, 4);
   const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-  const semActual = Math.ceil((now - startW1) / 604800000);
-  const anoActual = now.getFullYear();
+  startW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const semActual = Math.round((thu - startW1) / 604800000) + 1;
 
   // Recoger histórico, máximo 10 semanas
   let historico = getHistorico();
@@ -1010,24 +1002,46 @@ function switchTurnosTab(tab) {
   }
 }
 
+function deptKeyFromDept(dept) {
+  // Convierte nombre de departamento a clave de localStorage
+  // Ej: "Calidad Líneas" → "calidadlineas"
+  return (dept || '').toLowerCase()
+    .replace(/\s+/g,'')
+    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
+    .replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n')
+    // Normalizar variantes del nombre
+    .replace('fís-quím','fq').replace('fisquim','fq')
+    .replace('microbiologia','micro').replace('materiales','mat')
+    .replace('continua','continua').replace('lineas','lineas');
+}
+
 function getHistorico() {
-  const historico = [];
+  // Determinar el dept del usuario logado para filtrar solo sus semanas
+  const userDept = currentUser ? deptKeyFromDept(currentUser.departamento) : null;
+
+  const seen = new Map(); // clave ano+semana → data
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key || !key.startsWith('ubesol_historico_')) continue;
     try {
       const data = JSON.parse(localStorage.getItem(key));
-      if (data) historico.push(data);
+      if (!data || !data.semana || !data.ano) continue;
+
+      // Si hay dept en el dato, filtrar por el del usuario
+      if (data.dept && userDept) {
+        const dataDept = deptKeyFromDept(data.dept);
+        if (dataDept !== userDept) continue; // no es su dept
+      }
+
+      const k = String(data.ano) + '_' + String(data.semana).padStart(2,'0');
+      if (!seen.has(k) || data.dept) seen.set(k, data);
     } catch(e) {}
   }
-  if (cuadrante) {
-    const yaEsta = historico.some(h => h.semana == cuadrante.semana && h.ano == cuadrante.ano);
-    if (!yaEsta) historico.push(cuadrante);
-  }
+  const historico = Array.from(seen.values());
   historico.sort((a, b) => {
     const ka = parseInt(a.ano)*100 + parseInt(a.semana);
     const kb = parseInt(b.ano)*100 + parseInt(b.semana);
-    return ka - kb; // ascendente: actual primero, futuras después
+    return ka - kb;
   });
   return historico;
 }
