@@ -381,6 +381,10 @@ body {
 
 .tag-ok   { background: #dcfce7; color: #166534; }
 .tag-pend { background: #fef3c7; color: #92400e; }
+.tag-rech { background: #fee2e2; color: #991b1b; }
+.epi-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.epi-tab { flex: 1; padding: 8px 4px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text-3); font-size: 12px; font-weight: 600; font-family: 'DM Sans',sans-serif; cursor: pointer; text-align: center; transition: all .15s; }
+.epi-tab.active { background: var(--green); color: white; border-color: var(--green); }
 
 .btn-nueva-epi {
   background: var(--green);
@@ -1238,24 +1242,49 @@ function showEpi() {
   renderEpi();
 }
 
+let epiTabActual = 'pendiente';
+
+function setEpiTab(tab) {
+  epiTabActual = tab;
+  renderEpi();
+}
+
 function renderEpi() {
   const epis = getEpis();
   const c = document.getElementById('epi-content');
 
-  const lista = epis.length ? epis.map(e => `
-    <div class="epi-item">
+  const pend  = epis.filter(e => e.estado === 'pendiente');
+  const aprov = epis.filter(e => e.estado === 'aprobado');
+  const rech  = epis.filter(e => e.estado === 'rechazado');
+
+  const ESTADO_CFG = {
+    pendiente: { label: 'Pendiente', cls: 'tag-pend' },
+    aprobado:  { label: 'Aprobado',  cls: 'tag-ok'   },
+    rechazado: { label: 'Rechazado', cls: 'tag-rech'  },
+    entregado: { label: 'Entregado', cls: 'tag-ok'    },
+  };
+
+  const filtrados = epis.filter(e => e.estado === epiTabActual);
+
+  const lista = filtrados.length ? filtrados.map(e => {
+    const cfg = ESTADO_CFG[e.estado] || { label: e.estado, cls: 'tag-pend' };
+    const info = e.fechaGestion ? ` · Gestionado ${e.fechaGestion}` : ` · ${e.fecha}`;
+    return `<div class="epi-item">
       <div class="epi-ico">🦺</div>
       <div class="epi-info">
         <div class="epi-name">${e.tipo}</div>
         <div class="epi-meta">${e.nota || ''}</div>
-        <span class="tag ${e.estado === 'entregado' ? 'tag-ok' : 'tag-pend'}">
-          ${e.estado === 'entregado' ? 'Entregado · ' + e.fecha : 'Pendiente · ' + e.fecha}
-        </span>
+        <span class="tag ${cfg.cls}">${cfg.label}${info}</span>
       </div>
-    </div>
-  `).join('') : '<div class="no-turno" style="margin-bottom:12px">No tienes solicitudes de EPIs</div>';
+    </div>`;
+  }).join('') : `<div class="no-turno" style="margin-bottom:12px">No hay solicitudes ${epiTabActual === 'pendiente' ? 'pendientes' : epiTabActual === 'aprobado' ? 'aprobadas' : 'rechazadas'}</div>`;
 
   c.innerHTML = `
+    <div class="epi-tabs">
+      <button class="epi-tab ${epiTabActual==='pendiente'?'active':''}" onclick="setEpiTab('pendiente')">Pendientes <span class="epi-tab-count">${pend.length}</span></button>
+      <button class="epi-tab ${epiTabActual==='aprobado' ?'active':''}" onclick="setEpiTab('aprobado')">Aprobadas <span class="epi-tab-count">${aprov.length}</span></button>
+      <button class="epi-tab ${epiTabActual==='rechazado'?'active':''}" onclick="setEpiTab('rechazado')">Rechazadas <span class="epi-tab-count">${rech.length}</span></button>
+    </div>
     <div class="epi-list">${lista}</div>
     <button class="btn-nueva-epi" onclick="showEpiForm()" style="margin-top:12px">+ Nueva solicitud</button>
     <div id="epi-form-wrap" style="display:none;margin-top:12px">
