@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no">
 <meta name="screen-orientation" content="portrait">
 <title>GrupoUbesol — Portal Trabajador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -875,7 +875,7 @@ function loadCuadrante() {
       snap.forEach(function(docSnap) {
         const data = docSnap.data();
         if (!data || !data.semana || !data.ano) return;
-        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'00');
+        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
         localStorage.setItem(hKey, JSON.stringify(data));
         if (!cuadrante ||
             (parseInt(data.ano)*100 + parseInt(data.semana)) >=
@@ -899,7 +899,19 @@ function loadCuadrante() {
         if (!data || !data.fecha) return;
         localStorage.setItem('ubesol_extras_firebase_' + data.fecha, JSON.stringify(data));
       });
-      if (currentUser) { updateBadges(); }
+      if (currentUser) {
+        updateBadges();
+        // Si la pantalla de extras está activa, re-renderizar
+        const screenExtras = document.getElementById('screen-extras');
+        if (screenExtras && screenExtras.classList.contains('active')) {
+          showExtras();
+        }
+        // Si la pantalla de turnos está activa, re-renderizar
+        const screenTurnos = document.getElementById('screen-turnos');
+        if (screenTurnos && screenTurnos.classList.contains('active')) {
+          showTurnos();
+        }
+      }
     });
   } catch(e) {
     console.warn('Firebase cuadrante error:', e);
@@ -1211,46 +1223,24 @@ function getHistorico() {
   historico.sort((a,b) => (parseInt(a.ano)*100+parseInt(a.semana))-(parseInt(b.ano)*100+parseInt(b.semana)));
   return historico;
 }
+// ─── CALENDARIO LABORAL 2026 ─────────────────────────
+const FESTIVOS_2026 = new Set([
+  '2026-01-01','2026-01-02','2026-01-05','2026-01-06',
+  '2026-03-30','2026-03-31','2026-04-01','2026-04-02',
+  '2026-04-03','2026-04-06','2026-05-01','2026-06-24',
+  '2026-08-15','2026-09-11','2026-10-12','2026-11-01',
+  '2026-12-06','2026-12-07','2026-12-08','2026-12-25',
+  '2026-12-26','2026-12-28','2026-12-29','2026-12-30','2026-12-31'
+]);
+const SABADOS_LABORABLES = new Set(['2026-01-10','2026-12-12']);
+
 function renderCalendario() {
   const c = document.getElementById('calendario-content');
   const historico = getHistorico();
   const TURNO_COLORS = { M: '#4a7c2f', T: '#c47a00', N: '#1a6eb5', P: '#7c3a8a' };
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  // Calendario laboral 2026 - Ulldecona Operaciones
-  // Formato: 'YYYY-MM-DD'
-  const FESTIVOS_2026 = new Set([
-    '2026-01-01', // Año nuevo (N)
-    '2026-01-02', // Planta cerrada (ajuste jornada)
-    '2026-01-05', // Ajuste jornada
-    '2026-01-06', // Epifanía (N)
-    '2026-03-30', // Vacaciones Semana Santa
-    '2026-03-31', // Vacaciones Semana Santa
-    '2026-04-01', // Vacaciones Semana Santa
-    '2026-04-02', // Vacaciones Semana Santa
-    '2026-04-03', // Viernes Santo (N)
-    '2026-04-06', // Lunes Pascua (A)
-    '2026-05-01', // Día del trabajador (N)
-    '2026-06-24', // San Juan (A)
-    '2026-08-15', // Virgen de Agosto (N)
-    '2026-09-11', // Diada Cataluña (A)
-    '2026-10-12', // Hispanidad (N)
-    '2026-11-01', // Todos los Santos (N)
-    '2026-12-06', // Día Constitución (N)
-    '2026-12-07', // Planta cerrada (ajuste jornada)
-    '2026-12-08', // Inmaculada Concepción (N)
-    '2026-12-25', // Navidad (N)
-    '2026-12-26', // San Esteban (A)
-    '2026-12-28', // Ajuste jornada
-    '2026-12-29', // Ajuste jornada
-    '2026-12-30', // Festivo Ulldecona (L)
-    '2026-12-31', // Festivo Ulldecona (L)
-  ]);
-  // Sábados laborables (planta abierta aunque sea sábado)
-  const SABADOS_LABORABLES = new Set([
-    '2026-01-10',
-    '2026-12-12',
-  ]);
+  // FESTIVOS_2026 y SABADOS_LABORABLES definidos globalmente
 
   function fmtKey(fecha) {
     const y = fecha.getFullYear();
@@ -1411,16 +1401,25 @@ function findTurnoWorkerInData(nombre, data) {
   const TURNOS = ['M','T','N','P'];
   const safeArr = a => Array.isArray(a) ? a : [];
   const PLABELS = {
+    // Envasado especiales
+    sup:'Supervisor/A Turno',tr1:'Tracking Nave 1',sum:'Suministro',
+    tol3:'Tolvas Nave 3',tras3:'Traslado Nave 3',trk3:'Tracking Nave 3',
+    tol4:'Tolvas Nave 4',comp4:'Componentes Nave 4',trk4:'Tracking Nave 4',
+    // Elaboración
     elab_sup:'Supervisor/A',elab_elab:'Elaborador/A',elab_pes:'Pesadas',
     elab_hig:'Higiene',elab_desc:'Descarga Cisternas',
+    // Mantenimiento
     mto_coord:'Coordinador',mto_back:'Backoffice',mto_sup:'Supervisor/A',mto_tec:'Técnico Mto.',
+    // Almacén
     alm_sup:'Supervisor/A',alm_desc:'Descarga/Ubicar',alm_sopl:'Soplado/Ubicar',
     alm_ab3:'Abast. Nave 3',alm_ab1:'Abast. Nave 1',alm_res:'Residuos/Destruc.',
     alm_ubi:'Ubicar',alm_mmpp:'MMPP',alm_sala:'Sala Blanca',alm_cargas:'Cargas',
     alm_silo:'Silo',alm_destr:'Destrucciones',
+    // Calidad
     cal_nave1:'Nave 1-MK1',cal_nave3:'Nave 3-Nave 4',cal_tec:'Técnico',
     calfq_tec:'Técnico Lab.',calmicro_tec:'Técnico Micro.',
     calmat_tec:'Técnico Mat.',mc_tec:'Técnico Procesos',
+    // Soplado
     sopl_sup:'Supervisor/A',sopl_s12:'Sopladora 1 y 2',sopl_s3:'Sopladora 3',
     sopl_s46:'Sopladora 4 y 6',sopl_s5t:'Sopladora 5 y Trk.',
     sopl_pal:'Paletizadores',sopl_ref:'Refuerzo Turno',
@@ -1434,7 +1433,7 @@ function findTurnoWorkerInData(nombre, data) {
           if (!w || !w.cells) continue;
           for (const t of TURNOS) {
             if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-              return { turno: t, puesto: id.toUpperCase() };
+              return { turno: t, puesto: PLABELS[id] || id.toUpperCase() };
           }
         }
       }
@@ -1675,6 +1674,34 @@ function getExtrasForUser() {
 
 function findExtraWorker(nombreUpper, d) {
   const safeArr = a => Array.isArray(a) ? a : [];
+  const EXTRA_LABELS = {
+    // Envasado especiales
+    sup:'Supervisor/A Turno', tr1:'Tracking Nave 1', sum:'Suministro',
+    tol3:'Tolvas Nave 3', tras3:'Traslado Nave 3', trk3:'Tracking Nave 3',
+    tol4:'Tolvas Nave 4', comp4:'Componentes Nave 4', trk4:'Tracking Nave 4',
+    // Elaboración
+    elab_sup:'Supervisor/A', elab_elab:'Elaborador/A', elab_pes:'Pesadas',
+    elab_hig:'Higiene', elab_desc:'Descarga Cisternas',
+    // Mantenimiento
+    mto_coord:'Coordinador', mto_back:'Backoffice', mto_sup:'Supervisor/A', mto_tec:'Técnico Mto.',
+    // Almacén
+    alm_sup:'Supervisor/A', alm_desc:'Descarga/Ubicar', alm_sopl:'Soplado/Ubicar',
+    alm_ab3:'Abast. Nave 3', alm_ab1:'Abast. Nave 1', alm_res:'Residuos/Destruc.',
+    alm_ubi:'Ubicar', alm_mmpp:'MMPP', alm_sala:'Sala Blanca', alm_cargas:'Cargas',
+    alm_silo:'Silo', alm_destr:'Destrucciones',
+    // Calidad
+    cal_nave1:'Nave 1-MK1', cal_nave3:'Nave 3-Nave 4', cal_tec:'Técnico Cal.',
+    calfq_tec:'Técnico Lab.', calmicro_tec:'Técnico Micro.', calmat_tec:'Técnico Mat.',
+    // Mejora / Soplado
+    mc_tec:'Técnico Procesos',
+    sopl_sup:'Supervisor/A', sopl_s12:'Sopladora 1 y 2', sopl_s3:'Sopladora 3',
+    sopl_s46:'Sopladora 4 y 6', sopl_s5t:'Sopladora 5 y Trk.',
+    sopl_pal:'Paletizadores', sopl_ref:'Refuerzo Turno',
+  };
+  const DEPT_LABELS = {
+    elaboracion:'Elaboración', almacen:'Almacén', mantenimiento:'Mantenimiento',
+    calidad:'Calidad', soplado:'Soplado', mejora:'Mejora Continua'
+  };
   const check = (w, puesto, dept) => {
     if (w && w.nombre && w.nombre.toUpperCase().trim() === nombreUpper) {
       return { turno: w.turno || 'M', puesto, dept };
@@ -1686,7 +1713,7 @@ function findExtraWorker(nombreUpper, d) {
   if (d.envasado && d.envasado.special) {
     for (const [id, arr] of Object.entries(d.envasado.special)) {
       for (const w of safeArr(arr)) {
-        const r = check(w, id, 'Envasado');
+        const r = check(w, EXTRA_LABELS[id] || id, 'Envasado');
         if (r) return r;
       }
     }
@@ -1706,14 +1733,10 @@ function findExtraWorker(nombreUpper, d) {
   }
   // Post depts
   if (d.depts) {
-    const DEPT_LABELS = {
-      elaboracion:'Elaboración', almacen:'Almacén', mantenimiento:'Mantenimiento',
-      calidad:'Calidad', soplado:'Soplado', mejora:'Mejora Continua'
-    };
     for (const [deptId, puestos] of Object.entries(d.depts)) {
       for (const [pId, arr] of Object.entries(puestos)) {
         for (const w of safeArr(arr)) {
-          const r = check(w, pId, DEPT_LABELS[deptId] || deptId);
+          const r = check(w, EXTRA_LABELS[pId] || pId, DEPT_LABELS[deptId] || deptId);
           if (r) return r;
         }
       }
@@ -1729,9 +1752,9 @@ function getExtrasByFecha() {
   return map;
 }
 
-function showExtras() {
-  goScreen('extras');
+function renderExtrasContent() {
   const c = document.getElementById('extras-content');
+  if (!c) return;
   const extras = getExtrasForUser();
   const hoy = new Date();
   const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
@@ -1740,7 +1763,65 @@ function showExtras() {
   const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
   if (!extras.length) {
-    c.innerHTML = '<div class="no-turno">No tienes horas extras registradas.</div>';
+    c.innerHTML = '<div class="no-turno">No tienes horas extras asignadas.</div>';
+    return;
+  }
+}
+
+function showExtras() {
+  goScreen('extras');
+  const c = document.getElementById('extras-content');
+  c.innerHTML = '<div class="no-turno" style="text-align:center">⏳ Cargando...</div>';
+
+  // Cargar directamente desde Firebase
+  db.collection('horas_extras').get().then(function(snap) {
+    // Limpiar y recargar localStorage de extras
+    const keysBorrar = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ubesol_extras_firebase_')) keysBorrar.push(k);
+    }
+    keysBorrar.forEach(function(k){ localStorage.removeItem(k); });
+    snap.forEach(function(docSnap) {
+      const data = docSnap.data();
+      if (!data || !data.fecha) return;
+      localStorage.setItem('ubesol_extras_firebase_' + data.fecha, JSON.stringify(data));
+    });
+    renderExtrasContent();
+  }).catch(function(e) {
+    c.innerHTML = '<div class="no-turno">Error al cargar: ' + e.message + '</div>';
+  });
+}
+function getExtrasByFecha() {
+  // Devuelve mapa fecha -> info extra del trabajador
+  const map = {};
+  getExtrasForUser().forEach(e => { map[e.fecha] = e; });
+  return map;
+}
+
+function showExtras() {
+  goScreen('extras');
+  loadCuadrante(); // Asegurar que los datos de Firebase están cargados
+  const c = document.getElementById('extras-content');
+  const extras = getExtrasForUser();
+  const hoy = new Date();
+  const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+  const TURNO_LABELS = {M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'};
+  const TURNO_COLORS = {M:'#4a7c2f',T:'#c47a00',N:'#1a6eb5',P:'#7c3a8a'};
+  const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  // Verificar si hay datos en Firebase (puede que aún estén cargando)
+  const hayDatosFirebase = (function() {
+    for (let i = 0; i < localStorage.length; i++) {
+      if ((localStorage.key(i)||'').startsWith('ubesol_extras_firebase_')) return true;
+    }
+    return false;
+  })();
+
+  if (!extras.length) {
+    c.innerHTML = hayDatosFirebase
+      ? '<div class="no-turno">No tienes horas extras asignadas.</div>'
+      : '<div class="no-turno" style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:24px">⏳</div><div>Cargando datos...</div><div style="font-size:12px;color:#999">Si no aparece nada, no tienes extras registradas</div></div>';
     return;
   }
 
