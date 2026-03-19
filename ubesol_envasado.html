@@ -517,6 +517,22 @@ td.cell-p { background: var(--p-bg) !important; }
 td.name-cell { overflow: visible !important; }
 
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCKnL5zbmZ5iBRIU-pH22k3oXKoeKVUrHQ",
+  authDomain: "maverick-turnos.firebaseapp.com",
+  projectId: "maverick-turnos",
+  storageBucket: "maverick-turnos.firebasestorage.app",
+  messagingSenderId: "185776839924",
+  appId: "1:185776839924:web:c783702e586c2c071a12a1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
 </head>
 <body>
 
@@ -1570,12 +1586,20 @@ function publicar() {
   try {
     const json = JSON.stringify(payload, null, 2);
 
-    // Guardar como publicado actual
-    localStorage.setItem('ubesol_publicado', json);
-
-    // Guardar en histórico con clave por semana
+    // Guardar en histórico local
     const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
     localStorage.setItem(historicoKey, json);
+
+    // Guardar en Firebase para sincronización entre dispositivos
+    try {
+      const deptKey = (payload.dept || currentTab || 'Envasado').toLowerCase()
+        .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+        .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+      const semKey = payload.ano + '_s' + String(payload.semana).padStart(2,'0');
+      db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(payload)
+        .then(function(){ console.log('Publicado en Firebase: ' + deptKey + '_' + semKey); })
+        .catch(function(e){ console.warn('Firebase error:', e); });
+    } catch(e) { console.warn('Firebase sync error:', e); }
 
     toast(duplicados.length > 0
       ? `⚠️ Cuadrante semana ${payload.semana} publicado con ${duplicados.length} duplicado(s)`

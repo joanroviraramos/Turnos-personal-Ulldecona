@@ -538,6 +538,22 @@ body {
 }
 </style>
 <div id="landscape-warn">📱 Gira el móvil a vertical para mejor experiencia</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCKnL5zbmZ5iBRIU-pH22k3oXKoeKVUrHQ",
+  authDomain: "maverick-turnos.firebaseapp.com",
+  projectId: "maverick-turnos",
+  storageBucket: "maverick-turnos.firebasestorage.app",
+  messagingSenderId: "185776839924",
+  appId: "1:185776839924:web:c783702e586c2c071a12a1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
 </head>
 <body>
 
@@ -819,37 +835,28 @@ async function init() {
 
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
-async function loadCuadrante() {
+function loadCuadrante() {
+  // Cargar todos los cuadrantes desde Firebase en tiempo real
   try {
-    const saved = localStorage.getItem('ubesol_publicado');
-    if (saved) {
-      const data = JSON.parse(saved);
-      cuadrante = data;
-      // Guardar en histórico si no existe ya
-      if (data.semana && data.ano) {
+    db.collection('cuadrantes').onSnapshot(function(snap) {
+      snap.forEach(function(docSnap) {
+        const data = docSnap.data();
+        if (!data || !data.semana || !data.ano) return;
+        // Guardar en histórico local
         const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
-        if (!localStorage.getItem(hKey)) {
-          localStorage.setItem(hKey, saved);
-        }
-      }
-      if (currentUser) updateHomeInfo();
-    }
-  } catch(e) {}
-
-  // Fallback: GitHub Pages
-  try {
-    const r = await fetch(CUADRANTE_URL + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) return;
-    const data = await r.json();
-    cuadrante = data;
-    if (data.semana && data.ano) {
-      const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
-      if (!localStorage.getItem(hKey)) {
         localStorage.setItem(hKey, JSON.stringify(data));
-      }
-    }
-    if (currentUser) updateHomeInfo();
-  } catch(e) {}
+        // Actualizar cuadrante activo con el más reciente
+        if (!cuadrante ||
+            (parseInt(data.ano)*100 + parseInt(data.semana)) >=
+            (parseInt(cuadrante.ano)*100 + parseInt(cuadrante.semana))) {
+          cuadrante = data;
+        }
+      });
+      if (currentUser) { updateHomeInfo(); updateBadges(); }
+    });
+  } catch(e) {
+    console.warn('Firebase cuadrante error:', e);
+  }
 }
 
 // ─── AUTH ────────────────────────────────────────────
@@ -935,9 +942,18 @@ function goScreen(id) {
 function showHome() {
   goScreen('home');
   if (!currentUser) return;
-  const nombre = currentUser.nombre;
-  document.getElementById('home-name').textContent = 'Hola, ' + nombre;
+  document.getElementById('home-name').textContent = 'Hola, ' + currentUser.nombre;
   document.getElementById('home-dept').textContent = currentUser.departamento;
+  loadCuadrante();
+  // Sincronizar EPIs desde Firebase en tiempo real
+  try {
+    db.collection('epis').doc('solicitudes').onSnapshot(function(docSnap) {
+      if (docSnap.exists) {
+        localStorage.setItem(LS_EPIS, JSON.stringify(docSnap.data()));
+        updateBadges();
+      }
+    });
+  } catch(e) {}
   updateHomeInfo();
   updateBadges();
 }
@@ -1305,6 +1321,10 @@ function saveEpis(epis) {
   const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
   all[currentUser.dni] = epis;
   localStorage.setItem(LS_EPIS, JSON.stringify(all));
+  // Sincronizar con Firebase
+  try {
+    db.collection('epis').doc('solicitudes').set(all);
+  } catch(e) { console.warn('Firebase EPI sync error:', e); }
 }
 
 function showEpi() {

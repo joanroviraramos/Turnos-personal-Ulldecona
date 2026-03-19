@@ -77,6 +77,22 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:white;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;transform:translateY(0);}
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCKnL5zbmZ5iBRIU-pH22k3oXKoeKVUrHQ",
+  authDomain: "maverick-turnos.firebaseapp.com",
+  projectId: "maverick-turnos",
+  storageBucket: "maverick-turnos.firebasestorage.app",
+  messagingSenderId: "185776839924",
+  appId: "1:185776839924:web:c783702e586c2c071a12a1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
 </head>
 <body>
 
@@ -227,10 +243,11 @@ function getSolicitudes() {
 function saveSolicitud(dni, idx, nuevoEstado) {
   var all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
   if (all[dni] && all[dni][idx] !== undefined) {
-    all[dni][idx].estado       = nuevoEstado;
-    all[dni][idx].fechaGestion = hoy();
+    all[dni][idx].estado        = nuevoEstado;
+    all[dni][idx].fechaGestion  = hoy();
     all[dni][idx].gestionadoPor = currentUser.nombre;
     localStorage.setItem(LS_EPIS, JSON.stringify(all));
+    saveEpisToFirebase(); // Sincronizar con Firebase
   }
 }
 
@@ -379,6 +396,26 @@ function toast(msg) {
   setTimeout(function(){ t.classList.remove('show'); }, 2800);
 }
 
+
+// ── FIREBASE SYNC EPIs ───────────────────────────────────────────────
+function saveEpisToFirebase() {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
+    db.collection('epis').doc('solicitudes').set(all);
+  } catch(e) { console.warn('Firebase EPI sync error:', e); }
+}
+
+function loadEpisFromFirebase() {
+  try {
+    db.collection('epis').doc('solicitudes').onSnapshot(function(doc) {
+      if (doc.exists) {
+        localStorage.setItem(LS_EPIS, JSON.stringify(doc.data()));
+        renderTabla();
+      }
+    });
+  } catch(e) { console.warn('Firebase EPI load error:', e); }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────
 (function() {
   var sess = null;
@@ -386,6 +423,7 @@ function toast(msg) {
   if (!sess) { window.location.href = 'index.html'; return; }
   currentUser = sess;
   document.getElementById('hdr-dept').textContent = currentUser.user==='admin' ? 'Todos los departamentos' : currentUser.departamento;
+  loadEpisFromFirebase(); // Cargar EPIs desde Firebase en tiempo real
   renderTabla();
 })();
 </script>
