@@ -499,6 +499,16 @@ footer {
           <div class="card-arrow">›</div>
           <div class="card-badge" id="epi-badge" style="display:none">0</div>
         </a>
+
+        <a class="portal-card" id="card-extras" href="horas_extras.html">
+          <div class="card-icon">⏱</div>
+          <div>
+            <div class="card-label">Planificación</div>
+            <div class="card-name">Horas Extras</div>
+          </div>
+          <div class="card-desc">Gestiona y publica los turnos de horas extras por día especial.</div>
+          <div class="card-arrow">›</div>
+        </a>
       </div>
 
       <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
@@ -607,6 +617,7 @@ function showPortal(responsable) {
   // Actualizar enlace al cuadrante con el dept del responsable
   const dept = responsable.dept || 'envasado';
   document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
+  document.getElementById('card-extras').href = 'horas_extras.html?dept=' + dept;
   contarEpisPendientes(responsable);
   document.getElementById('portal-section').classList.add('active');
 }
