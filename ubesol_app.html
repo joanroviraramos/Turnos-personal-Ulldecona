@@ -1798,4 +1798,35 @@ function showExtras() {
   c.innerHTML = html;
 }
 
+// ─── UTILS ───────────────────────────────────────────
+function getWeekDates(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const startW1 = new Date(jan4);
+  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
+  const monday = new Date(startW1);
+  monday.setDate(startW1.getDate() + (week-1)*7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  return { monday, sunday };
+}
 
+function fmtDate(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function fmtDateShort(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── START ───────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
