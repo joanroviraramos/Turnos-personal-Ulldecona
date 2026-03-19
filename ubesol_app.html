@@ -628,6 +628,16 @@ const db = firebase.firestore();
         <div class="action-arrow">›</div>
         <div class="action-badge" id="avisos-badge" style="display:none">2</div>
       </button>
+
+      <button class="action-btn" style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border-left:4px solid #e65100" onclick="goTo('extras')">
+        <div class="action-icon" style="font-size:16px">⏱</div>
+        <div class="action-text">
+          <div class="action-title" style="color:#e65100">Horas Extras</div>
+          <div class="action-desc">Historial de días extra</div>
+        </div>
+        <div class="action-arrow" style="color:#e65100">›</div>
+        <div class="action-badge" id="extras-badge" style="display:none;background:#e65100">0</div>
+      </button>
     </div>
   </div>
 </div>
@@ -707,6 +717,22 @@ const db = firebase.firestore();
   <div class="screen-body">
     <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
     <div id="avisos-content"></div>
+  </div>
+</div>
+
+<!-- ═══ EXTRAS ═══ -->
+<div id="screen-extras" class="screen">
+  <div class="app-header">
+    <div class="header-top">
+      <span class="header-logo">GrupoUbesol</span>
+      <button class="header-logout" onclick="doLogout()">Salir</button>
+    </div>
+    <div class="header-name">Horas Extras</div>
+    <div class="header-dept">Historial de días extra</div>
+  </div>
+  <div class="screen-body">
+    <button class="back-btn" onclick="goTo('home')">‹ Volver</button>
+    <div id="extras-content"></div>
   </div>
 </div>
 
@@ -839,20 +865,17 @@ function loadCuadrante() {
   // Cargar todos los cuadrantes desde Firebase en tiempo real
   try {
     db.collection('cuadrantes').onSnapshot(function(snap) {
-      // 1. Borrar TODOS los cuadrantes del localStorage del móvil
       const keysBorrar = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k && k.startsWith('ubesol_historico_')) keysBorrar.push(k);
       }
       keysBorrar.forEach(k => localStorage.removeItem(k));
-
-      // 2. Reescribir solo lo que hay en Firebase ahora mismo
       cuadrante = null;
       snap.forEach(function(docSnap) {
         const data = docSnap.data();
         if (!data || !data.semana || !data.ano) return;
-        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
+        const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'00');
         localStorage.setItem(hKey, JSON.stringify(data));
         if (!cuadrante ||
             (parseInt(data.ano)*100 + parseInt(data.semana)) >=
@@ -860,8 +883,23 @@ function loadCuadrante() {
           cuadrante = data;
         }
       });
-
       if (currentUser) { updateHomeInfo(); updateBadges(); }
+    });
+
+    // Cargar horas extras en tiempo real
+    db.collection('horas_extras').onSnapshot(function(snap) {
+      const keysBorrar = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('ubesol_extras_firebase_')) keysBorrar.push(k);
+      }
+      keysBorrar.forEach(k => localStorage.removeItem(k));
+      snap.forEach(function(docSnap) {
+        const data = docSnap.data();
+        if (!data || !data.fecha) return;
+        localStorage.setItem('ubesol_extras_firebase_' + data.fecha, JSON.stringify(data));
+      });
+      if (currentUser) { updateBadges(); }
     });
   } catch(e) {
     console.warn('Firebase cuadrante error:', e);
@@ -939,6 +977,7 @@ function goTo(screen) {
   if (screen === 'turnos') { showTurnos(); return; }
   if (screen === 'epi') { showEpi(); return; }
   if (screen === 'avisos') { showAvisos(); return; }
+  if (screen === 'extras') { showExtras(); return; }
 }
 
 function goScreen(id) {
@@ -986,6 +1025,15 @@ function updateBadges() {
   const eb = document.getElementById('epi-badge');
   if (pend > 0) { eb.textContent = pend; eb.style.display = 'flex'; }
   else eb.style.display = 'none';
+
+  // Extras próximas no vistas
+  const exb = document.getElementById('extras-badge');
+  if (exb) {
+    const hoyStr2 = new Date().toISOString().slice(0,10);
+    const proxExtras = getExtrasForUser ? getExtrasForUser().filter(e => e.fecha >= hoyStr2).length : 0;
+    if (proxExtras > 0) { exb.textContent = proxExtras; exb.style.display = 'flex'; }
+    else exb.style.display = 'none';
+  }
 }
 
 // ─── TURNOS ──────────────────────────────────────────
@@ -1058,8 +1106,31 @@ function showTurnos() {
 
     const sinAsignar = !turnoInfo;
     const turnoNombre  = turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
+
+    // Buscar extras en esta semana
+    const extrasMap = getExtrasByFecha();
+    const extrasEnSemana = [];
+    for (let di = 0; di < 7; di++) {
+      const dia = new Date(monday); dia.setDate(monday.getDate() + di);
+      const fkey = dia.getFullYear() + '-' + String(dia.getMonth()+1).padStart(2,'0') + '-' + String(dia.getDate()).padStart(2,'0');
+      if (extrasMap[fkey]) extrasEnSemana.push({ fecha: fkey, dia, ...extrasMap[fkey] });
+    }
     const puestoNombre = turnoInfo ? turnoInfo.puesto : 'Sin asignar';
     const borderColor  = tipo === 'futura' ? '#6366f1' : '#d1d5db';
+
+    const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const TC = {M:'#4a7c2f',T:'#c47a00',N:'#1a6eb5',P:'#7c3a8a'};
+    const TL = {M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'};
+    const extrasHTML = extrasEnSemana.map(e => {
+      const dow = e.dia.getDay();
+      return `<div style="margin-top:7px;background:#fff8e1;border-radius:7px;border:1px solid #ffcc02;padding:7px 10px;display:flex;align-items:center;gap:8px">
+        <div style="width:7px;height:7px;border-radius:2px;background:#e65100;flex-shrink:0"></div>
+        <div style="font-size:11px;line-height:1.4">
+          <span style="font-weight:600;color:#e65100">Extra · ${DIAS_S[dow]} ${fmtDateShort(e.dia)}</span>
+          <span style="color:#bf360c"> · ${TL[e.turno]||e.turno} · ${e.puesto} · ${e.dept}</span>
+        </div>
+      </div>`;
+    }).join('');
 
     if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
       html += `<div class="${cardClass}">
@@ -1067,6 +1138,7 @@ function showTurnos() {
         <div class="tc-turno">${turnoNombre}</div>
         <div class="tc-puesto">${puestoNombre}</div>
         <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+        ${extrasHTML}
       </div>`;
     } else {
       html += `<div class="${cardClass}" style="border-left-color:${borderColor}">
@@ -1080,6 +1152,7 @@ function showTurnos() {
             ${fmtDate(monday)}<br>${fmtDate(sunday)}
           </div>
         </div>
+        ${extrasHTML}
       </div>`;
     }
   });
@@ -1197,6 +1270,9 @@ function renderCalendario() {
 
   const anoActual = new Date().getFullYear();
 
+  // Mapa de extras del trabajador
+  const extrasMapCal = getExtrasByFecha();
+
   // Calcular número de semana ISO para una fecha — usando siempre el lunes de esa semana
   function getSemKey(fecha) {
     // Encontrar el lunes de la semana de esta fecha
@@ -1227,6 +1303,10 @@ function renderCalendario() {
         <div style="display:flex;align-items:center;gap:5px">
           <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b"></div>
           <span style="font-size:12px;color:var(--text-2)">Sáb. laborable</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:12px;height:12px;border-radius:50%;background:#FFD600;border:1.5px solid #e65100"></div>
+          <span style="font-size:12px;color:var(--text-2)">Horas extra</span>
         </div>
       </div>
     </div>`;
@@ -1275,10 +1355,14 @@ function renderCalendario() {
       const fKey = fmtKey(fecha);
       const esFestivo = FESTIVOS_2026.has(fKey);
       const esSabLab  = SABADOS_LABORABLES.has(fKey);
+      const esExtra   = !!extrasMapCal[fKey];
 
       let bgColor, textColor;
-      // Prioridad: festivo > sábado laborable > turno laboral > fin de semana normal
-      if (esFestivo) {
+      // Prioridad: extra > festivo > sábado laborable > turno laboral > fin de semana normal
+      if (esExtra) {
+        bgColor   = '#FFD600';
+        textColor = '#e53935';
+      } else if (esFestivo) {
         bgColor   = '#e53935';
         textColor = '#FFD600';
       } else if (esSabLab) {
@@ -1291,10 +1375,10 @@ function renderCalendario() {
         bgColor   = 'transparent';
         textColor = esFinSem ? '#bbb' : 'var(--text)';
       }
-      const border = esHoy ? `2px solid var(--green)` : esFestivo ? '1px solid #c62828' : esSabLab ? '1px solid rgba(245,158,11,0.4)' : '1px solid transparent';
-      const fw = esHoy ? 700 : esFestivo || esSabLab ? 700 : 400;
+      const border = esHoy ? `2px solid var(--green)` : esExtra ? '2px solid #e65100' : esFestivo ? '1px solid #c62828' : esSabLab ? '1px solid rgba(245,158,11,0.4)' : '1px solid transparent';
+      const fw = esHoy ? 700 : esExtra || esFestivo || esSabLab ? 700 : 400;
 
-      const borderRadius = (esFestivo || esSabLab) ? '50%' : '4px';
+      const borderRadius = (esExtra || esFestivo || esSabLab) ? '50%' : '4px';
       html += `<div style="${CELL}">
         <div style="width:24px;height:24px;border-radius:${borderRadius};background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:${fw};border:${border};box-sizing:border-box">${dia}</div>
       </div>`;
@@ -1570,35 +1654,148 @@ function showAvisos() {
     }).join('') + '</div>';
 }
 
-// ─── UTILS ───────────────────────────────────────────
-function getWeekDates(year, week) {
-  const jan4 = new Date(year, 0, 4);
-  const startW1 = new Date(jan4);
-  startW1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-  const monday = new Date(startW1);
-  monday.setDate(startW1.getDate() + (week-1)*7);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate()+6);
-  return { monday, sunday };
+// ─── HORAS EXTRAS ────────────────────────────────────
+function getExtrasForUser() {
+  if (!currentUser) return [];
+  const nombre = currentUser.nombre.toUpperCase().trim();
+  const extras = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('ubesol_extras_firebase_')) continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (!d || !d.fecha) continue;
+      // Buscar al trabajador en este día
+      const info = findExtraWorker(nombre, d);
+      if (info) extras.push({ fecha: d.fecha, turno: info.turno, puesto: info.puesto, dept: info.dept });
+    } catch(e) {}
+  }
+  return extras.sort((a,b) => a.fecha.localeCompare(b.fecha));
 }
 
-function fmtDate(d) {
-  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+function findExtraWorker(nombreUpper, d) {
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const check = (w, puesto, dept) => {
+    if (w && w.nombre && w.nombre.toUpperCase().trim() === nombreUpper) {
+      return { turno: w.turno || 'M', puesto, dept };
+    }
+    return null;
+  };
+
+  // Envasado especiales
+  if (d.envasado && d.envasado.special) {
+    for (const [id, arr] of Object.entries(d.envasado.special)) {
+      for (const w of safeArr(arr)) {
+        const r = check(w, id, 'Envasado');
+        if (r) return r;
+      }
+    }
+  }
+  // Envasado líneas
+  if (d.envasado && d.envasado.lines) {
+    for (const line of safeArr(d.envasado.lines)) {
+      for (const w of safeArr(line.maq)) {
+        const r = check(w, 'Op. Máquina ' + line.label, 'Envasado');
+        if (r) return r;
+      }
+      for (const w of safeArr(line.ops)) {
+        const r = check(w, 'Operario/a ' + line.label, 'Envasado');
+        if (r) return r;
+      }
+    }
+  }
+  // Post depts
+  if (d.depts) {
+    const DEPT_LABELS = {
+      elaboracion:'Elaboración', almacen:'Almacén', mantenimiento:'Mantenimiento',
+      calidad:'Calidad', soplado:'Soplado', mejora:'Mejora Continua'
+    };
+    for (const [deptId, puestos] of Object.entries(d.depts)) {
+      for (const [pId, arr] of Object.entries(puestos)) {
+        for (const w of safeArr(arr)) {
+          const r = check(w, pId, DEPT_LABELS[deptId] || deptId);
+          if (r) return r;
+        }
+      }
+    }
+  }
+  return null;
 }
 
-function fmtDateShort(d) {
-  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+function getExtrasByFecha() {
+  // Devuelve mapa fecha -> info extra del trabajador
+  const map = {};
+  getExtrasForUser().forEach(e => { map[e.fecha] = e; });
+  return map;
 }
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+function showExtras() {
+  goScreen('extras');
+  const c = document.getElementById('extras-content');
+  const extras = getExtrasForUser();
+  const hoy = new Date();
+  const hoyStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+  const TURNO_LABELS = {M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'};
+  const TURNO_COLORS = {M:'#4a7c2f',T:'#c47a00',N:'#1a6eb5',P:'#7c3a8a'};
+  const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+  if (!extras.length) {
+    c.innerHTML = '<div class="no-turno">No tienes horas extras registradas.</div>';
+    return;
+  }
+
+  const proximos = extras.filter(function(e){ return e.fecha >= hoyStr; });
+  const pasados  = extras.filter(function(e){ return e.fecha < hoyStr; }).reverse();
+  const mesActual = hoyStr.slice(0,7);
+  const extrasEsteMes = extras.filter(function(e){ return e.fecha.startsWith(mesActual); }).length;
+  const extrasAnio = extras.filter(function(e){ return e.fecha.startsWith(hoyStr.slice(0,4)); }).length;
+
+  function renderExtraItem(e) {
+    const parts = e.fecha.split('-');
+    const y = parts[0], m = parts[1], d = parts[2];
+    const dow = new Date(e.fecha + 'T12:00:00').getDay();
+    const isFest = FESTIVOS_2026.has(e.fecha);
+    const isSabLab = SABADOS_LABORABLES.has(e.fecha);
+    const tipoLabel = isFest ? 'Festivo' : isSabLab ? 'Sáb. lab.' : dow === 0 ? 'Domingo' : 'Sábado';
+    const tipoBg = isFest ? '#ffebee' : isSabLab ? '#e8f5e9' : '#fff3e0';
+    const tipoCol = isFest ? '#b71c1c' : isSabLab ? '#1b5e20' : '#e65100';
+    const tc = TURNO_COLORS[e.turno] || '#888';
+    const tl = TURNO_LABELS[e.turno] || e.turno;
+    return '<div style="background:white;border:1px solid #ffe0b2;border-radius:10px;padding:12px 14px;border-left:4px solid #e65100">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<span style="font-size:13px;font-weight:600;color:#e65100">' + DIAS[dow] + ' ' + d + '/' + m + '/' + y + '</span>' +
+        '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:' + tipoBg + ';color:' + tipoCol + '">' + tipoLabel + '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<div style="width:8px;height:8px;border-radius:50%;background:' + tc + ';flex-shrink:0"></div>' +
+        '<span style="font-size:12px;font-weight:500;color:#333">' + tl + '</span>' +
+        '<span style="font-size:12px;color:#666"> · ' + e.puesto + ' · ' + e.dept + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var html = '<div style="background:#fff3e0;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:16px">' +
+    '<div style="text-align:center">' +
+      '<div style="font-size:20px;font-weight:700;color:#e65100">' + extrasEsteMes + '</div>' +
+      '<div style="font-size:10px;color:#bf360c">este mes</div>' +
+    '</div>' +
+    '<div style="width:1px;background:#ffb74d"></div>' +
+    '<div style="text-align:center">' +
+      '<div style="font-size:20px;font-weight:700;color:#e65100">' + extrasAnio + '</div>' +
+      '<div style="font-size:10px;color:#bf360c">este año</div>' +
+    '</div>' +
+  '</div>';
+
+  if (proximos.length) {
+    html += '<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 6px">Próximos</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:8px">' + proximos.map(renderExtraItem).join('') + '</div>';
+  }
+  if (pasados.length) {
+    html += '<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px">Historial</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:8px">' + pasados.map(renderExtraItem).join('') + '</div>';
+  }
+
+  c.innerHTML = html;
 }
 
-// ─── START ───────────────────────────────────────────
-init();
-</script>
-</body>
-</html>
+
