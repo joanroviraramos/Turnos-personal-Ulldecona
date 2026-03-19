@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="screen-orientation" content="portrait">
 <title>GrupoUbesol — Portal Trabajador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -509,6 +510,21 @@ body {
   letter-spacing: 0.07em;
 }
 </style>
+
+<script>
+// Bloquear orientación en portrait (vertical)
+(function() {
+  function lockPortrait() {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait').catch(function(){});
+    }
+  }
+  lockPortrait();
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) lockPortrait();
+  });
+})();
+</script>
 </head>
 <body>
 
@@ -1262,7 +1278,7 @@ function findTurnoWorker(nombre) {
 }
 
 // ─── EPIs ────────────────────────────────────────────
-const EPI_TIPOS = ['Botas de seguridad','Guantes anticorte','Guantes de nitrilo','Gafas de protección','Casco','Chaleco reflectante','Mascarilla FFP2','Tapones auditivos','Ropa de trabajo','Otros'];
+const EPI_TIPOS = ['Botas de seguridad','Gafas de protección','Pantalón','Camisa','Sudadera','Chaleco','Parca','Jersey manga corta','Guantes anticorte','Guantes de nitrilo','Casco','Chaleco reflectante','Mascarilla FFP2','Tapones auditivos','Otros'];
 
 function getEpis() {
   const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
@@ -1354,13 +1370,17 @@ function renderPedido() {
   const c = document.getElementById('nuevo-pedido-content');
   if (!c) return;
   c.innerHTML = pedidoLineas.map((l, i) => `
-    <div class="pedido-linea">
-      <select onchange="pedidoLineas[${i}].tipo=this.value">
+    <div class="pedido-linea" style="grid-template-columns:1fr${l.tipo==='Otros'?' 1fr':' 90px'} 36px">
+      <select onchange="pedidoLineas[${i}].tipo=this.value;if(this.value!=='Otros')pedidoLineas[${i}].tipoCustom='';renderPedido()">
         <option value="">EPI...</option>
         ${EPI_TIPOS.map(t => `<option value="${t}" ${l.tipo===t?'selected':''}>${t}</option>`).join('')}
       </select>
-      <input type="text" placeholder="Talla / Nº" value="${l.talla||''}"
-        oninput="pedidoLineas[${i}].talla=this.value">
+      ${l.tipo==='Otros'
+        ? `<input type="text" placeholder="Escribe el EPI..." value="${l.tipoCustom||''}"
+             oninput="pedidoLineas[${i}].tipoCustom=this.value">`
+        : `<input type="text" placeholder="Talla / Nº" value="${l.talla||''}"
+             oninput="pedidoLineas[${i}].talla=this.value">`
+      }
       <button class="pedido-del" onclick="deletePedidoLinea(${i})" ${pedidoLineas.length===1?'style="opacity:.3;pointer-events:none"':''}>✕</button>
     </div>
   `).join('');
@@ -1378,13 +1398,14 @@ function deletePedidoLinea(i) {
 }
 
 function enviarPedido() {
-  const validas = pedidoLineas.filter(l => l.tipo);
-  if (!validas.length) { showToast('Añade al menos un EPI'); return; }
+  const validas = pedidoLineas.filter(l => l.tipo && (l.tipo !== 'Otros' || l.tipoCustom));
+  if (!validas.length) { showToast('Añade al menos un EPI y especifica cuál si es "Otros"'); return; }
   const fecha = fmtDateShort(new Date());
   const pedidoId = Date.now().toString();
   const epis = getEpis();
   validas.forEach(l => {
-    epis.unshift({ tipo: l.tipo, talla: l.talla||'', nota: '', estado: 'pendiente', fecha, pedidoId });
+    const tipoFinal = l.tipo === 'Otros' ? (l.tipoCustom || 'Otros') : l.tipo;
+    epis.unshift({ tipo: tipoFinal, talla: l.talla||'', nota: '', estado: 'pendiente', fecha, pedidoId });
   });
   saveEpis(epis);
   showToast('✓ Pedido enviado — ' + validas.length + ' EPI' + (validas.length>1?'s':''));
