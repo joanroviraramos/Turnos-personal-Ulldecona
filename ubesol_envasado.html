@@ -2104,12 +2104,16 @@ function clearStorage() {
       return Promise.all(promesas);
     }).then(function() {
       console.log('Firebase: semanas borradas correctamente');
-      _autoSaveBlocked = false;
-      if (estaActiva) loadWeekFromStorage(weekKey());
+      setTimeout(function() {
+        _autoSaveBlocked = false;
+        if (estaActiva) loadWeekFromStorage(weekKey());
+      }, 2000); // esperar 2s para que no haya race conditions
     }).catch(function(e) {
       console.warn('Firebase borrar error:', e);
-      _autoSaveBlocked = false;
-      if (estaActiva) loadWeekFromStorage(weekKey());
+      setTimeout(function() {
+        _autoSaveBlocked = false;
+        if (estaActiva) loadWeekFromStorage(weekKey());
+      }, 2000);
     });
 
     toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · sincronizando Firebase...');
@@ -2655,6 +2659,7 @@ document.addEventListener('change', autoSave);
 
 // Al cerrar, cambiar de pestaña o minimizar: guardar y publicar todo
 function publicarTodoAhora() {
+  if (_autoSaveBlocked) return;
   autoSaveToKey(weekKey());
   autoPublicarTodasLasSemanas();
 }
