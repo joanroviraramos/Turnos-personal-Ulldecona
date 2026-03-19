@@ -228,7 +228,10 @@ const db = firebase.firestore();
       <ul id="modal-60h-lista"></ul>
       <br>Considera cambiar sus horas a <strong>🏖 Compensar</strong> o revisar el cuadrante.
     </div>
-    <button class="modal-aceptar" onclick="cerrarModal60h()">Entendido — Continuar</button>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="modal-aceptar" style="background:#555;border:none;border-radius:6px;padding:10px 24px;font-size:14px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif" onclick="cerrarModal60h()">Cancelar</button>
+      <button class="modal-aceptar" id="modal-btn-continuar" onclick="cerrarModal60h()">Publicar igualmente</button>
+    </div>
   </div>
 </div>
 
@@ -406,7 +409,6 @@ function calcularHorasCache() {
       contarHorasEnDoc(d); // contar TODOS los días incluido el actual publicado
     } catch(e) {}
   }
-  console.log('calcularHorasCache: docs=', docsEncontrados, 'cache=', JSON.stringify(_horasCache));
 }
 
 function contarHorasEnDoc(d) {
@@ -470,7 +472,6 @@ function checkModal60h() {
     const acum = getHorasPagar(w.nombre);
     const hoy  = getHorasHoy(w.nombre);
     const total = acum + hoy;
-    console.log('checkModal60h:', w.nombre, 'acum:', acum, 'hoy:', hoy, 'total:', total);
     if (total > 64 && !vistos.includes(w.nombre.trim().toUpperCase())) {
       vistos.push(w.nombre.trim().toUpperCase());
       mostrarModal60h(w.nombre, total);
@@ -673,22 +674,22 @@ function renderPostDeptHTML(dept) {
 }
 
 // ─── SETTERS ──────────────────────────────────────────────────────────────────
-function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); setTimeout(checkModal60h,100); }
+function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); }
 function setSpT(id,wi,v){ specialW[id][wi].turno=v; }
-function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); setTimeout(checkModal60h,50); }
+function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); }
 function addSp(id){ specialW[id].push(mkW()); renderAll(); }
 function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
 
 function getL(id){ return lines.find(l=>l.id===id); }
-function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); setTimeout(checkModal60h,100); }
+function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); }
 function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
-function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); setTimeout(checkModal60h,50); }
+function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); }
 function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
 function remLMaq(lid){ const l=getL(lid); if(l.maq.length>1) l.maq.pop(); renderAll(); }
 function addLOps(lid){ getL(lid).ops.push(mkW()); renderAll(); }
 function remLOps(lid){ const l=getL(lid); if(l.ops.length>1) l.ops.pop(); renderAll(); }
 
-function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); renderAll(); setTimeout(checkModal60h,50); }
+function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); renderAll(); }
 function setPT(did,pid,wi,v){ postW[did][pid][wi].turno=v; }
 function setPTipo(did,pid,wi,v){ postW[did][pid][wi].tipo=v; renderAll(); }
 function addP(did,pid){ postW[did][pid].push(mkW()); renderAll(); }
@@ -757,6 +758,54 @@ function guardar() {
 function publicar() {
   const p = buildPayload();
   if (!p) { toast('⚠️ Selecciona una fecha primero'); return; }
+
+  // Comprobar límites de 64h antes de publicar
+  calcularHorasCache();
+  const superados = [];
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const checkW = (w) => {
+    if (!w || !w.nombre || !w.nombre.trim()) return;
+    if ((w.tipo || 'pagar') !== 'pagar') return;
+    const key = w.nombre.trim().toUpperCase();
+    const acum = _horasCache[key] || 0;
+    // Contar cuántas veces aparece en el formulario actual
+    let enFormulario = 0;
+    ALL_SPECIALS.forEach(pp => safeArr(specialW[pp.id]).forEach(ww => { if(ww.nombre&&ww.nombre.trim().toUpperCase()===key&&(ww.tipo||'pagar')==='pagar') enFormulario+=8; }));
+    lines.forEach(l => { safeArr(l.maq).concat(safeArr(l.ops)).forEach(ww => { if(ww.nombre&&ww.nombre.trim().toUpperCase()===key&&(ww.tipo||'pagar')==='pagar') enFormulario+=8; }); });
+    POST_DEPTS.forEach(d => d.puestos.forEach(pp => safeArr(postW[d.id][pp.id]).forEach(ww => { if(ww.nombre&&ww.nombre.trim().toUpperCase()===key&&(ww.tipo||'pagar')==='pagar') enFormulario+=8; })));
+    const total = acum + enFormulario;
+    if (total > 64 && !superados.find(s => s.key === key)) {
+      superados.push({ key, nombre: w.nombre.trim(), total });
+    }
+  };
+  ALL_SPECIALS.forEach(pp => safeArr(specialW[pp.id]).forEach(checkW));
+  lines.forEach(l => { safeArr(l.maq).forEach(checkW); safeArr(l.ops).forEach(checkW); });
+  POST_DEPTS.forEach(d => d.puestos.forEach(pp => safeArr(postW[d.id][pp.id]).forEach(checkW)));
+
+  if (superados.length > 0) {
+    // Mostrar modal y no publicar hasta que acepte
+    const lista = document.getElementById('modal-60h-lista');
+    if (lista) lista.innerHTML = superados.map(s => '<li><strong>' + s.nombre + '</strong> — ' + s.total + 'h a pagar este año</li>').join('');
+    const modal = document.getElementById('modal-60h');
+    if (modal) {
+      modal.classList.add('show');
+      // Cancelar — solo cierra el modal
+      document.getElementById('modal-btn-continuar').previousElementSibling.onclick = function() {
+        cerrarModal60h();
+      };
+      // Publicar igualmente
+      document.getElementById('modal-btn-continuar').onclick = function() {
+        cerrarModal60h();
+        _doPublicar(p);
+      };
+    }
+    return;
+  }
+
+  _doPublicar(p);
+}
+
+function _doPublicar(p) {
   localStorage.setItem('ubesol_extras_'+p.fecha, JSON.stringify(p));
   db.collection('horas_extras').doc('extras_'+p.fecha).set(p)
     .then(()=>{ toast('✅ Publicado: '+formatFecha(p.fecha)); cargarHistorial(); })
@@ -1095,7 +1144,7 @@ function makeAcInput(currentVal, deptId, onSelect) {
           inp.value = w.nombre;
           onSelect(w.nombre);
           list.classList.remove('open');
-          setTimeout(checkModal60h, 150);
+
         };
         list.appendChild(item);
       });
