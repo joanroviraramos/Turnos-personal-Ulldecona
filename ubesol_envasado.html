@@ -1183,8 +1183,9 @@ function guardarManual() {
   // 1. Guardar la semana activa
   autoSaveToKey(weekKey());
 
-  // 2. Publicar TODAS las semanas con datos al histórico
+  // 2. Publicar TODAS las semanas con datos al histórico local y a Firebase
   let count = 0;
+  let firebaseCount = 0;
   try {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -1199,16 +1200,28 @@ function guardarManual() {
       try {
         const d = JSON.parse(raw);
         if (!d || !d._version) return;
+        // Guardar en histórico local
         const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
         localStorage.setItem(hk, raw);
         count++;
+        // Subir a Firebase
+        try {
+          const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+            .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+            .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+          const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+          db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(d)
+            .then(function(){ console.log('Guardado en Firebase: ' + deptKey + '_' + semKey); })
+            .catch(function(e){ console.warn('Firebase error:', e); });
+          firebaseCount++;
+        } catch(e) { console.warn('Firebase sync error:', e); }
       } catch(e) {}
     });
   } catch(e) {
     console.error('guardarManual error:', e);
   }
 
-  toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' guardada' + (count !== 1 ? 's' : '') + ' y publicadas');
+  toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' guardada' + (count !== 1 ? 's' : '') + ' y sincronizada' + (count !== 1 ? 's' : '') + ' con Firebase');
 }
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
