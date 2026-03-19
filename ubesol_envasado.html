@@ -1205,27 +1205,30 @@ function guardarManual() {
 
   // 2. Sincronizar Firebase: borrar TODO lo que no está en local, subir lo que sí
   const count = Object.keys(semanasLocales).length;
+
   db.collection('cuadrantes').get().then(function(snap) {
-    const batch = db.batch();
+    // Borrar uno a uno (más fiable que batch para colecciones pequeñas)
+    const promesas = [];
     snap.forEach(function(doc) {
-      if (!semanasLocales[doc.id]) batch.delete(doc.ref);
+      if (!semanasLocales[doc.id]) {
+        promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
+      }
     });
+    // Subir/actualizar los documentos locales
     Object.entries(semanasLocales).forEach(function([docId, payload]) {
-      batch.set(db.collection('cuadrantes').doc(docId), payload);
+      promesas.push(db.collection('cuadrantes').doc(docId).set(payload));
     });
-    return batch.commit();
+    return Promise.all(promesas);
   }).then(function() {
     toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' sincronizada' + (count !== 1 ? 's' : '') + ' con Firebase ✓');
   }).catch(function(e) {
     console.warn('Firebase sync error:', e);
-    toast('⚠️ Error al sincronizar con Firebase: ' + e.message);
+    toast('⚠️ Error al sincronizar: ' + e.message);
   });
 
-  if (count === 0) {
-    toast('💾 Sincronizando Firebase (limpiando semanas borradas)...');
-  } else {
-    toast('💾 Sincronizando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
-  }
+  toast(count === 0
+    ? '💾 Limpiando Firebase...'
+    : '💾 Sincronizando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
 }
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
@@ -2570,14 +2573,16 @@ function autoPublicarTodasLasSemanas() {
 
     // Sincronizar Firebase: borrar lo que no existe local, subir lo que sí
     db.collection('cuadrantes').get().then(function(snap) {
-      const batch = db.batch();
+      const promesas = [];
       snap.forEach(function(doc) {
-        if (!semanasLocales[doc.id]) batch.delete(doc.ref);
+        if (!semanasLocales[doc.id]) {
+          promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
+        }
       });
       Object.entries(semanasLocales).forEach(function([docId, payload]) {
-        batch.set(db.collection('cuadrantes').doc(docId), payload);
+        promesas.push(db.collection('cuadrantes').doc(docId).set(payload));
       });
-      return batch.commit();
+      return Promise.all(promesas);
     }).then(function() {
       console.log('Firebase sincronizado: ' + Object.keys(semanasLocales).length + ' semanas');
     }).catch(function(e) {
