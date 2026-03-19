@@ -1183,45 +1183,56 @@ function guardarManual() {
   // 1. Guardar la semana activa
   autoSaveToKey(weekKey());
 
-  // 2. Publicar TODAS las semanas con datos al histórico local y a Firebase
-  let count = 0;
-  let firebaseCount = 0;
+  // 2. Recoger todas las semanas locales con datos válidos
+  const semanasLocales = {}; // docId -> payload
   try {
-    const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith('ubesol_') && !k.startsWith('ubesol_historico_') && k !== 'ubesol_publicado') {
-        keys.push(k);
-      }
-    }
-    keys.forEach(k => {
+      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
       const raw = localStorage.getItem(k);
-      if (!raw) return;
+      if (!raw) continue;
       try {
         const d = JSON.parse(raw);
-        if (!d || !d._version) return;
+        if (!d || !d._version || !d.ano || !d.semana) continue;
         // Guardar en histórico local
         const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
         localStorage.setItem(hk, raw);
-        count++;
-        // Subir a Firebase
-        try {
-          const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
-            .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
-            .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
-          const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
-          db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(d)
-            .then(function(){ console.log('Guardado en Firebase: ' + deptKey + '_' + semKey); })
-            .catch(function(e){ console.warn('Firebase error:', e); });
-          firebaseCount++;
-        } catch(e) { console.warn('Firebase sync error:', e); }
+        // Calcular docId igual que en publicar()
+        const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+          .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+          .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+        const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+        semanasLocales[deptKey + '_' + semKey] = d;
       } catch(e) {}
-    });
+    }
   } catch(e) {
     console.error('guardarManual error:', e);
   }
 
-  toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' guardada' + (count !== 1 ? 's' : '') + ' y sincronizada' + (count !== 1 ? 's' : '') + ' con Firebase');
+  const count = Object.keys(semanasLocales).length;
+
+  // 3. Sincronizar con Firebase: borrar lo que ya no existe localmente y subir lo actual
+  db.collection('cuadrantes').get().then(function(snap) {
+    const batch = db.batch();
+    // Borrar documentos de Firebase que ya no están en local
+    snap.forEach(function(doc) {
+      if (!semanasLocales[doc.id]) {
+        batch.delete(doc.ref);
+      }
+    });
+    // Subir/actualizar los documentos locales
+    Object.entries(semanasLocales).forEach(function([docId, payload]) {
+      batch.set(db.collection('cuadrantes').doc(docId), payload);
+    });
+    return batch.commit();
+  }).then(function() {
+    toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' sincronizada' + (count !== 1 ? 's' : '') + ' con Firebase ✓');
+  }).catch(function(e) {
+    console.warn('Firebase sync error:', e);
+    toast('⚠️ Error al sincronizar con Firebase: ' + e.message);
+  });
+
+  toast('💾 Guardando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
 }
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
