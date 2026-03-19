@@ -860,9 +860,6 @@ async function doLogin() {
   // Buscar en workers cargados
   const worker = allWorkers.find(w => w.dni === dni);
 
-  // DEBUG temporal
-  alert('DNI:[' + dni + '] Workers:' + allWorkers.length + ' Encontrado:' + (worker ? worker.nombre : 'NO'));
-
   // Si no hay workers cargados (sin conexión), intentar con sesión guardada
   if (!allWorkers.length) {
     err.textContent = 'No se puede conectar. Comprueba tu conexión a internet.';
@@ -879,8 +876,11 @@ async function doLogin() {
   }
 
   if (pass.trim().toUpperCase() !== savedPass.trim().toUpperCase()) {
-    err.textContent = 'Contraseña incorrecta';
-    err.classList.add('show'); return;
+    // Segundo intento: comparar también con el DNI original por si la pass guardada es distinta
+    if (pass.trim().toUpperCase() !== dni) {
+      err.textContent = 'Contraseña incorrecta';
+      err.classList.add('show'); return;
+    }
   }
 
   err.classList.remove('show');
