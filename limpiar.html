@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Limpiar Datos — Grupo Ubesol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f0f0f0; color: #1a1a1a; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+.card { background: white; border-radius: 12px; border: 1px solid #d0d0d0; padding: 32px; max-width: 480px; width: 100%; }
+.logo { font-size: 12px; font-weight: 700; color: #1b5e20; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+h1 { font-size: 20px; font-weight: 700; color: #b71c1c; margin-bottom: 6px; }
+.sub { font-size: 13px; color: #666; margin-bottom: 24px; line-height: 1.5; }
+.section { margin-bottom: 20px; }
+.section-title { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.check-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.check-row:last-child { border-bottom: none; }
+.check-row input { width: 16px; height: 16px; cursor: pointer; accent-color: #b71c1c; }
+.check-row label { cursor: pointer; flex: 1; }
+.check-row .desc { font-size: 11px; color: #999; }
+.btn-limpiar {
+  width: 100%; padding: 12px; background: #b71c1c; color: white;
+  border: none; border-radius: 6px; font-size: 14px; font-weight: 700;
+  font-family: 'Inter', sans-serif; cursor: pointer; margin-top: 8px;
+  transition: background .15s;
+}
+.btn-limpiar:hover { background: #7f0000; }
+.btn-limpiar:disabled { background: #ccc; cursor: not-allowed; }
+.btn-volver { width: 100%; padding: 10px; background: white; color: #555; border: 1px solid #d0d0d0; border-radius: 6px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; margin-top: 8px; }
+.btn-volver:hover { background: #f5f5f5; }
+.log { background: #f8f8f8; border-radius: 6px; border: 1px solid #e0e0e0; padding: 12px; margin-top: 16px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; line-height: 1.8; display: none; max-height: 200px; overflow-y: auto; }
+.log.show { display: block; }
+.log-ok   { color: #1b5e20; }
+.log-err  { color: #b71c1c; }
+.log-info { color: #555; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
+  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
+  projectId: "maverick-turnos-81d4a",
+  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
+  messagingSenderId: "170123467344",
+  appId: "1:170123467344:web:142eee4473940ebd924f55"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+</head>
+<body>
+<div class="card">
+  <div class="logo">GrupoUbesol</div>
+  <h1>🗑 Limpiar datos de prueba</h1>
+  <p class="sub">Selecciona qué quieres borrar. Esta acción no se puede deshacer.</p>
+
+  <div class="section">
+    <div class="section-title">Firebase (datos en la nube)</div>
+    <div class="check-row">
+      <input type="checkbox" id="ch-cuadrantes" checked>
+      <label for="ch-cuadrantes">
+        <div>Cuadrantes de turnos</div>
+        <div class="desc">Colección <code>cuadrantes</code></div>
+      </label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="ch-extras" checked>
+      <label for="ch-extras">
+        <div>Horas extras</div>
+        <div class="desc">Colección <code>horas_extras</code></div>
+      </label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="ch-epis" checked>
+      <label for="ch-epis">
+        <div>Solicitudes de EPIs</div>
+        <div class="desc">Colección <code>epis</code></div>
+      </label>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">LocalStorage (datos en este navegador)</div>
+    <div class="check-row">
+      <input type="checkbox" id="ch-ls" checked>
+      <label for="ch-ls">
+        <div>Datos locales del navegador</div>
+        <div class="desc">Turnos, extras y EPIs guardados localmente</div>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn-limpiar" id="btn-limpiar" onclick="limpiar()">Limpiar datos seleccionados</button>
+  <button class="btn-volver" onclick="window.location.href='index.html'">‹ Volver al portal</button>
+
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+function addLog(msg, tipo) {
+  const log = document.getElementById('log');
+  log.classList.add('show');
+  const line = document.createElement('div');
+  line.className = 'log-' + (tipo || 'info');
+  line.textContent = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function borrarColeccion(nombre) {
+  addLog('Borrando ' + nombre + '...', 'info');
+  const snap = await db.collection(nombre).get();
+  if (snap.empty) { addLog('  → ' + nombre + ': vacío', 'info'); return; }
+  const batch = db.batch();
+  snap.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  addLog('  ✓ ' + nombre + ': ' + snap.size + ' documento(s) borrados', 'ok');
+}
+
+async function limpiar() {
+  const btn = document.getElementById('btn-limpiar');
+  btn.disabled = true;
+  btn.textContent = 'Limpiando...';
+  document.getElementById('log').innerHTML = '';
+
+  try {
+    if (document.getElementById('ch-cuadrantes').checked) await borrarColeccion('cuadrantes');
+    if (document.getElementById('ch-extras').checked)     await borrarColeccion('horas_extras');
+    if (document.getElementById('ch-epis').checked)       await borrarColeccion('epis');
+
+    if (document.getElementById('ch-ls').checked) {
+      addLog('Limpiando localStorage...', 'info');
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('ubesol_') || k.startsWith('ubesol_portal_'))) keys.push(k);
+      }
+      keys.forEach(k => localStorage.removeItem(k));
+      addLog('  ✓ localStorage: ' + keys.length + ' clave(s) borradas', 'ok');
+    }
+
+    addLog('✅ Limpieza completada', 'ok');
+    btn.textContent = '✓ Limpieza completada';
+    btn.style.background = '#1b5e20';
+  } catch(e) {
+    addLog('❌ Error: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = 'Limpiar datos seleccionados';
+  }
+}
+</script>
+</body>
+</html>
