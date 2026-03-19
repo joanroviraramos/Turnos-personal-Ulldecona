@@ -839,19 +839,28 @@ function loadCuadrante() {
   // Cargar todos los cuadrantes desde Firebase en tiempo real
   try {
     db.collection('cuadrantes').onSnapshot(function(snap) {
+      // 1. Borrar TODOS los cuadrantes del localStorage del móvil
+      const keysBorrar = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('ubesol_historico_')) keysBorrar.push(k);
+      }
+      keysBorrar.forEach(k => localStorage.removeItem(k));
+
+      // 2. Reescribir solo lo que hay en Firebase ahora mismo
+      cuadrante = null;
       snap.forEach(function(docSnap) {
         const data = docSnap.data();
         if (!data || !data.semana || !data.ano) return;
-        // Guardar en histórico local
         const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
         localStorage.setItem(hKey, JSON.stringify(data));
-        // Actualizar cuadrante activo con el más reciente
         if (!cuadrante ||
             (parseInt(data.ano)*100 + parseInt(data.semana)) >=
             (parseInt(cuadrante.ano)*100 + parseInt(cuadrante.semana))) {
           cuadrante = data;
         }
       });
+
       if (currentUser) { updateHomeInfo(); updateBadges(); }
     });
   } catch(e) {
