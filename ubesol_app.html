@@ -860,6 +860,9 @@ async function doLogin() {
   // Buscar en workers cargados
   const worker = allWorkers.find(w => w.dni === dni);
 
+  // DEBUG temporal
+  alert('DNI:[' + dni + '] Workers:' + allWorkers.length + ' Encontrado:' + (worker ? worker.nombre : 'NO'));
+
   // Si no hay workers cargados (sin conexión), intentar con sesión guardada
   if (!allWorkers.length) {
     err.textContent = 'No se puede conectar. Comprueba tu conexión a internet.';
@@ -875,7 +878,7 @@ async function doLogin() {
     err.classList.add('show'); return;
   }
 
-  if (pass !== savedPass) {
+  if (pass.trim().toUpperCase() !== savedPass.trim().toUpperCase()) {
     err.textContent = 'Contraseña incorrecta';
     err.classList.add('show'); return;
   }
