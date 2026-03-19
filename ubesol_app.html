@@ -1144,6 +1144,48 @@ function renderCalendario() {
   const TURNO_COLORS = { M: '#4a7c2f', T: '#c47a00', N: '#1a6eb5', P: '#7c3a8a' };
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
+  // Calendario laboral 2026 - Ulldecona Operaciones
+  // Formato: 'YYYY-MM-DD'
+  const FESTIVOS_2026 = new Set([
+    '2026-01-01', // Año nuevo (N)
+    '2026-01-02', // Planta cerrada (ajuste jornada)
+    '2026-01-05', // Ajuste jornada
+    '2026-01-06', // Epifanía (N)
+    '2026-03-30', // Vacaciones Semana Santa
+    '2026-03-31', // Vacaciones Semana Santa
+    '2026-04-01', // Vacaciones Semana Santa
+    '2026-04-02', // Vacaciones Semana Santa
+    '2026-04-03', // Viernes Santo (N)
+    '2026-04-06', // Lunes Pascua (A)
+    '2026-05-01', // Día del trabajador (N)
+    '2026-06-24', // San Juan (A)
+    '2026-08-15', // Virgen de Agosto (N)
+    '2026-09-11', // Diada Cataluña (A)
+    '2026-10-12', // Hispanidad (N)
+    '2026-11-01', // Todos los Santos (N)
+    '2026-12-06', // Día Constitución (N)
+    '2026-12-07', // Planta cerrada (ajuste jornada)
+    '2026-12-08', // Inmaculada Concepción (N)
+    '2026-12-25', // Navidad (N)
+    '2026-12-26', // San Esteban (A)
+    '2026-12-28', // Ajuste jornada
+    '2026-12-29', // Ajuste jornada
+    '2026-12-30', // Festivo Ulldecona (L)
+    '2026-12-31', // Festivo Ulldecona (L)
+  ]);
+  // Sábados laborables (planta abierta aunque sea sábado)
+  const SABADOS_LABORABLES = new Set([
+    '2026-01-10',
+    '2026-12-12',
+  ]);
+
+  function fmtKey(fecha) {
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth()+1).padStart(2,'0');
+    const d = String(fecha.getDate()).padStart(2,'0');
+    return y + '-' + m + '-' + d;
+  }
+
   // Construir mapa semana->turno
   const turnoMap = {};
   historico.forEach(data => {
@@ -1178,6 +1220,14 @@ function renderCalendario() {
             <div style="width:12px;height:12px;border-radius:3px;background:${col}"></div>
             <span style="font-size:12px;color:var(--text-2)">${{M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'}[t]}</span>
           </div>`).join('')}
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:12px;height:12px;border-radius:50%;background:#e53935"></div>
+          <span style="font-size:12px;color:var(--text-2)">Festivo / Cerrado</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:12px;height:12px;border-radius:50%;background:#f59e0b"></div>
+          <span style="font-size:12px;color:var(--text-2)">Sáb. laborable</span>
+        </div>
       </div>
     </div>`;
 
@@ -1222,12 +1272,31 @@ function renderCalendario() {
         html += `<div style="font-size:8px;font-weight:800;color:${lineaCol};text-align:center;line-height:1;padding:2px 1px">${lineaTxt}</div>`;
       }
 
-      const bgColor   = t && !esFinSem ? TURNO_COLORS[t.turno] : 'transparent';
-      const textColor = t && !esFinSem ? 'white' : esFinSem ? '#bbb' : 'var(--text)';
-      const border    = esHoy ? `2px solid var(--green)` : '1px solid transparent';
+      const fKey = fmtKey(fecha);
+      const esFestivo = FESTIVOS_2026.has(fKey);
+      const esSabLab  = SABADOS_LABORABLES.has(fKey);
 
+      let bgColor, textColor;
+      // Prioridad: festivo > sábado laborable > turno laboral > fin de semana normal
+      if (esFestivo) {
+        bgColor   = '#e53935';
+        textColor = '#FFD600';
+      } else if (esSabLab) {
+        bgColor   = 'rgba(245,158,11,0.18)';
+        textColor = '#b45309';
+      } else if (t && !esFinSem) {
+        bgColor   = TURNO_COLORS[t.turno];
+        textColor = 'white';
+      } else {
+        bgColor   = 'transparent';
+        textColor = esFinSem ? '#bbb' : 'var(--text)';
+      }
+      const border = esHoy ? `2px solid var(--green)` : esFestivo ? '1px solid #c62828' : esSabLab ? '1px solid rgba(245,158,11,0.4)' : '1px solid transparent';
+      const fw = esHoy ? 700 : esFestivo || esSabLab ? 700 : 400;
+
+      const borderRadius = (esFestivo || esSabLab) ? '50%' : '4px';
       html += `<div style="${CELL}">
-        <div style="width:24px;height:24px;border-radius:4px;background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:${esHoy?700:400};border:${border};box-sizing:border-box">${dia}</div>
+        <div style="width:24px;height:24px;border-radius:${borderRadius};background:${bgColor};color:${textColor};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:${fw};border:${border};box-sizing:border-box">${dia}</div>
       </div>`;
 
       // Si es domingo (fin de semana) y quedan días, añadir columna línea del próximo lunes
