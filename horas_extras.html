@@ -84,7 +84,7 @@ td.linea-label  { font-weight:700; font-size:11px; color:#1b5e20; white-space:no
 td.rol-label    { font-size:11px; color:var(--muted); width:130px; padding-left:8px; }
 
 select.turno-sel { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; border:1px solid var(--border-l); border-radius:3px; padding:3px 6px; background:white; width:80px; cursor:pointer; }
-input.nombre-input { font-family:'Inter',sans-serif; font-size:12px; border:1px solid var(--border-l); border-radius:3px; padding:4px 7px; width:100%; min-width:160px; background:white; }
+input.nombre-input { font-family:'Inter',sans-serif; font-size:12px; border:1px solid var(--border-l); border-radius:3px; padding:4px 7px; width:100%; min-width:140px; background:white; }
 input.nombre-input:focus { outline:none; border-color:#e65100; }
 
 .ctrl-btn { font-size:14px; font-weight:700; width:22px; height:22px; border-radius:3px; border:1px solid var(--border-l); cursor:pointer; background:white; display:inline-flex; align-items:center; justify-content:center; }
@@ -105,11 +105,11 @@ input.nombre-input:focus { outline:none; border-color:#e65100; }
 .toast.show { opacity:1; }
 
 /* ── AUTOCOMPLETE ── */
-.ac-wrap { position: relative; width: 100%; }
+.ac-wrap { position: relative; width: 100%; min-width: 140px; }
 .ac-inp {
   font-family: 'Inter', sans-serif; font-size: 12px;
   border: 1px solid var(--border-l); border-radius: 3px;
-  padding: 4px 7px; width: 100%; background: white;
+  padding: 4px 7px; width: 100%; min-width: 140px; background: white;
 }
 .ac-inp:focus { outline: none; border-color: #e65100; }
 .ac-list {
@@ -160,6 +160,7 @@ const db = firebase.firestore();
 </div>
 
 <div class="toolbar">
+  <button class="btn" onclick="window.location.href='index.html'">‹ Portal</button>
   <button class="btn" onclick="guardar()">💾 Guardar</button>
   <button class="btn" onclick="limpiarFormulario()">🗑 Limpiar</button>
   <button class="btn btn-pub" onclick="publicar()">Publicar ✓</button>
@@ -327,9 +328,9 @@ function showPostDept(dept) {
 function tipoSel(val, onchange) {
   const vPagar = val === 'pagar' ? ' selected' : '';
   const vComp  = val === 'compensar' ? ' selected' : '';
-  return '<select class="turno-sel" style="width:110px;font-size:11px" onchange="' + onchange + '">' +
-    '<option value="pagar"' + vPagar + '>💰 A pagar</option>' +
-    '<option value="compensar"' + vComp + '>🏖 A compensar</option>' +
+  return '<select class="turno-sel" style="width:108px;font-size:11px" onchange="' + onchange + '">' +
+    '<option value="pagar"' + vPagar + '>💰 Pagar</option>' +
+    '<option value="compensar"' + vComp + '>🏖 Compensar</option>' +
   '</select>';
 }
 
@@ -457,12 +458,12 @@ function renderEnvasadoHTML() {
     <div class="section-header dept-envasado">🏭 Envasado</div>
     <table class="extras-table">
     <thead><tr>
-      <th style="width:60px">Línea</th>
-      <th style="width:130px">Rol / Puesto</th>
-      <th style="width:90px">Turno</th>
-      <th style="width:120px">Tipo</th>
-      <th>Trabajador/a</th>
-      <th style="width:60px;text-align:center">+/−</th>
+      <th style="width:55px;min-width:55px">Línea</th>
+      <th style="width:120px;min-width:120px">Rol / Puesto</th>
+      <th style="width:80px;min-width:80px">Turno</th>
+      <th style="width:105px;min-width:105px">Tipo</th>
+      <th style="min-width:180px">Trabajador/a</th>
+      <th style="width:50px;min-width:50px;text-align:center">+/−</th>
     </tr></thead><tbody>`;
 
   // Especiales
@@ -475,7 +476,7 @@ function renderEnvasadoHTML() {
         <td class="puesto-label">${wi===0?puesto.label:''}</td>
         <td>${turnoSel(w.turno,"setSpT('" + puesto.id + "'," + wi + ",this.value)")}</td>
         <td>${tipoSel(w.tipo,"setSpTipo('" + puesto.id + "'," + wi + ",this.value)")}</td>
-        <td><div>${regNombreInp(w.nombre,'envasado', function(v){setSpN(''+puesto.id,wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
+        <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,'envasado', function(v){setSpN(''+puesto.id,wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="ctrl-btn ctrl-add" onclick="addSp('${puesto.id}')">+</button>
           ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remSp('${puesto.id}',${wi})">−</button>`:''}
@@ -496,7 +497,7 @@ function renderEnvasadoHTML() {
         <td class="rol-label">Op. Máquina</td>
         <td>${turnoSel(w.turno,"setLT('" + line.id + "','maq'," + wi + ",this.value)")}</td>
         <td>${tipoSel(w.tipo,"setLTipo('" + line.id + "','maq'," + wi + ",this.value)")}</td>
-        <td><div>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'maq',wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
+        <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'maq',wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           ${wi===line.maq.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLMaq('${line.id}')">+</button>`:''}
           ${line.maq.length>1&&wi===line.maq.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLMaq('${line.id}')">−</button>`:''}
@@ -509,7 +510,7 @@ function renderEnvasadoHTML() {
         <td class="rol-label">Operario/a</td>
         <td>${turnoSel(w.turno,"setLT('" + line.id + "','ops'," + wi + ",this.value)")}</td>
         <td>${tipoSel(w.tipo,"setLTipo('" + line.id + "','ops'," + wi + ",this.value)")}</td>
-        <td><div>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'ops',wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
+        <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'ops',wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           ${wi===line.ops.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLOps('${line.id}')">+</button>`:''}
           ${line.ops.length>1&&wi===line.ops.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLOps('${line.id}')">−</button>`:''}
@@ -528,10 +529,11 @@ function renderPostDeptHTML(dept) {
     <div class="section-header ${dept.cls}">${dept.label}</div>
     <table class="extras-table">
     <thead><tr>
-      <th style="width:180px">Puesto</th>
-      <th style="width:90px">Turno</th>
-      <th>Trabajador/a</th>
-      <th style="width:60px;text-align:center">+/−</th>
+      <th style="width:150px;min-width:150px">Puesto</th>
+      <th style="width:80px;min-width:80px">Turno</th>
+      <th style="width:105px;min-width:105px">Tipo</th>
+      <th style="min-width:180px">Trabajador/a</th>
+      <th style="width:50px;min-width:50px;text-align:center">+/−</th>
     </tr></thead><tbody>`;
 
   dept.puestos.forEach(puesto => {
@@ -542,7 +544,7 @@ function renderPostDeptHTML(dept) {
         <td class="puesto-label">${wi===0?puesto.label:''}</td>
         <td>${turnoSel(w.turno,"setPT('" + dept.id + "','" + puesto.id + "'," + wi + ",this.value)")}</td>
         <td>${tipoSel(w.tipo,"setPTipo('" + dept.id + "','" + puesto.id + "'," + wi + ",this.value)")}</td>
-        <td><div>${regNombreInp(w.nombre,dept.id, function(v){setPN(''+dept.id,''+puesto.id,wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
+        <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,dept.id, function(v){setPN(''+dept.id,''+puesto.id,wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="ctrl-btn ctrl-add" onclick="addP('${dept.id}','${puesto.id}')">+</button>
           ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remP('${dept.id}','${puesto.id}',${wi})">−</button>`:''}
