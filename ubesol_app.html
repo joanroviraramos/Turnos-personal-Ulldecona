@@ -1868,15 +1868,15 @@ function showExtras() {
   const extrasAnioTodas = extras.filter(function(e){ return e.fecha.startsWith(anioStr); });
   const horasPagar = extrasAnioTodas.filter(function(e){ return e.tipo !== 'compensar'; }).length * 8;
   const diasCompensar = extrasAnioTodas.filter(function(e){ return e.tipo === 'compensar'; }).length;
-  const pct = Math.min(100, Math.round(horasPagar / 60 * 100));
-  const barColor = horasPagar > 60 ? '#b71c1c' : horasPagar >= 52 ? '#e65100' : '#2e7d32';
+  const pct = Math.min(100, Math.round(horasPagar / 64 * 100));
+  const barColor = horasPagar > 64 ? '#b71c1c' : horasPagar >= 52 ? '#e65100' : '#2e7d32';
 
   var html = '<div style="background:#fff3e0;border-radius:10px;padding:14px;margin-bottom:12px">' +
     '<div style="display:flex;gap:12px;margin-bottom:10px">' +
       '<div style="text-align:center;flex:1">' +
         '<div style="font-size:11px;color:#bf360c;font-weight:600;margin-bottom:2px">💰 A PAGAR</div>' +
         '<div style="font-size:22px;font-weight:700;color:#e65100">' + horasPagar + 'h</div>' +
-        '<div style="font-size:10px;color:#888">de 60h máx · año</div>' +
+        '<div style="font-size:10px;color:#888">de 64h máx · año</div>' +
       '</div>' +
       '<div style="width:1px;background:#ffb74d"></div>' +
       '<div style="text-align:center;flex:1">' +
@@ -1889,7 +1889,7 @@ function showExtras() {
     '<div style="background:#ffe0b2;border-radius:4px;height:8px;overflow:hidden">' +
       '<div style="background:' + barColor + ';height:100%;width:' + pct + '%;border-radius:4px;transition:width .3s"></div>' +
     '</div>' +
-    (horasPagar > 60 ? '<div style="font-size:11px;color:#b71c1c;font-weight:600;margin-top:4px">⚠️ Has superado el límite de 60h a pagar</div>' : '') +
+    (horasPagar > 64 ? '<div style="font-size:11px;color:#b71c1c;font-weight:600;margin-top:4px">⚠️ Has superado el límite de 64h a pagar</div>' : '') +
   '</div>';
 
   if (proximos.length) {

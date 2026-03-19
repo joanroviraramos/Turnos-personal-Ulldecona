@@ -224,7 +224,7 @@ const db = firebase.firestore();
     <div class="modal-icon">🚨</div>
     <div class="modal-title">Límite de 60h superado</div>
     <div class="modal-body">
-      Los siguientes trabajadores superan el máximo de <strong>60 horas a pagar</strong> en el año:
+      Los siguientes trabajadores superan el máximo de <strong>64 horas a pagar</strong> en el año:
       <ul id="modal-60h-lista"></ul>
       <br>Considera cambiar sus horas a <strong>🏖 Compensar</strong> o revisar el cuadrante.
     </div>
@@ -403,13 +403,10 @@ function calcularHorasCache() {
     try {
       const d = JSON.parse(localStorage.getItem(k));
       if (!d || !d.fecha || !d.fecha.startsWith(anio)) continue;
-      // No contar el día actual que se está editando
-      const fechaActual = document.getElementById('fecha-extra') ? document.getElementById('fecha-extra').value : '';
-      if (d.fecha === fechaActual) continue;
-      contarHorasEnDoc(d);
+      contarHorasEnDoc(d); // contar TODOS los días incluido el actual publicado
     } catch(e) {}
   }
-  console.log('calcularHorasCache: docs encontrados:', docsEncontrados, 'cache:', JSON.stringify(_horasCache));
+  console.log('calcularHorasCache: docs=', docsEncontrados, 'cache=', JSON.stringify(_horasCache));
 }
 
 function contarHorasEnDoc(d) {
@@ -465,6 +462,7 @@ function cerrarModal60h() {
 
 // Comprobar si algún trabajador supera 60h y mostrar modal
 function checkModal60h() {
+  calcularHorasCache(); // siempre actualizar antes de comprobar
   const safeArr = a => Array.isArray(a) ? a : [];
   const vistos = [];
   const checkW = (w) => {
@@ -473,7 +471,7 @@ function checkModal60h() {
     const hoy  = getHorasHoy(w.nombre);
     const total = acum + hoy;
     console.log('checkModal60h:', w.nombre, 'acum:', acum, 'hoy:', hoy, 'total:', total);
-    if (total > 60 && !vistos.includes(w.nombre.trim().toUpperCase())) {
+    if (total > 64 && !vistos.includes(w.nombre.trim().toUpperCase())) {
       vistos.push(w.nombre.trim().toUpperCase());
       mostrarModal60h(w.nombre, total);
     }
@@ -489,9 +487,9 @@ function getAvisoHoras(nombre, esPagar) {
   const acum = getHorasPagar(nombre);
   const hoy  = getHorasHoy(nombre);
   const total = acum + hoy;
-  if (total > 60) {
-    return '<div style="font-size:11px;font-weight:700;color:white;background:#b71c1c;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">🚨 ' + total + 'h — SUPERA 60h</div>';
-  } else if (total >= 52) {
+  if (total > 64) {
+    return '<div style="font-size:11px;font-weight:700;color:white;background:#b71c1c;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">🚨 ' + total + 'h — SUPERA 64h</div>';
+  } else if (total >= 56) {
     return '<div style="font-size:11px;font-weight:700;color:white;background:#e65100;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">⚡ ' + total + 'h — cerca del límite</div>';
   }
   return '<div style="font-size:10px;color:#555;margin-top:2px">💰 ' + total + 'h a pagar este año</div>';
@@ -519,7 +517,7 @@ function checkLimitesAntesDPublicar() {
     const acum = getHorasPagar(nombre);
     const hoy  = getHorasHoy(nombre);
     const total = acum + hoy;
-    if (total > 60) superan.push({ nombre, total });
+    if (total > 64) superan.push({ nombre, total });
   });
   return superan;
 }
@@ -675,14 +673,14 @@ function renderPostDeptHTML(dept) {
 }
 
 // ─── SETTERS ──────────────────────────────────────────────────────────────────
-function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); renderAll(); setTimeout(checkModal60h,50); }
+function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); setTimeout(checkModal60h,100); }
 function setSpT(id,wi,v){ specialW[id][wi].turno=v; }
 function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); setTimeout(checkModal60h,50); }
 function addSp(id){ specialW[id].push(mkW()); renderAll(); }
 function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
 
 function getL(id){ return lines.find(l=>l.id===id); }
-function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); renderAll(); setTimeout(checkModal60h,50); }
+function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); setTimeout(checkModal60h,100); }
 function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
 function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); setTimeout(checkModal60h,50); }
 function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
