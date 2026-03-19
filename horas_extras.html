@@ -821,24 +821,76 @@ function toggleHistorial() {
   if (body.classList.contains('open')) cargarHistorial();
 }
 
+// Mapeo deptParam -> qué secciones del documento tiene datos
+function deptTienePersonas(d) {
+  if (deptParam === 'admin') return true; // admin ve todo
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const tieneNombre = arr => safeArr(arr).some(w => w && w.nombre && w.nombre.trim());
+
+  if (deptParam === 'envasado') {
+    if (Object.values(d.envasado&&d.envasado.special||{}).some(tieneNombre)) return true;
+    if (safeArr(d.envasado&&d.envasado.lines).some(l => tieneNombre(l.maq)||tieneNombre(l.ops))) return true;
+    return false;
+  }
+  // Mapear deptParam al id interno del POST_DEPT
+  const deptMap = {
+    elaboracion:'elaboracion', almacen:'almacen', mantenimiento:'mantenimiento',
+    calidadlineas:'calidad', calidadfq:'calidad', calidadmicro:'calidad', calidadmat:'calidad',
+    soplado:'soplado', mejoracontinua:'mejora'
+  };
+  const deptId = deptMap[deptParam];
+  if (!deptId || !d.depts || !d.depts[deptId]) return false;
+  return Object.values(d.depts[deptId]).some(tieneNombre);
+}
+
+// Contar personas del departamento actual en un documento
+function contarPersonasDept(d) {
+  if (deptParam === 'admin') {
+    let total = 0;
+    Object.values(d.envasado&&d.envasado.special||{}).forEach(a=>total+=(a||[]).length);
+    (d.envasado&&d.envasado.lines||[]).forEach(l=>total+=(l.maq||[]).length+(l.ops||[]).length);
+    Object.values(d.depts||{}).forEach(dp=>Object.values(dp).forEach(a=>total+=(a||[]).length));
+    return total;
+  }
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const contarArr = arr => safeArr(arr).filter(w => w && w.nombre && w.nombre.trim()).length;
+
+  if (deptParam === 'envasado') {
+    let t = 0;
+    Object.values(d.envasado&&d.envasado.special||{}).forEach(a => t += contarArr(a));
+    safeArr(d.envasado&&d.envasado.lines).forEach(l => { t += contarArr(l.maq); t += contarArr(l.ops); });
+    return t;
+  }
+  const deptMap = {
+    elaboracion:'elaboracion', almacen:'almacen', mantenimiento:'mantenimiento',
+    calidadlineas:'calidad', calidadfq:'calidad', calidadmicro:'calidad', calidadmat:'calidad',
+    soplado:'soplado', mejoracontinua:'mejora'
+  };
+  const deptId = deptMap[deptParam];
+  if (!deptId || !d.depts || !d.depts[deptId]) return 0;
+  let t = 0;
+  Object.values(d.depts[deptId]).forEach(a => t += contarArr(a));
+  return t;
+}
+
 function cargarHistorial() {
   const list = document.getElementById('historial-list');
   list.innerHTML = '<div style="padding:16px;color:var(--faint);text-align:center">Cargando...</div>';
-  db.collection('horas_extras').orderBy('fecha','desc').limit(30).get()
+  db.collection('horas_extras').orderBy('fecha','desc').limit(60).get()
     .then(snap => {
       if (snap.empty) { list.innerHTML='<div style="padding:16px;color:var(--faint);text-align:center">No hay días publicados aún</div>'; return; }
       let html='';
       snap.forEach(doc => {
         const d=doc.data(); const fecha=d.fecha||'';
+        // Filtrar por departamento
+        if (!deptTienePersonas(d)) return;
+        const total = contarPersonasDept(d);
+        if (total === 0) return; // no mostrar si no hay personas de este dept
         const dow=fecha?new Date(fecha+'T12:00:00').getDay():-1;
         const esFest=FESTIVOS_2026.has(fecha); const esSabL=SABADOS_LABORABLES.has(fecha);
         const tlabel=esFest?'🔴 Festivo':esSabL?'🟢 Sáb.lab.':dow===0?'🟣 Domingo':'🟠 Sábado';
         const tbg=esFest?'#ffebee':esSabL?'#e8f5e9':dow===0?'#f3e5f5':'#fff3e0';
         const tcol=esFest?'#b71c1c':esSabL?'#1b5e20':dow===0?'#6a1b9a':'#e65100';
-        let total=0;
-        Object.values(d.envasado&&d.envasado.special||{}).forEach(a=>total+=a.length);
-        (d.envasado&&d.envasado.lines||[]).forEach(l=>total+=(l.maq||[]).length+(l.ops||[]).length);
-        Object.values(d.depts||{}).forEach(dp=>Object.values(dp).forEach(a=>total+=a.length));
         html+=`<div class="historial-item" onclick="cargarDesdeHistorial('${fecha}')">
           <span class="fecha">${formatFecha(fecha)}</span>
           <span class="tipo-badge" style="background:${tbg};color:${tcol}">${tlabel}</span>
@@ -846,7 +898,7 @@ function cargarHistorial() {
           <span style="margin-left:auto;font-size:11px;color:#999">${d.responsable||''}</span>
         </div>`;
       });
-      list.innerHTML=html;
+      list.innerHTML = html || '<div style="padding:16px;color:var(--faint);text-align:center">No hay días publicados para este departamento</div>';
     })
     .catch(()=>{ list.innerHTML='<div style="padding:16px;color:var(--faint);text-align:center">Error al cargar</div>'; });
 }
