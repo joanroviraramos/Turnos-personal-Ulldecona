@@ -1180,11 +1180,9 @@ function buildExpandableRow(worker, wi, puesto, arr) {
 //  GUARDAR MANUAL
 // ═══════════════════════════════════════════════════════════════════════
 function guardarManual() {
-  // 1. Guardar la semana activa
-  autoSaveToKey(weekKey());
-
-  // 2. Recoger todas las semanas locales con datos válidos
-  const semanasLocales = {}; // docId -> payload
+  // 1. Primero recoger lo que hay en localStorage ANTES de escribir nada
+  //    para saber exactamente qué semanas existen realmente
+  const semanasLocales = {};
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
@@ -1194,10 +1192,6 @@ function guardarManual() {
       try {
         const d = JSON.parse(raw);
         if (!d || !d._version || !d.ano || !d.semana) continue;
-        // Guardar en histórico local
-        const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
-        localStorage.setItem(hk, raw);
-        // Calcular docId igual que en publicar()
         const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
           .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
           .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
@@ -1209,18 +1203,13 @@ function guardarManual() {
     console.error('guardarManual error:', e);
   }
 
+  // 2. Sincronizar Firebase: borrar TODO lo que no está en local, subir lo que sí
   const count = Object.keys(semanasLocales).length;
-
-  // 3. Sincronizar con Firebase: borrar lo que ya no existe localmente y subir lo actual
   db.collection('cuadrantes').get().then(function(snap) {
     const batch = db.batch();
-    // Borrar documentos de Firebase que ya no están en local
     snap.forEach(function(doc) {
-      if (!semanasLocales[doc.id]) {
-        batch.delete(doc.ref);
-      }
+      if (!semanasLocales[doc.id]) batch.delete(doc.ref);
     });
-    // Subir/actualizar los documentos locales
     Object.entries(semanasLocales).forEach(function([docId, payload]) {
       batch.set(db.collection('cuadrantes').doc(docId), payload);
     });
@@ -1232,7 +1221,11 @@ function guardarManual() {
     toast('⚠️ Error al sincronizar con Firebase: ' + e.message);
   });
 
-  toast('💾 Guardando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
+  if (count === 0) {
+    toast('💾 Sincronizando Firebase (limpiando semanas borradas)...');
+  } else {
+    toast('💾 Sincronizando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
+  }
 }
 function addMaq(lineId) {
   const line = lines.find(l => l.id === lineId);
@@ -2496,9 +2489,33 @@ function buildPayload() {
   if (t==='Soplado')         return {...base, soplado:       {workers:soplWorkers,    bajas:soplBajas,     vacaciones:soplVacaciones}};
   return base;
 }
+function payloadTieneDatos(payload) {
+  // Comprueba si el payload tiene trabajadores reales con nombres
+  if (!payload) return false;
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const tieneNombre = w => w && (w.nombre || w.name || (w.cells && Object.values(w.cells).some(v => v && v.trim())));
+
+  if (payload.envasado) {
+    const e = payload.envasado;
+    if (safeArr(e.lines).some(l => safeArr(l.maq).some(tieneNombre) || safeArr(l.ops).some(tieneNombre))) return true;
+    if (e.specialWorkers && Object.values(e.specialWorkers).some(arr => safeArr(arr).some(tieneNombre))) return true;
+  }
+  const depts = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
+  for (const dept of depts) {
+    if (payload[dept] && payload[dept].workers) {
+      if (Object.values(payload[dept].workers).some(arr => Array.isArray(arr) && arr.some(tieneNombre))) return true;
+    }
+  }
+  return false;
+}
+
 function autoSaveToKey(key) {
   try {
-    localStorage.setItem(key, JSON.stringify(buildPayload()));
+    const payload = buildPayload();
+    if (payloadTieneDatos(payload)) {
+      localStorage.setItem(key, JSON.stringify(payload));
+    }
+    // Si no tiene datos, NO escribir — así localStorage refleja solo semanas con contenido real
   } catch(e) {
     console.error('autoSave error:', e);
   }
