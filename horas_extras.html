@@ -395,9 +395,11 @@ function calcularHorasCache() {
   const anio = new Date().getFullYear().toString();
   Object.keys(_horasCache).forEach(k => delete _horasCache[k]);
 
+  let docsEncontrados = 0;
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     if (!k || !k.startsWith('ubesol_extras_firebase_')) continue;
+    docsEncontrados++;
     try {
       const d = JSON.parse(localStorage.getItem(k));
       if (!d || !d.fecha || !d.fecha.startsWith(anio)) continue;
@@ -407,13 +409,15 @@ function calcularHorasCache() {
       contarHorasEnDoc(d);
     } catch(e) {}
   }
+  console.log('calcularHorasCache: docs encontrados:', docsEncontrados, 'cache:', JSON.stringify(_horasCache));
 }
 
 function contarHorasEnDoc(d) {
   const safeArr = a => Array.isArray(a) ? a : [];
   const add = (w) => {
     if (!w || !w.nombre || !w.nombre.trim()) return;
-    if (w.tipo !== 'pagar') return;
+    const tipo = w.tipo || 'pagar'; // si no tiene tipo, es 'pagar' por defecto
+    if (tipo !== 'pagar') return;
     const key = w.nombre.trim().toUpperCase();
     _horasCache[key] = (_horasCache[key] || 0) + 8;
   };
@@ -440,7 +444,7 @@ function getHorasHoy(nombre) {
   const key = nombre.trim().toUpperCase();
   let horas = 0;
   const safeArr = a => Array.isArray(a) ? a : [];
-  const check = (w) => { if (w && w.nombre && w.nombre.trim().toUpperCase() === key && w.tipo === 'pagar') horas += 8; };
+  const check = (w) => { if (w && w.nombre && w.nombre.trim().toUpperCase() === key && (w.tipo || 'pagar') === 'pagar') horas += 8; };
   ALL_SPECIALS.forEach(p => safeArr(specialW[p.id]).forEach(check));
   lines.forEach(l => { safeArr(l.maq).forEach(check); safeArr(l.ops).forEach(check); });
   POST_DEPTS.forEach(d => d.puestos.forEach(p => safeArr(postW[d.id][p.id]).forEach(check)));
@@ -464,10 +468,11 @@ function checkModal60h() {
   const safeArr = a => Array.isArray(a) ? a : [];
   const vistos = [];
   const checkW = (w) => {
-    if (!w || !w.nombre || !w.nombre.trim() || w.tipo !== 'pagar') return;
+    if (!w || !w.nombre || !w.nombre.trim() || (w.tipo || 'pagar') !== 'pagar') return;
     const acum = getHorasPagar(w.nombre);
     const hoy  = getHorasHoy(w.nombre);
     const total = acum + hoy;
+    console.log('checkModal60h:', w.nombre, 'acum:', acum, 'hoy:', hoy, 'total:', total);
     if (total > 60 && !vistos.includes(w.nombre.trim().toUpperCase())) {
       vistos.push(w.nombre.trim().toUpperCase());
       mostrarModal60h(w.nombre, total);
