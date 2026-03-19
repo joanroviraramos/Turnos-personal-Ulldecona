@@ -2063,54 +2063,56 @@ function clearStorage() {
 
     // 1. Borrar del localStorage principal Y del histórico
     const savedKey = weekKey();
-    const docIdsBorrados = [];
     sel.forEach(k => {
       localStorage.removeItem(k);
       const match = k.match(/ubesol_(\d+)_s(\d+)/);
-      if (match) {
-        localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
-        // Calcular docId de Firebase para borrar directamente
-        const ano = match[1];
-        const sem = match[2];
-        // Borrar para todos los posibles dept keys
-        ['envasado','elaboracion','almacen','mantenimiento','calidadlineas','calidadfis-quim','calidadfisquim','calidadmicrobiologia','calidadmateriales','mejoracontinua','soplado'].forEach(dept => {
-          docIdsBorrados.push(dept + '_' + ano + '_s' + sem);
-        });
-      }
+      if (match) localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
     });
-
-    // Borrar directamente de Firebase los docs de las semanas eliminadas
-    if (docIdsBorrados.length > 0) {
-      db.collection('cuadrantes').get().then(function(snap) {
-        const batch = db.batch();
-        snap.forEach(function(doc) {
-          // Borrar si el docId contiene el año_semana de alguna semana borrada
-          sel.forEach(k => {
-            const match = k.match(/ubesol_(\d+)_s(\d+)/);
-            if (match) {
-              const semKey = match[1] + '_s' + match[2];
-              if (doc.id.includes(semKey)) batch.delete(doc.ref);
-            }
-          });
-        });
-        return batch.commit();
-      }).then(function() {
-        console.log('Firebase: semanas borradas correctamente');
-      }).catch(function(e) {
-        console.warn('Firebase borrar error:', e);
-      });
-    }
 
     cerrar();
 
-    // 2. Solo guardar la semana activa si NO estaba entre las borradas
-    if (!estaActiva) autoSaveToKey(savedKey);
-    autoPublicarTodasLasSemanas();
+    // 2. Borrar de Firebase las semanas eliminadas usando el semKey
+    const semKeysBorrados = [];
+    sel.forEach(k => {
+      const match = k.match(/ubesol_(\d+)_s(\d+)/);
+      if (match) semKeysBorrados.push(match[1] + '_s' + match[2]);
+    });
 
-    _autoSaveBlocked = false;
+    db.collection('cuadrantes').get().then(function(snap) {
+      const promesas = [];
+      snap.forEach(function(doc) {
+        const debeBorar = semKeysBorrados.some(semKey => doc.id.includes(semKey));
+        if (debeBorar) promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
+      });
+      // Si quedan semanas en local, subirlas también
+      if (!estaActiva) {
+        autoSaveToKey(savedKey);
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+          try {
+            const d = JSON.parse(localStorage.getItem(k));
+            if (!d || !d._version || !d.ano || !d.semana) continue;
+            const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+              .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+              .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+            const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+            promesas.push(db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(d));
+          } catch(e) {}
+        }
+      }
+      return Promise.all(promesas);
+    }).then(function() {
+      console.log('Firebase: semanas borradas correctamente');
+      _autoSaveBlocked = false;
+      if (estaActiva) loadWeekFromStorage(weekKey());
+    }).catch(function(e) {
+      console.warn('Firebase borrar error:', e);
+      _autoSaveBlocked = false;
+      if (estaActiva) loadWeekFromStorage(weekKey());
+    });
 
-    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · restantes guardadas y publicadas');
-    if (estaActiva) loadWeekFromStorage(weekKey());
+    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · sincronizando Firebase...');
   };
 }
 
