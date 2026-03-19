@@ -447,17 +447,9 @@ function getHorasHoy(nombre) {
   return horas;
 }
 
-// Trabajadores que ya han visto el aviso esta sesión (para no repetirlo)
-const _avisoVisto = new Set();
-
 function mostrarModal60h(nombre, total) {
-  const key = nombre.trim().toUpperCase();
-  if (_avisoVisto.has(key)) return;
-  _avisoVisto.add(key);
   const lista = document.getElementById('modal-60h-lista');
-  if (lista) {
-    lista.innerHTML = '<li><strong>' + nombre + '</strong> — ' + total + 'h a pagar este año</li>';
-  }
+  if (lista) lista.innerHTML = '<li><strong>' + nombre + '</strong> — ' + total + 'h a pagar este año</li>';
   const modal = document.getElementById('modal-60h');
   if (modal) modal.classList.add('show');
 }
@@ -467,6 +459,25 @@ function cerrarModal60h() {
   if (modal) modal.classList.remove('show');
 }
 
+// Comprobar si algún trabajador supera 60h y mostrar modal
+function checkModal60h() {
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const vistos = [];
+  const checkW = (w) => {
+    if (!w || !w.nombre || !w.nombre.trim() || w.tipo !== 'pagar') return;
+    const acum = getHorasPagar(w.nombre);
+    const hoy  = getHorasHoy(w.nombre);
+    const total = acum + hoy;
+    if (total > 60 && !vistos.includes(w.nombre.trim().toUpperCase())) {
+      vistos.push(w.nombre.trim().toUpperCase());
+      mostrarModal60h(w.nombre, total);
+    }
+  };
+  ALL_SPECIALS.forEach(p => safeArr(specialW[p.id]).forEach(checkW));
+  lines.forEach(l => { safeArr(l.maq).forEach(checkW); safeArr(l.ops).forEach(checkW); });
+  POST_DEPTS.forEach(d => d.puestos.forEach(p => safeArr(postW[d.id][p.id]).forEach(checkW)));
+}
+
 function getAvisoHoras(nombre, esPagar) {
   if (!nombre || !nombre.trim()) return '';
   if (!esPagar) return '<div style="font-size:10px;color:#1b5e20;margin-top:2px">🏖 A compensar — sin límite</div>';
@@ -474,8 +485,6 @@ function getAvisoHoras(nombre, esPagar) {
   const hoy  = getHorasHoy(nombre);
   const total = acum + hoy;
   if (total > 60) {
-    // Mostrar modal con un pequeño delay para que el render termine
-    setTimeout(function() { mostrarModal60h(nombre, total); }, 100);
     return '<div style="font-size:11px;font-weight:700;color:white;background:#b71c1c;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">🚨 ' + total + 'h — SUPERA 60h</div>';
   } else if (total >= 52) {
     return '<div style="font-size:11px;font-weight:700;color:white;background:#e65100;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">⚡ ' + total + 'h — cerca del límite</div>';
@@ -661,22 +670,22 @@ function renderPostDeptHTML(dept) {
 }
 
 // ─── SETTERS ──────────────────────────────────────────────────────────────────
-function setSpN(id,wi,v){ const prev=specialW[id][wi].nombre; specialW[id][wi].nombre=v.trim(); if(prev!==v.trim()) _avisoVisto.delete(v.trim().toUpperCase()); renderAll(); }
+function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); renderAll(); setTimeout(checkModal60h,50); }
 function setSpT(id,wi,v){ specialW[id][wi].turno=v; }
-function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); }
+function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); setTimeout(checkModal60h,50); }
 function addSp(id){ specialW[id].push(mkW()); renderAll(); }
 function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
 
 function getL(id){ return lines.find(l=>l.id===id); }
-function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); _avisoVisto.delete(v.trim().toUpperCase()); renderAll(); }
+function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); renderAll(); setTimeout(checkModal60h,50); }
 function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
-function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); }
+function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); setTimeout(checkModal60h,50); }
 function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
 function remLMaq(lid){ const l=getL(lid); if(l.maq.length>1) l.maq.pop(); renderAll(); }
 function addLOps(lid){ getL(lid).ops.push(mkW()); renderAll(); }
 function remLOps(lid){ const l=getL(lid); if(l.ops.length>1) l.ops.pop(); renderAll(); }
 
-function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); _avisoVisto.delete(v.trim().toUpperCase()); renderAll(); }
+function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); renderAll(); setTimeout(checkModal60h,50); }
 function setPT(did,pid,wi,v){ postW[did][pid][wi].turno=v; }
 function setPTipo(did,pid,wi,v){ postW[did][pid][wi].tipo=v; renderAll(); }
 function addP(did,pid){ postW[did][pid].push(mkW()); renderAll(); }
@@ -1031,6 +1040,7 @@ function makeAcInput(currentVal, deptId, onSelect) {
           inp.value = w.nombre;
           onSelect(w.nombre);
           list.classList.remove('open');
+          setTimeout(checkModal60h, 150);
         };
         list.appendChild(item);
       });
