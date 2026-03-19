@@ -299,7 +299,7 @@ let lines = [];
 let specialW = {};
 let postW = {};
 
-function mkW() { return {nombre:'', turno:'M'}; }
+function mkW() { return {nombre:'', turno:'M', tipo:'pagar'}; }
 
 function initState() {
   lines = DEFAULT_LINES.map(l => ({...l, maq:[mkW()], ops:[mkW()]}));
@@ -320,6 +320,90 @@ function showPostDept(dept) {
   if (deptParam === 'admin') return true;
   return deptParam === dept.deptKey ||
     (dept.id === 'calidad' && ['calidadlineas','calidadfq','calidadmicro','calidadmat'].includes(deptParam));
+}
+
+
+// ─── SELECTOR TIPO Y CONTROL HORAS ───────────────────────────────────────────
+function tipoSel(val, onchange) {
+  const vPagar = val === 'pagar' ? ' selected' : '';
+  const vComp  = val === 'compensar' ? ' selected' : '';
+  return '<select class="turno-sel" style="width:110px;font-size:11px" onchange="' + onchange + '">' +
+    '<option value="pagar"' + vPagar + '>💰 A pagar</option>' +
+    '<option value="compensar"' + vComp + '>🏖 A compensar</option>' +
+  '</select>';
+}
+
+// Cache de horas acumuladas por trabajador (se actualiza al cargar Firebase)
+const _horasCache = {}; // nombre.toUpperCase() -> horas pagar este año
+
+function calcularHorasCache() {
+  // Recorrer todos los días de extras en Firebase del año actual
+  const anio = new Date().getFullYear().toString();
+  Object.keys(_horasCache).forEach(k => delete _horasCache[k]);
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('ubesol_extras_firebase_')) continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (!d || !d.fecha || !d.fecha.startsWith(anio)) continue;
+      // No contar el día actual que se está editando
+      const fechaActual = document.getElementById('fecha-extra') ? document.getElementById('fecha-extra').value : '';
+      if (d.fecha === fechaActual) continue;
+      contarHorasEnDoc(d);
+    } catch(e) {}
+  }
+}
+
+function contarHorasEnDoc(d) {
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const add = (w) => {
+    if (!w || !w.nombre || !w.nombre.trim()) return;
+    if (w.tipo !== 'pagar') return;
+    const key = w.nombre.trim().toUpperCase();
+    _horasCache[key] = (_horasCache[key] || 0) + 8;
+  };
+  if (d.envasado) {
+    Object.values(d.envasado.special || {}).forEach(arr => safeArr(arr).forEach(add));
+    safeArr(d.envasado.lines).forEach(l => {
+      safeArr(l.maq).forEach(add);
+      safeArr(l.ops).forEach(add);
+    });
+  }
+  Object.values(d.depts || {}).forEach(dept =>
+    Object.values(dept).forEach(arr => safeArr(arr).forEach(add))
+  );
+}
+
+function getHorasPagar(nombre) {
+  if (!nombre || !nombre.trim()) return 0;
+  return _horasCache[nombre.trim().toUpperCase()] || 0;
+}
+
+function getHorasHoy(nombre) {
+  // Contar horas del día actual en el formulario
+  if (!nombre || !nombre.trim()) return 0;
+  const key = nombre.trim().toUpperCase();
+  let horas = 0;
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const check = (w) => { if (w && w.nombre && w.nombre.trim().toUpperCase() === key && w.tipo === 'pagar') horas += 8; };
+  ALL_SPECIALS.forEach(p => safeArr(specialW[p.id]).forEach(check));
+  lines.forEach(l => { safeArr(l.maq).forEach(check); safeArr(l.ops).forEach(check); });
+  POST_DEPTS.forEach(d => d.puestos.forEach(p => safeArr(postW[d.id][p.id]).forEach(check)));
+  return horas;
+}
+
+function getAvisoHoras(nombre, esPagar) {
+  if (!esPagar || !nombre || !nombre.trim()) return '';
+  const acum = getHorasPagar(nombre);
+  const hoy  = getHorasHoy(nombre);
+  const total = acum + hoy;
+  if (total > 60) {
+    return '<div style="font-size:10px;color:#b71c1c;font-weight:600;margin-top:2px">⚠️ ' + total + 'h a pagar (máx 60h)</div>';
+  } else if (total >= 52) {
+    return '<div style="font-size:10px;color:#e65100;font-weight:600;margin-top:2px">⚡ ' + total + 'h a pagar (cerca del límite)</div>';
+  }
+  return '<div style="font-size:10px;color:#555;margin-top:2px">' + total + 'h a pagar este año</div>';
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
@@ -376,6 +460,7 @@ function renderEnvasadoHTML() {
       <th style="width:60px">Línea</th>
       <th style="width:130px">Rol / Puesto</th>
       <th style="width:90px">Turno</th>
+      <th style="width:120px">Tipo</th>
       <th>Trabajador/a</th>
       <th style="width:60px;text-align:center">+/−</th>
     </tr></thead><tbody>`;
@@ -389,7 +474,8 @@ function renderEnvasadoHTML() {
         <td class="linea-label">${wi===0?'—':''}</td>
         <td class="puesto-label">${wi===0?puesto.label:''}</td>
         <td>${turnoSel(w.turno,"setSpT('" + puesto.id + "'," + wi + ",this.value)")}</td>
-        <td>${regNombreInp(w.nombre,'envasado', function(v){setSpN(''+puesto.id,wi,v);})}</td>
+        <td>${tipoSel(w.tipo,"setSpTipo('" + puesto.id + "'," + wi + ",this.value)")}</td>
+        <td><div>${regNombreInp(w.nombre,'envasado', function(v){setSpN(''+puesto.id,wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="ctrl-btn ctrl-add" onclick="addSp('${puesto.id}')">+</button>
           ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remSp('${puesto.id}',${wi})">−</button>`:''}
@@ -409,7 +495,8 @@ function renderEnvasadoHTML() {
         ${wi===0?`<td class="linea-label" rowspan="${totalRows}">${line.label}</td>`:''}
         <td class="rol-label">Op. Máquina</td>
         <td>${turnoSel(w.turno,"setLT('" + line.id + "','maq'," + wi + ",this.value)")}</td>
-        <td>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'maq',wi,v);})}</td>
+        <td>${tipoSel(w.tipo,"setLTipo('" + line.id + "','maq'," + wi + ",this.value)")}</td>
+        <td><div>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'maq',wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           ${wi===line.maq.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLMaq('${line.id}')">+</button>`:''}
           ${line.maq.length>1&&wi===line.maq.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLMaq('${line.id}')">−</button>`:''}
@@ -421,7 +508,8 @@ function renderEnvasadoHTML() {
       html += `<tr class="${og}">
         <td class="rol-label">Operario/a</td>
         <td>${turnoSel(w.turno,"setLT('" + line.id + "','ops'," + wi + ",this.value)")}</td>
-        <td>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'ops',wi,v);})}</td>
+        <td>${tipoSel(w.tipo,"setLTipo('" + line.id + "','ops'," + wi + ",this.value)")}</td>
+        <td><div>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'ops',wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           ${wi===line.ops.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLOps('${line.id}')">+</button>`:''}
           ${line.ops.length>1&&wi===line.ops.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLOps('${line.id}')">−</button>`:''}
@@ -453,7 +541,8 @@ function renderPostDeptHTML(dept) {
       html += `<tr class="${rc}">
         <td class="puesto-label">${wi===0?puesto.label:''}</td>
         <td>${turnoSel(w.turno,"setPT('" + dept.id + "','" + puesto.id + "'," + wi + ",this.value)")}</td>
-        <td>${regNombreInp(w.nombre,dept.id, function(v){setPN(''+dept.id,''+puesto.id,wi,v);})}</td>
+        <td>${tipoSel(w.tipo,"setPTipo('" + dept.id + "','" + puesto.id + "'," + wi + ",this.value)")}</td>
+        <td><div>${regNombreInp(w.nombre,dept.id, function(v){setPN(''+dept.id,''+puesto.id,wi,v);})}</div>${getAvisoHoras(w.nombre, w.tipo==='pagar')}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="ctrl-btn ctrl-add" onclick="addP('${dept.id}','${puesto.id}')">+</button>
           ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remP('${dept.id}','${puesto.id}',${wi})">−</button>`:''}
@@ -467,21 +556,24 @@ function renderPostDeptHTML(dept) {
 }
 
 // ─── SETTERS ──────────────────────────────────────────────────────────────────
-function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); }
+function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); renderAll(); }
 function setSpT(id,wi,v){ specialW[id][wi].turno=v; }
+function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); }
 function addSp(id){ specialW[id].push(mkW()); renderAll(); }
 function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
 
 function getL(id){ return lines.find(l=>l.id===id); }
-function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); }
+function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); renderAll(); }
 function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
+function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); }
 function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
 function remLMaq(lid){ const l=getL(lid); if(l.maq.length>1) l.maq.pop(); renderAll(); }
 function addLOps(lid){ getL(lid).ops.push(mkW()); renderAll(); }
 function remLOps(lid){ const l=getL(lid); if(l.ops.length>1) l.ops.pop(); renderAll(); }
 
-function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); }
+function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); renderAll(); }
 function setPT(did,pid,wi,v){ postW[did][pid][wi].turno=v; }
+function setPTipo(did,pid,wi,v){ postW[did][pid][wi].tipo=v; renderAll(); }
 function addP(did,pid){ postW[did][pid].push(mkW()); renderAll(); }
 function remP(did,pid,wi){ postW[did][pid].splice(wi,1); if(!postW[did][pid].length) postW[did][pid]=[mkW()]; renderAll(); }
 
@@ -563,6 +655,7 @@ function limpiarFormulario() {
 
 // ─── CARGAR FECHA ─────────────────────────────────────────────────────────────
 function cargarFecha(fecha) {
+  calcularHorasCache(); // actualizar cache antes de renderizar
   const raw = localStorage.getItem('ubesol_extras_'+fecha);
   if (raw) {
     try { applyPayload(JSON.parse(raw)); document.getElementById('estado-txt').textContent='📂 Cargado local'; return; }

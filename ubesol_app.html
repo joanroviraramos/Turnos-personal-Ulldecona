@@ -1135,11 +1135,15 @@ function showTurnos() {
     const TL = {M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'};
     const extrasHTML = extrasEnSemana.map(e => {
       const dow = e.dia.getDay();
-      return `<div style="margin-top:7px;background:#fff8e1;border-radius:7px;border:1px solid #ffcc02;padding:7px 10px;display:flex;align-items:center;gap:8px">
-        <div style="width:7px;height:7px;border-radius:2px;background:#e65100;flex-shrink:0"></div>
-        <div style="font-size:11px;line-height:1.4">
-          <span style="font-weight:600;color:#e65100">Extra · ${DIAS_S[dow]} ${fmtDateShort(e.dia)}</span>
-          <span style="color:#bf360c"> · ${TL[e.turno]||e.turno} · ${e.puesto} · ${e.dept}</span>
+      const tipoBadge = e.tipo === 'compensar'
+        ? '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#e8f5e9;color:#1b5e20;margin-left:4px">🏖 Compensar</span>'
+        : '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:#fff3e0;color:#e65100;margin-left:4px">💰 A pagar</span>';
+      return `<div style="margin-top:7px;background:#fff8e1;border-radius:7px;border:1px solid #ffcc02;padding:7px 10px">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div style="width:7px;height:7px;border-radius:2px;background:#e65100;flex-shrink:0"></div>
+          <span style="font-size:11px;font-weight:600;color:#e65100">Extra · ${DIAS_S[dow]} ${fmtDateShort(e.dia)}</span>
+          <span style="font-size:11px;color:#bf360c"> · ${TL[e.turno]||e.turno} · ${e.puesto}</span>
+          ${tipoBadge}
         </div>
       </div>`;
     }).join('');
@@ -1704,7 +1708,7 @@ function findExtraWorker(nombreUpper, d) {
   };
   const check = (w, puesto, dept) => {
     if (w && w.nombre && w.nombre.toUpperCase().trim() === nombreUpper) {
-      return { turno: w.turno || 'M', puesto, dept };
+      return { turno: w.turno || 'M', tipo: w.tipo || 'pagar', puesto, dept };
     }
     return null;
   };
@@ -1847,24 +1851,45 @@ function showExtras() {
         '<span style="font-size:13px;font-weight:600;color:#e65100">' + DIAS[dow] + ' ' + d + '/' + m + '/' + y + '</span>' +
         '<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:' + tipoBg + ';color:' + tipoCol + '">' + tipoLabel + '</span>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
         '<div style="width:8px;height:8px;border-radius:50%;background:' + tc + ';flex-shrink:0"></div>' +
         '<span style="font-size:12px;font-weight:500;color:#333">' + tl + '</span>' +
         '<span style="font-size:12px;color:#666"> · ' + e.puesto + ' · ' + e.dept + '</span>' +
+        '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;' +
+          (e.tipo === 'compensar' ? 'background:#e8f5e9;color:#1b5e20' : 'background:#fff8e1;color:#e65100') + '">' +
+          (e.tipo === 'compensar' ? '🏖 Compensar' : '💰 A pagar') +
+        '</span>' +
       '</div>' +
     '</div>';
   }
 
-  var html = '<div style="background:#fff3e0;border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;gap:16px">' +
-    '<div style="text-align:center">' +
-      '<div style="font-size:20px;font-weight:700;color:#e65100">' + extrasEsteMes + '</div>' +
-      '<div style="font-size:10px;color:#bf360c">este mes</div>' +
+  // Calcular horas a pagar y días a compensar del año
+  const anioStr = hoyStr.slice(0,4);
+  const extrasAnioTodas = extras.filter(function(e){ return e.fecha.startsWith(anioStr); });
+  const horasPagar = extrasAnioTodas.filter(function(e){ return e.tipo !== 'compensar'; }).length * 8;
+  const diasCompensar = extrasAnioTodas.filter(function(e){ return e.tipo === 'compensar'; }).length;
+  const pct = Math.min(100, Math.round(horasPagar / 60 * 100));
+  const barColor = horasPagar > 60 ? '#b71c1c' : horasPagar >= 52 ? '#e65100' : '#2e7d32';
+
+  var html = '<div style="background:#fff3e0;border-radius:10px;padding:14px;margin-bottom:12px">' +
+    '<div style="display:flex;gap:12px;margin-bottom:10px">' +
+      '<div style="text-align:center;flex:1">' +
+        '<div style="font-size:11px;color:#bf360c;font-weight:600;margin-bottom:2px">💰 A PAGAR</div>' +
+        '<div style="font-size:22px;font-weight:700;color:#e65100">' + horasPagar + 'h</div>' +
+        '<div style="font-size:10px;color:#888">de 60h máx · año</div>' +
+      '</div>' +
+      '<div style="width:1px;background:#ffb74d"></div>' +
+      '<div style="text-align:center;flex:1">' +
+        '<div style="font-size:11px;color:#1b5e20;font-weight:600;margin-bottom:2px">🏖 A COMPENSAR</div>' +
+        '<div style="font-size:22px;font-weight:700;color:#2e7d32">' + diasCompensar + '</div>' +
+        '<div style="font-size:10px;color:#888">día' + (diasCompensar !== 1 ? 's' : '') + ' este año</div>' +
+      '</div>' +
     '</div>' +
-    '<div style="width:1px;background:#ffb74d"></div>' +
-    '<div style="text-align:center">' +
-      '<div style="font-size:20px;font-weight:700;color:#e65100">' + extrasAnio + '</div>' +
-      '<div style="font-size:10px;color:#bf360c">este año</div>' +
+    '<div style="font-size:10px;color:#888;margin-bottom:4px">Horas a pagar este año: ' + horasPagar + ' / 60h</div>' +
+    '<div style="background:#ffe0b2;border-radius:4px;height:8px;overflow:hidden">' +
+      '<div style="background:' + barColor + ';height:100%;width:' + pct + '%;border-radius:4px;transition:width .3s"></div>' +
     '</div>' +
+    (horasPagar > 60 ? '<div style="font-size:11px;color:#b71c1c;font-weight:600;margin-top:4px">⚠️ Has superado el límite de 60h a pagar</div>' : '') +
   '</div>';
 
   if (proximos.length) {
