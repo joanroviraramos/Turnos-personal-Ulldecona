@@ -171,12 +171,14 @@ body {
 .header-logout {
   background: rgba(255,255,255,0.15);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: white;
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
   font-family: 'DM Sans', sans-serif;
   cursor: pointer;
+  min-height: 44px;
 }
 
 .header-name {
@@ -261,11 +263,15 @@ body {
 
 .back-btn {
   display: flex; align-items: center; gap: 6px;
-  background: none; border: none;
-  font-size: 14px; font-weight: 500;
+  background: var(--green-l);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px; font-weight: 600;
   color: var(--green); cursor: pointer;
   font-family: 'DM Sans', sans-serif;
-  padding: 0 0 4px;
+  padding: 12px 16px;
+  min-height: 44px;
+  margin-bottom: 8px;
 }
 
 .turno-card {
@@ -511,20 +517,21 @@ body {
 }
 </style>
 
-<script>
-// Bloquear orientación en portrait (vertical)
-(function() {
-  function lockPortrait() {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('portrait').catch(function(){});
-    }
+
+<style>
+@media screen and (orientation: landscape) and (max-width: 900px) {
+  html {
+    transform: rotate(-90deg);
+    transform-origin: left top;
+    width: 100vh;
+    height: 100vw;
+    overflow-x: hidden;
+    position: absolute;
+    top: 100%;
+    left: 0;
   }
-  lockPortrait();
-  document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) lockPortrait();
-  });
-})();
-</script>
+}
+</style>
 </head>
 <body>
 
