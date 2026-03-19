@@ -518,20 +518,26 @@ body {
 </style>
 
 
+
 <style>
-@media screen and (orientation: landscape) and (max-width: 900px) {
-  html {
-    transform: rotate(-90deg);
-    transform-origin: left top;
-    width: 100vh;
-    height: 100vw;
-    overflow-x: hidden;
-    position: absolute;
-    top: 100%;
-    left: 0;
-  }
+#landscape-warn {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: var(--green, #4a7c2f);
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  font-family: 'DM Sans', sans-serif;
+}
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  #landscape-warn { display: block; }
 }
 </style>
+<div id="landscape-warn">📱 Gira el móvil a vertical para mejor experiencia</div>
 </head>
 <body>
 
