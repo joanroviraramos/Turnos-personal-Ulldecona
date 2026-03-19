@@ -103,6 +103,31 @@ input.nombre-input:focus { outline:none; border-color:#e65100; }
 .toast-container { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999; pointer-events:none; }
 .toast { background:#1b5e20; color:white; font-size:13px; font-weight:500; padding:10px 20px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,.2); opacity:0; transition:opacity .3s; white-space:nowrap; }
 .toast.show { opacity:1; }
+
+/* ── AUTOCOMPLETE ── */
+.ac-wrap { position: relative; width: 100%; }
+.ac-inp {
+  font-family: 'Inter', sans-serif; font-size: 12px;
+  border: 1px solid var(--border-l); border-radius: 3px;
+  padding: 4px 7px; width: 100%; background: white;
+}
+.ac-inp:focus { outline: none; border-color: #e65100; }
+.ac-list {
+  display: none; position: absolute; top: 100%; left: 0; right: 0;
+  background: white; border: 1px solid var(--border);
+  border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 500; max-height: 200px; overflow-y: auto;
+}
+.ac-list.open { display: block; }
+.ac-item {
+  padding: 6px 10px; cursor: pointer; display: flex;
+  align-items: center; justify-content: space-between; gap: 8px;
+  font-size: 12px; border-bottom: 1px solid var(--border-l);
+}
+.ac-item:hover { background: #f0f7ee; }
+.ac-name { font-weight: 500; color: var(--text); }
+.ac-dni  { font-size: 10px; color: var(--faint); font-family: 'IBM Plex Mono', monospace; }
+.ac-empty { padding: 8px 10px; color: var(--faint); font-size: 11px; font-style: italic; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -303,17 +328,44 @@ function renderAll() {
   if (showEnvasado()) html += renderEnvasadoHTML();
   POST_DEPTS.forEach(d => { if (showPostDept(d)) html += renderPostDeptHTML(d); });
   document.getElementById('sections-container').innerHTML = html;
+  mountPendingAcInputs();
 }
 
 function turnoSel(val, onchange) {
-  return `<select class="turno-sel" onchange="${onchange}">
-    ${TURNOS.map(t=>`<option value="${t}"${val===t?' selected':''}>${t} – ${TURNO_LABELS[t]}</option>`).join('')}
-  </select>`;
+  let opts = '';
+  TURNOS.forEach(function(t) {
+    opts += '<option value="' + t + '"' + (val===t?' selected':'') + '>' + t + ' – ' + TURNO_LABELS[t] + '</option>';
+  });
+  return '<select class="turno-sel" onchange="' + onchange + '">' + opts + '</select>';
 }
-function nombreInp(val, onchange) {
-  return `<input class="nombre-input" type="text" value="${(val||'').replace(/"/g,'&quot;')}"
-    placeholder="Nombre trabajador/a..." onchange="${onchange}" list="ac-names">`;
+// Registro global de callbacks para los ac inputs
+const _acRegistry = {};
+let _acCounter = 0;
+let _acPending = [];
+
+function nombreInp(val, deptId, cbFn) {
+  const uid = 'ac_' + (++_acCounter);
+  _acRegistry[uid] = cbFn;
+  _acPending.push({uid, val, deptId});
+  return '<span id="' + uid + '" style="display:block;width:100%"></span>';
 }
+
+function regNombreInp(val, deptId, cbFn) {
+  return nombreInp(val, deptId, cbFn);
+}
+
+function mountPendingAcInputs() {
+  _acPending.forEach(function(item) {
+    const span = document.getElementById(item.uid);
+    if (!span) return;
+    const cb = _acRegistry[item.uid];
+    const acEl = makeAcInput(item.val, item.deptId, cb || function(){});
+    span.replaceWith(acEl);
+  });
+  _acPending = [];
+}
+
+
 
 // ── ENVASADO ──────────────────────────────────────────────────────────────────
 function renderEnvasadoHTML() {
@@ -336,8 +388,8 @@ function renderEnvasadoHTML() {
       html += `<tr class="${rc}">
         <td class="linea-label">${wi===0?'—':''}</td>
         <td class="puesto-label">${wi===0?puesto.label:''}</td>
-        <td>${turnoSel(w.turno,`setSpT('${puesto.id}',${wi},this.value)`)}</td>
-        <td>${nombreInp(w.nombre,`setSpN('${puesto.id}',${wi},this.value)`)}</td>
+        <td>${turnoSel(w.turno,"setSpT('" + puesto.id + "'," + wi + ",this.value)")}</td>
+        <td>${regNombreInp(w.nombre,'envasado', function(v){setSpN(''+puesto.id,wi,v);})}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="ctrl-btn ctrl-add" onclick="addSp('${puesto.id}')">+</button>
           ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remSp('${puesto.id}',${wi})">−</button>`:''}
@@ -356,8 +408,8 @@ function renderEnvasadoHTML() {
       html += `<tr class="${mg}">
         ${wi===0?`<td class="linea-label" rowspan="${totalRows}">${line.label}</td>`:''}
         <td class="rol-label">Op. Máquina</td>
-        <td>${turnoSel(w.turno,`setLT('${line.id}','maq',${wi},this.value)`)}</td>
-        <td>${nombreInp(w.nombre,`setLN('${line.id}','maq',${wi},this.value)`)}</td>
+        <td>${turnoSel(w.turno,"setLT('" + line.id + "','maq'," + wi + ",this.value)")}</td>
+        <td>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'maq',wi,v);})}</td>
         <td style="text-align:center;white-space:nowrap">
           ${wi===line.maq.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLMaq('${line.id}')">+</button>`:''}
           ${line.maq.length>1&&wi===line.maq.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLMaq('${line.id}')">−</button>`:''}
@@ -368,8 +420,8 @@ function renderEnvasadoHTML() {
     line.ops.forEach((w,wi) => {
       html += `<tr class="${og}">
         <td class="rol-label">Operario/a</td>
-        <td>${turnoSel(w.turno,`setLT('${line.id}','ops',${wi},this.value)`)}</td>
-        <td>${nombreInp(w.nombre,`setLN('${line.id}','ops',${wi},this.value)`)}</td>
+        <td>${turnoSel(w.turno,"setLT('" + line.id + "','ops'," + wi + ",this.value)")}</td>
+        <td>${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'ops',wi,v);})}</td>
         <td style="text-align:center;white-space:nowrap">
           ${wi===line.ops.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLOps('${line.id}')">+</button>`:''}
           ${line.ops.length>1&&wi===line.ops.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLOps('${line.id}')">−</button>`:''}
@@ -400,8 +452,8 @@ function renderPostDeptHTML(dept) {
     arr.forEach((w,wi) => {
       html += `<tr class="${rc}">
         <td class="puesto-label">${wi===0?puesto.label:''}</td>
-        <td>${turnoSel(w.turno,`setPT('${dept.id}','${puesto.id}',${wi},this.value)`)}</td>
-        <td>${nombreInp(w.nombre,`setPN('${dept.id}','${puesto.id}',${wi},this.value)`)}</td>
+        <td>${turnoSel(w.turno,"setPT('" + dept.id + "','" + puesto.id + "'," + wi + ",this.value)")}</td>
+        <td>${regNombreInp(w.nombre,dept.id, function(v){setPN(''+dept.id,''+puesto.id,wi,v);})}</td>
         <td style="text-align:center;white-space:nowrap">
           <button class="ctrl-btn ctrl-add" onclick="addP('${dept.id}','${puesto.id}')">+</button>
           ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remP('${dept.id}','${puesto.id}',${wi})">−</button>`:''}
@@ -609,32 +661,198 @@ function toast(msg) {
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-// ─── AUTOCOMPLETE ─────────────────────────────────────────────────────────────
-function buildAutocomplete() {
-  const names=new Set();
-  try {
-    for (let i=0;i<localStorage.length;i++) {
-      const k=localStorage.key(i);
-      if (!k||!k.startsWith('ubesol_historico_')) continue;
-      const d=JSON.parse(localStorage.getItem(k)||'null');
-      if (!d) continue;
-      const sa=a=>Array.isArray(a)?a:[];
-      if (d.envasado) {
-        sa(d.envasado.lines).forEach(l=>[...sa(l.maq),...sa(l.ops)].forEach(w=>{
-          if(w&&w.cells) Object.values(w.cells).forEach(v=>{if(v&&v.trim())names.add(v.trim());});
-        }));
-      }
+// ─── WORKERS DATA ────────────────────────────────────────────────────────────
+const WORKERS_DATA = [
+  {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
+  {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
+  {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
+  {nombre:"ANA LOPEZ MARTINEZ",dni:"45678901D",departamento:"Envasado"},
+  {nombre:"PEDRO GONZALEZ RUIZ",dni:"56789012E",departamento:"Envasado"},
+  {nombre:"LUCIA HERNANDEZ JIMENEZ",dni:"67890123F",departamento:"Envasado"},
+  {nombre:"MIGUEL PEREZ MORENO",dni:"78901234G",departamento:"Envasado"},
+  {nombre:"SOFIA MARTIN DIAZ",dni:"89012345H",departamento:"Envasado"},
+  {nombre:"ANTONIO GARCIA ROMERO",dni:"90123456I",departamento:"Envasado"},
+  {nombre:"ELENA FERNANDEZ TORRES",dni:"01234567J",departamento:"Envasado"},
+  {nombre:"DAVID SANCHEZ NAVARRO",dni:"11223344K",departamento:"Envasado"},
+  {nombre:"LAURA JIMENEZ GUERRERO",dni:"22334455L",departamento:"Envasado"},
+  {nombre:"FRANCISCO RUIZ CANO",dni:"33445566M",departamento:"Envasado"},
+  {nombre:"CARMEN MORENO FUENTES",dni:"44556677N",departamento:"Envasado"},
+  {nombre:"RAUL DIAZ MOLINA",dni:"55667788O",departamento:"Envasado"},
+  {nombre:"ISABEL TORRES REYES",dni:"66778899P",departamento:"Envasado"},
+  {nombre:"JAVIER ROMERO CASTILLO",dni:"77889900Q",departamento:"Envasado"},
+  {nombre:"PATRICIA NAVARRO BLANCO",dni:"88990011R",departamento:"Envasado"},
+  {nombre:"SERGIO GUERRERO VARGAS",dni:"99001122S",departamento:"Envasado"},
+  {nombre:"MONICA CANO HERRERA",dni:"00112233T",departamento:"Envasado"},
+  {nombre:"ALBERTO FUENTES MEDINA",dni:"12312312U",departamento:"Envasado"},
+  {nombre:"CRISTINA MOLINA ORTEGA",dni:"23423423V",departamento:"Envasado"},
+  {nombre:"ROBERTO REYES DELGADO",dni:"34534534W",departamento:"Envasado"},
+  {nombre:"SILVIA CASTILLO IBAÑEZ",dni:"45645645X",departamento:"Envasado"},
+  {nombre:"FERNANDO BLANCO MORA",dni:"56756756Y",departamento:"Envasado"},
+  {nombre:"TERESA VARGAS SANTOS",dni:"67867867Z",departamento:"Elaboración"},
+  {nombre:"MANUEL HERRERA MEDINA",dni:"78978978A",departamento:"Elaboración"},
+  {nombre:"ANDREA ORTEGA FLORES",dni:"89089089B",departamento:"Elaboración"},
+  {nombre:"JUAN DELGADO VEGA",dni:"90190190C",departamento:"Elaboración"},
+  {nombre:"BEATRIZ IBAÑEZ BRAVO",dni:"01201201D",departamento:"Elaboración"},
+  {nombre:"PABLO MORA NIETO",dni:"12312312E",departamento:"Elaboración"},
+  {nombre:"ROSA SANTOS MARIN",dni:"23423423F",departamento:"Elaboración"},
+  {nombre:"OSCAR LORENZO GIMENEZ",dni:"34534534G",departamento:"Elaboración"},
+  {nombre:"NURIA FLORES PASCUAL",dni:"45645645H",departamento:"Elaboración"},
+  {nombre:"VICENTE VEGA CABRERA",dni:"56756756I",departamento:"Elaboración"},
+  {nombre:"AMPARO BRAVO SERRANO",dni:"67867867J",departamento:"Elaboración"},
+  {nombre:"EMILIO NIETO MENDEZ",dni:"78978978K",departamento:"Elaboración"},
+  {nombre:"CONSUELO MARIN RUBIO",dni:"89089089L",departamento:"Almacén"},
+  {nombre:"IGNACIO GIMENEZ ALONSO",dni:"90190190M",departamento:"Almacén"},
+  {nombre:"DOLORES PASCUAL PEÑA",dni:"01201201N",departamento:"Almacén"},
+  {nombre:"VICTOR CABRERA RAMOS",dni:"12312344O",departamento:"Almacén"},
+  {nombre:"ALICIA SERRANO GARCIA",dni:"23423455P",departamento:"Almacén"},
+  {nombre:"RAFAEL MENDEZ LOPEZ",dni:"34534566Q",departamento:"Almacén"},
+  {nombre:"PILAR RUBIO MARTINEZ",dni:"45645677R",departamento:"Almacén"},
+  {nombre:"ENRIQUE ALONSO SANCHEZ",dni:"56756788S",departamento:"Almacén"},
+  {nombre:"INMACULADA PEÑA RUIZ",dni:"67867899T",departamento:"Almacén"},
+  {nombre:"JORGE RAMOS HERNANDEZ",dni:"78978900U",departamento:"Almacén"},
+  {nombre:"ROCIO GARCIA PEREZ",dni:"89089011V",departamento:"Almacén"},
+  {nombre:"JAIME LOPEZ MARTIN",dni:"90190122W",departamento:"Almacén"},
+  {nombre:"MAITE MARTINEZ FERNANDEZ",dni:"01201233X",departamento:"Almacén"},
+  {nombre:"ANDRES SANCHEZ GARCIA",dni:"11122233Y",departamento:"Mantenimiento"},
+  {nombre:"YOLANDA RUIZ LOPEZ",dni:"22233344Z",departamento:"Mantenimiento"},
+  {nombre:"TOMAS HERNANDEZ MARTINEZ",dni:"33344455A",departamento:"Mantenimiento"},
+  {nombre:"VIRGINIA JIMENEZ SANCHEZ",dni:"44455566B",departamento:"Mantenimiento"},
+  {nombre:"MARIO MORENO RUIZ",dni:"55566677C",departamento:"Mantenimiento"},
+  {nombre:"ANGELES DIAZ HERNANDEZ",dni:"66677788D",departamento:"Mantenimiento"},
+  {nombre:"NICOLAS TORRES JIMENEZ",dni:"77788899E",departamento:"Mantenimiento"},
+  {nombre:"SUSANA ROMERO MORENO",dni:"88899900F",departamento:"Mantenimiento"},
+  {nombre:"JULIAN NAVARRO DIAZ",dni:"99900011G",departamento:"Mantenimiento"},
+  {nombre:"NATALIA GUERRERO TORRES",dni:"00011122H",departamento:"Mantenimiento"},
+  {nombre:"MARCOS CANO ROMERO",dni:"11122233I",departamento:"Calidad Líneas"},
+  {nombre:"CAROLINA FUENTES NAVARRO",dni:"22233344J",departamento:"Calidad Líneas"},
+  {nombre:"LUCAS MOLINA GUERRERO",dni:"33344455K",departamento:"Calidad Líneas"},
+  {nombre:"PAULA REYES CANO",dni:"44455566L",departamento:"Calidad Líneas"},
+  {nombre:"HUGO CASTILLO FUENTES",dni:"55566677M",departamento:"Calidad Líneas"},
+  {nombre:"SARA BLANCO MOLINA",dni:"66677788N",departamento:"Calidad Líneas"},
+  {nombre:"SAMUEL VARGAS REYES",dni:"77788899O",departamento:"Calidad Fís-Quím"},
+  {nombre:"LORENA HERRERA CASTILLO",dni:"88899900P",departamento:"Calidad Fís-Quím"},
+  {nombre:"RUBEN MEDINA BLANCO",dni:"99900011Q",departamento:"Calidad Fís-Quím"},
+  {nombre:"CLAUDIA ORTEGA VARGAS",dni:"00011122R",departamento:"Calidad Fís-Quím"},
+  {nombre:"AARON DELGADO HERRERA",dni:"11122244S",departamento:"Calidad Microbiología"},
+  {nombre:"MIRIAM IBAÑEZ MEDINA",dni:"22233355T",departamento:"Calidad Microbiología"},
+  {nombre:"IVAN MORA ORTEGA",dni:"33344466U",departamento:"Calidad Microbiología"},
+  {nombre:"DIANA SANTOS DELGADO",dni:"44455577V",departamento:"Calidad Microbiología"},
+  {nombre:"ALEX LORENZO IBAÑEZ",dni:"55566688W",departamento:"Calidad Materiales"},
+  {nombre:"EVA FLORES MORA",dni:"66677799X",departamento:"Calidad Materiales"},
+  {nombre:"DANIEL VEGA SANTOS",dni:"77788800Y",departamento:"Calidad Materiales"},
+  {nombre:"NEREA BRAVO LORENZO",dni:"88899911Z",departamento:"Calidad Materiales"},
+  {nombre:"RODRIGO NIETO FLORES",dni:"99900022A",departamento:"Mejora Continua"},
+  {nombre:"IRENE MARIN VEGA",dni:"00011133B",departamento:"Mejora Continua"},
+  {nombre:"GONZALO GIMENEZ BRAVO",dni:"11122244C",departamento:"Mejora Continua"},
+  {nombre:"REBECA PASCUAL NIETO",dni:"22233355D",departamento:"Mejora Continua"},
+  {nombre:"ALBERTO CABRERA MARIN",dni:"33344466E",departamento:"Soplado"},
+  {nombre:"NOELIA SERRANO GIMENEZ",dni:"44455577F",departamento:"Soplado"},
+  {nombre:"BORJA MENDEZ PASCUAL",dni:"55566688G",departamento:"Soplado"},
+  {nombre:"VERONICA RUBIO CABRERA",dni:"66677799H",departamento:"Soplado"},
+  {nombre:"OSCAR ALONSO SERRANO",dni:"77788800I",departamento:"Soplado"},
+  {nombre:"MARTA PEÑA MENDEZ",dni:"88899911J",departamento:"Soplado"},
+  {nombre:"ALEJANDRO RAMOS RUBIO",dni:"99900022K",departamento:"Soplado"},
+  {nombre:"LARA GARCIA ALONSO",dni:"00011133L",departamento:"Soplado"},
+];
+
+// Mapeo deptParam -> departamento en WORKERS_DATA
+const DEPT_MAP = {
+  envasado:       ["Envasado"],
+  elaboracion:    ["Elaboración"],
+  almacen:        ["Almacén"],
+  mantenimiento:  ["Mantenimiento"],
+  calidadlineas:  ["Calidad Líneas"],
+  calidadfq:      ["Calidad Fís-Quím"],
+  calidadmicro:   ["Calidad Microbiología"],
+  calidadmat:     ["Calidad Materiales"],
+  mejoracontinua: ["Mejora Continua"],
+  soplado:        ["Soplado"],
+  admin:          null, // null = todos
+};
+
+let usedNames = new Set();
+
+function getWorkersForSection(deptId) {
+  // deptId es el id del POST_DEPT o 'envasado'
+  const deptToWData = {
+    envasado:     ["Envasado"],
+    elaboracion:  ["Elaboración"],
+    almacen:      ["Almacén"],
+    mantenimiento:["Mantenimiento"],
+    calidad:      ["Calidad Líneas","Calidad Fís-Quím","Calidad Microbiología","Calidad Materiales"],
+    soplado:      ["Soplado"],
+    mejora:       ["Mejora Continua"],
+  };
+  const depts = deptToWData[deptId];
+  if (!depts) return WORKERS_DATA;
+  return WORKERS_DATA.filter(w => depts.includes(w.departamento));
+}
+
+function rebuildUsedNames() {
+  usedNames = new Set();
+  const add = v => { if(v&&v.trim()) usedNames.add(v.trim().toUpperCase()); };
+  ALL_SPECIALS.forEach(p => (specialW[p.id]||[]).forEach(w => add(w.nombre)));
+  lines.forEach(l => { l.maq.forEach(w=>add(w.nombre)); l.ops.forEach(w=>add(w.nombre)); });
+  POST_DEPTS.forEach(d => d.puestos.forEach(p => (postW[d.id][p.id]||[]).forEach(w=>add(w.nombre))));
+}
+
+function makeAcInput(currentVal, deptId, onSelect) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-wrap';
+
+  const inp = document.createElement('input');
+  inp.className = 'ac-inp';
+  inp.type = 'text';
+  inp.value = currentVal || '';
+  inp.placeholder = 'Nombre trabajador/a...';
+  inp.autocomplete = 'off';
+
+  const list = document.createElement('div');
+  list.className = 'ac-list';
+
+  function showList(query) {
+    rebuildUsedNames();
+    const own = inp.value.trim().toUpperCase();
+    if (own) usedNames.delete(own);
+    const q = query.trim().toUpperCase();
+    const workers = getWorkersForSection(deptId);
+    const available = workers.filter(w => {
+      const nu = w.nombre.toUpperCase();
+      return (!q || nu.includes(q)) && !usedNames.has(nu);
+    });
+    list.innerHTML = '';
+    if (!available.length) {
+      list.innerHTML = '<div class="ac-empty">' + (q ? 'Sin resultados' : 'Todos asignados') + '</div>';
+    } else {
+      available.slice(0,30).forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'ac-item';
+        item.innerHTML = '<span class="ac-name">'+w.nombre+'</span><span class="ac-dni">'+w.dni+'</span>';
+        item.onmousedown = e => {
+          e.preventDefault();
+          inp.value = w.nombre;
+          onSelect(w.nombre);
+          list.classList.remove('open');
+        };
+        list.appendChild(item);
+      });
     }
-  } catch(e){}
-  const dl=document.createElement('datalist'); dl.id='ac-names';
-  [...names].sort().forEach(n=>{const o=document.createElement('option');o.value=n;dl.appendChild(o);});
-  document.body.appendChild(dl);
+    list.classList.add('open');
+  }
+
+  inp.addEventListener('focus', () => showList(inp.value));
+  inp.addEventListener('click', () => showList(inp.value));
+  inp.addEventListener('input', () => { onSelect(inp.value); showList(inp.value); });
+  inp.addEventListener('blur', () => { setTimeout(() => list.classList.remove('open'), 200); });
+
+  wrap.appendChild(inp);
+  wrap.appendChild(list);
+  return wrap;
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 initState();
 renderAll();
-buildAutocomplete();
 const hoy=new Date();
 document.getElementById('fecha-extra').value=
   hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
