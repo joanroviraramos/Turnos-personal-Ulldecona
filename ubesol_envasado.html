@@ -2067,11 +2067,43 @@ function clearStorage() {
 
     // 1. Borrar del localStorage principal Y del histórico
     const savedKey = weekKey();
+    const docIdsBorrados = [];
     sel.forEach(k => {
       localStorage.removeItem(k);
       const match = k.match(/ubesol_(\d+)_s(\d+)/);
-      if (match) localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
+      if (match) {
+        localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
+        // Calcular docId de Firebase para borrar directamente
+        const ano = match[1];
+        const sem = match[2];
+        // Borrar para todos los posibles dept keys
+        ['envasado','elaboracion','almacen','mantenimiento','calidadlineas','calidadfis-quim','calidadfisquim','calidadmicrobiologia','calidadmateriales','mejoracontinua','soplado'].forEach(dept => {
+          docIdsBorrados.push(dept + '_' + ano + '_s' + sem);
+        });
+      }
     });
+
+    // Borrar directamente de Firebase los docs de las semanas eliminadas
+    if (docIdsBorrados.length > 0) {
+      db.collection('cuadrantes').get().then(function(snap) {
+        const batch = db.batch();
+        snap.forEach(function(doc) {
+          // Borrar si el docId contiene el año_semana de alguna semana borrada
+          sel.forEach(k => {
+            const match = k.match(/ubesol_(\d+)_s(\d+)/);
+            if (match) {
+              const semKey = match[1] + '_s' + match[2];
+              if (doc.id.includes(semKey)) batch.delete(doc.ref);
+            }
+          });
+        });
+        return batch.commit();
+      }).then(function() {
+        console.log('Firebase: semanas borradas correctamente');
+      }).catch(function(e) {
+        console.warn('Firebase borrar error:', e);
+      });
+    }
 
     cerrar();
 
