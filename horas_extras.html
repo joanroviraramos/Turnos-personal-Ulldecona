@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horas Extras — Grupo Ubesol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #f0f0f0;
+  --white: #ffffff;
+  --border: #b0b0b0;
+  --border-l: #d0d0d0;
+  --text: #1a1a1a;
+  --muted: #555;
+  --faint: #999;
+  --green-dark: #1b5e20;
+  --line-green:      #e8f5e4;
+  --line-yellow:     #fffde7;
+  --line-green-hdr:  #c8e6c1;
+  --line-yellow-hdr: #fff9c4;
+  --sup-bg:     #e0f7fa;
+  --special-bg: #f3e5f5;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 12px; }
+
+.doc-header {
+  background: var(--white); border-bottom: 2px solid var(--border);
+  padding: 10px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { font-size: 13px; font-weight: 700; color: var(--green-dark); letter-spacing: 0.04em; text-transform: uppercase; }
+.title { font-size: 13px; font-weight: 600; color: #e65100; }
+.meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.meta-row label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+.meta-row input[type="date"], .meta-row input[type="text"] {
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; background: white; color: var(--text);
+}
+
+.dia-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; display: none; }
+.dia-badge.sabado  { background:#fff3e0; color:#e65100; border:1px solid #ffb74d; display:inline-block; }
+.dia-badge.domingo { background:#fce4ec; color:#880e4f; border:1px solid #f48fb1; display:inline-block; }
+.dia-badge.festivo { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; display:inline-block; }
+.dia-badge.sab-lab { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; display:inline-block; }
+
+.toolbar {
+  background: var(--white); border-bottom: 1px solid var(--border-l);
+  padding: 8px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+.btn { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:6px 14px; border-radius:4px; border:1px solid var(--border); cursor:pointer; background:white; color:var(--text); transition:all .15s; }
+.btn:hover { background:#f5f5f5; }
+.btn-pub { background:var(--green-dark); color:white; border-color:var(--green-dark); }
+.btn-pub:hover { background:#2e7d32; }
+
+.main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+.section-card { background:white; border:1px solid var(--border); border-radius:6px; margin-bottom:16px; overflow:hidden; }
+.section-header { color:white; font-size:12px; font-weight:700; padding:8px 14px; text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; justify-content:space-between; }
+.dept-envasado    { background:#1b5e20; }
+.dept-elaboracion { background:#0d47a1; }
+.dept-almacen     { background:#4a148c; }
+.dept-mto         { background:#bf360c; }
+.dept-calidad     { background:#006064; }
+.dept-soplado     { background:#33691e; }
+.dept-mejora      { background:#4e342e; }
+
+table.extras-table { width:100%; border-collapse:collapse; font-size:12px; }
+table.extras-table th { background:#f5f5f5; font-weight:600; padding:6px 10px; border:1px solid var(--border-l); text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted); }
+table.extras-table td { padding:5px 8px; border:1px solid var(--border-l); vertical-align:middle; }
+
+tr.row-green   { background: var(--line-green); }
+tr.row-yellow  { background: var(--line-yellow); }
+tr.row-maq-g   { background: var(--line-green-hdr); }
+tr.row-maq-y   { background: var(--line-yellow-hdr); }
+tr.row-sup     { background: var(--sup-bg); }
+tr.row-special { background: var(--special-bg); }
+
+td.puesto-label { font-weight:600; font-size:11px; color:var(--muted); white-space:nowrap; width:160px; padding-left:10px; }
+td.linea-label  { font-weight:700; font-size:11px; color:#1b5e20; white-space:nowrap; width:60px; text-align:center; }
+td.rol-label    { font-size:11px; color:var(--muted); width:130px; padding-left:8px; }
+
+select.turno-sel { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; border:1px solid var(--border-l); border-radius:3px; padding:3px 6px; background:white; width:80px; cursor:pointer; }
+input.nombre-input { font-family:'Inter',sans-serif; font-size:12px; border:1px solid var(--border-l); border-radius:3px; padding:4px 7px; width:100%; min-width:160px; background:white; }
+input.nombre-input:focus { outline:none; border-color:#e65100; }
+
+.ctrl-btn { font-size:14px; font-weight:700; width:22px; height:22px; border-radius:3px; border:1px solid var(--border-l); cursor:pointer; background:white; display:inline-flex; align-items:center; justify-content:center; }
+.ctrl-add { color:#1b5e20; } .ctrl-add:hover { background:#e8f5e9; }
+.ctrl-del { color:#b71c1c; } .ctrl-del:hover { background:#ffebee; }
+
+.historial-section { background:white; border:1px solid var(--border); border-radius:6px; margin-bottom:16px; overflow:hidden; }
+.historial-header { background:#37474f; color:white; font-size:12px; font-weight:700; padding:8px 14px; text-transform:uppercase; letter-spacing:0.06em; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+.historial-body { display:none; }
+.historial-body.open { display:block; }
+.historial-item { padding:8px 14px; border-bottom:1px solid var(--border-l); display:flex; align-items:center; gap:10px; font-size:12px; cursor:pointer; transition:background .1s; }
+.historial-item:hover { background:#f5f5f5; }
+.historial-item .fecha { font-weight:600; color:#e65100; min-width:110px; }
+.historial-item .tipo-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
+
+.toast-container { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9999; pointer-events:none; }
+.toast { background:#1b5e20; color:white; font-size:13px; font-weight:500; padding:10px 20px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,.2); opacity:0; transition:opacity .3s; white-space:nowrap; }
+.toast.show { opacity:1; }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
+  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
+  projectId: "maverick-turnos-81d4a",
+  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
+  messagingSenderId: "170123467344",
+  appId: "1:170123467344:web:142eee4473940ebd924f55"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="logo">GrupoUbesol</div>
+  <div class="title">⏱ Horas Extras</div>
+  <div class="meta-row">
+    <label>Fecha:</label>
+    <input type="date" id="fecha-extra" onchange="onFechaChange()">
+    <span id="dia-badge" class="dia-badge"></span>
+    <label style="margin-left:8px">Responsable:</label>
+    <input type="text" id="responsable" placeholder="Responsable..." style="width:180px">
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn" onclick="guardar()">💾 Guardar</button>
+  <button class="btn" onclick="limpiarFormulario()">🗑 Limpiar</button>
+  <button class="btn btn-pub" onclick="publicar()">Publicar ✓</button>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="estado-txt"></span>
+</div>
+
+<div class="main">
+  <div class="historial-section">
+    <div class="historial-header" onclick="toggleHistorial()">
+      📋 Historial de días publicados <span id="historial-arrow">▶</span>
+    </div>
+    <div class="historial-body" id="historial-body">
+      <div id="historial-list" style="padding:16px;color:var(--faint);text-align:center">Cargando...</div>
+    </div>
+  </div>
+  <div id="sections-container"></div>
+</div>
+
+<div class="toast-container"><div class="toast" id="toast"></div></div>
+
+<script>
+// ─── FESTIVOS ─────────────────────────────────────────────────────────────────
+const FESTIVOS_2026 = new Set([
+  '2026-01-01','2026-01-02','2026-01-05','2026-01-06',
+  '2026-03-30','2026-03-31','2026-04-01','2026-04-02',
+  '2026-04-03','2026-04-06','2026-05-01','2026-06-24',
+  '2026-08-15','2026-09-11','2026-10-12','2026-11-01',
+  '2026-12-06','2026-12-07','2026-12-08','2026-12-25',
+  '2026-12-26','2026-12-28','2026-12-29','2026-12-30','2026-12-31'
+]);
+const SABADOS_LABORABLES = new Set(['2026-01-10','2026-12-12']);
+
+// ─── DEPT DESDE URL ───────────────────────────────────────────────────────────
+const deptParam = new URLSearchParams(window.location.search).get('dept') || 'admin';
+
+// ─── DEFINICIONES ─────────────────────────────────────────────────────────────
+const SPECIAL_TOP = [
+  { id:'sup',   label:'SUPERVISOR/A DE TURNO', type:'sup'     },
+  { id:'tr1',   label:'TRACKING NAVE 1',       type:'special' },
+  { id:'sum',   label:'SUMINISTRO',            type:'special' },
+];
+const SPECIAL_BOT = [
+  { id:'tol3',  label:'TOLVAS NAVE 3',      type:'special' },
+  { id:'tras3', label:'TRASLADO NAVE 3',    type:'special' },
+  { id:'trk3',  label:'TRACKING NAVE 3',   type:'special' },
+  { id:'tol4',  label:'TOLVAS NAVE 4',      type:'special' },
+  { id:'comp4', label:'COMPONENTES NAVE 4', type:'special' },
+  { id:'trk4',  label:'TRACKING NAVE 4',   type:'special' },
+];
+const ALL_SPECIALS = [...SPECIAL_TOP, ...SPECIAL_BOT];
+
+const DEFAULT_LINES = [
+  {id:'L1',    label:'L1',    color:'green',  isL2sub:false},
+  {id:'L2',    label:'L2',    color:'yellow', isL2sub:false},
+  {id:'L3',    label:'L3',    color:'green',  isL2sub:false},
+  {id:'L4',    label:'L4',    color:'yellow', isL2sub:false},
+  {id:'L7',    label:'L7',    color:'green',  isL2sub:false},
+  {id:'L5.1',  label:'L5.1',  color:'yellow', isL2sub:false},
+  {id:'L2.1',  label:'L2.1',  color:'green',  isL2sub:true},
+  {id:'L2.2',  label:'L2.2',  color:'yellow', isL2sub:true},
+  {id:'L2.3',  label:'L2.3',  color:'green',  isL2sub:true},
+  {id:'L2.5',  label:'L2.5',  color:'yellow', isL2sub:true},
+  {id:'L2.6',  label:'L2.6',  color:'green',  isL2sub:true},
+  {id:'L2.7',  label:'L2.7',  color:'yellow', isL2sub:true},
+  {id:'L2.8',  label:'L2.8',  color:'green',  isL2sub:true},
+  {id:'L2.9',  label:'L2.9',  color:'yellow', isL2sub:true},
+  {id:'L2.10', label:'L2.10', color:'green',  isL2sub:true},
+];
+
+const POST_DEPTS = [
+  { id:'elaboracion', label:'Elaboración', cls:'dept-elaboracion', deptKey:'elaboracion',
+    puestos:[
+      {id:'elab_sup', label:'SUPERVISOR/A TURNO',type:'sup'},
+      {id:'elab_elab',label:'ELABORADOR/A',      type:'yellow'},
+      {id:'elab_pes', label:'PESADAS',           type:'green'},
+      {id:'elab_hig', label:'HIGIENE',           type:'yellow'},
+      {id:'elab_desc',label:'DESCARGA CISTERNAS',type:'green'},
+    ]
+  },
+  { id:'almacen', label:'Almacén', cls:'dept-almacen', deptKey:'almacen',
+    puestos:[
+      {id:'alm_sup',   label:'SUPERVISOR/A TURNO',      type:'sup'},
+      {id:'alm_desc',  label:'DESCARGA / UBICAR',       type:'green'},
+      {id:'alm_sopl',  label:'SOPLADO / UBICAR',        type:'yellow'},
+      {id:'alm_ab3',   label:'ABAST. NAVE 3 / UBICAR',  type:'green'},
+      {id:'alm_ab1',   label:'ABAST. NAVE 1 / UBICAR',  type:'yellow'},
+      {id:'alm_res',   label:'RESIDUOS / DESTRUCCIONES',type:'green'},
+      {id:'alm_ubi',   label:'UBICAR',                  type:'yellow'},
+      {id:'alm_mmpp',  label:'MMPP',                    type:'green'},
+      {id:'alm_sala',  label:'SALA BLANCA',             type:'yellow'},
+      {id:'alm_cargas',label:'CARGAS',                  type:'green'},
+      {id:'alm_silo',  label:'SILO',                    type:'yellow'},
+      {id:'alm_destr', label:'DESTRUCCIONES',           type:'green'},
+    ]
+  },
+  { id:'mantenimiento', label:'Mantenimiento', cls:'dept-mto', deptKey:'mantenimiento',
+    puestos:[
+      {id:'mto_coord',label:'COORDINADOR',          type:'green'},
+      {id:'mto_back', label:'BACKOFFICE',           type:'yellow'},
+      {id:'mto_sup',  label:'SUPERVISOR/A DE TURNO',type:'sup'},
+      {id:'mto_tec',  label:'TÉCNICO MTO.',         type:'yellow'},
+    ]
+  },
+  { id:'calidad', label:'Calidad', cls:'dept-calidad', deptKey:'calidadlineas',
+    puestos:[
+      {id:'cal_nave1',   label:'CAL. LÍNEAS NAVE 1-MK1',type:'green'},
+      {id:'cal_nave3',   label:'CAL. LÍNEAS NAVE 3-4',  type:'yellow'},
+      {id:'cal_tec',     label:'CAL. TÉCNICO',          type:'green'},
+      {id:'calfq_tec',   label:'CAL. FQ TÉCNICO LAB.',  type:'yellow'},
+      {id:'calmicro_tec',label:'CAL. MICRO TÉCNICO',    type:'green'},
+      {id:'calmat_tec',  label:'CAL. MAT. TÉCNICO',     type:'yellow'},
+    ]
+  },
+  { id:'soplado', label:'Soplado', cls:'dept-soplado', deptKey:'soplado',
+    puestos:[
+      {id:'sopl_sup',label:'SUPERVISOR/A DE TURNO', type:'sup'},
+      {id:'sopl_s12',label:'SOPLADORA 1 Y 2',       type:'green'},
+      {id:'sopl_s3', label:'SOPLADORA 3',           type:'yellow'},
+      {id:'sopl_s46',label:'SOPLADORA 4 Y 6',       type:'green'},
+      {id:'sopl_s5t',label:'SOPLADORA 5 Y TRACKING',type:'yellow'},
+      {id:'sopl_pal',label:'PALETIZADORES',         type:'green'},
+      {id:'sopl_ref',label:'REFUERZO TURNO',        type:'yellow'},
+    ]
+  },
+  { id:'mejora', label:'Mejora Continua', cls:'dept-mejora', deptKey:'mejoracontinua',
+    puestos:[
+      {id:'mc_tec',label:'TÉCNICO PROCESOS',type:'yellow'},
+    ]
+  },
+];
+
+const TURNOS = ['M','T','N','P'];
+const TURNO_LABELS = {M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'};
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
+let lines = [];
+let specialW = {};
+let postW = {};
+
+function mkW() { return {nombre:'', turno:'M'}; }
+
+function initState() {
+  lines = DEFAULT_LINES.map(l => ({...l, maq:[mkW()], ops:[mkW()]}));
+  specialW = {};
+  ALL_SPECIALS.forEach(p => { specialW[p.id] = [mkW()]; });
+  postW = {};
+  POST_DEPTS.forEach(d => {
+    postW[d.id] = {};
+    d.puestos.forEach(p => { postW[d.id][p.id] = [mkW()]; });
+  });
+}
+
+// ─── QUÉ MOSTRAR SEGÚN DEPT ───────────────────────────────────────────────────
+function showEnvasado() {
+  return ['admin','envasado'].includes(deptParam);
+}
+function showPostDept(dept) {
+  if (deptParam === 'admin') return true;
+  return deptParam === dept.deptKey ||
+    (dept.id === 'calidad' && ['calidadlineas','calidadfq','calidadmicro','calidadmat'].includes(deptParam));
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  let html = '';
+  if (showEnvasado()) html += renderEnvasadoHTML();
+  POST_DEPTS.forEach(d => { if (showPostDept(d)) html += renderPostDeptHTML(d); });
+  document.getElementById('sections-container').innerHTML = html;
+}
+
+function turnoSel(val, onchange) {
+  return `<select class="turno-sel" onchange="${onchange}">
+    ${TURNOS.map(t=>`<option value="${t}"${val===t?' selected':''}>${t} – ${TURNO_LABELS[t]}</option>`).join('')}
+  </select>`;
+}
+function nombreInp(val, onchange) {
+  return `<input class="nombre-input" type="text" value="${(val||'').replace(/"/g,'&quot;')}"
+    placeholder="Nombre trabajador/a..." onchange="${onchange}" list="ac-names">`;
+}
+
+// ── ENVASADO ──────────────────────────────────────────────────────────────────
+function renderEnvasadoHTML() {
+  let html = `<div class="section-card">
+    <div class="section-header dept-envasado">🏭 Envasado</div>
+    <table class="extras-table">
+    <thead><tr>
+      <th style="width:60px">Línea</th>
+      <th style="width:130px">Rol / Puesto</th>
+      <th style="width:90px">Turno</th>
+      <th>Trabajador/a</th>
+      <th style="width:60px;text-align:center">+/−</th>
+    </tr></thead><tbody>`;
+
+  // Especiales
+  ALL_SPECIALS.forEach(puesto => {
+    const arr = specialW[puesto.id] || [];
+    const rc = puesto.type==='sup'?'row-sup':'row-special';
+    arr.forEach((w,wi) => {
+      html += `<tr class="${rc}">
+        <td class="linea-label">${wi===0?'—':''}</td>
+        <td class="puesto-label">${wi===0?puesto.label:''}</td>
+        <td>${turnoSel(w.turno,`setSpT('${puesto.id}',${wi},this.value)`)}</td>
+        <td>${nombreInp(w.nombre,`setSpN('${puesto.id}',${wi},this.value)`)}</td>
+        <td style="text-align:center;white-space:nowrap">
+          <button class="ctrl-btn ctrl-add" onclick="addSp('${puesto.id}')">+</button>
+          ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remSp('${puesto.id}',${wi})">−</button>`:''}
+        </td>
+      </tr>`;
+    });
+  });
+
+  // Líneas
+  lines.forEach(line => {
+    const mg = line.color==='green'?'row-maq-g':'row-maq-y';
+    const og = line.color==='green'?'row-green':'row-yellow';
+    const totalRows = line.maq.length + line.ops.length;
+
+    line.maq.forEach((w,wi) => {
+      html += `<tr class="${mg}">
+        ${wi===0?`<td class="linea-label" rowspan="${totalRows}">${line.label}</td>`:''}
+        <td class="rol-label">Op. Máquina</td>
+        <td>${turnoSel(w.turno,`setLT('${line.id}','maq',${wi},this.value)`)}</td>
+        <td>${nombreInp(w.nombre,`setLN('${line.id}','maq',${wi},this.value)`)}</td>
+        <td style="text-align:center;white-space:nowrap">
+          ${wi===line.maq.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLMaq('${line.id}')">+</button>`:''}
+          ${line.maq.length>1&&wi===line.maq.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLMaq('${line.id}')">−</button>`:''}
+        </td>
+      </tr>`;
+    });
+
+    line.ops.forEach((w,wi) => {
+      html += `<tr class="${og}">
+        <td class="rol-label">Operario/a</td>
+        <td>${turnoSel(w.turno,`setLT('${line.id}','ops',${wi},this.value)`)}</td>
+        <td>${nombreInp(w.nombre,`setLN('${line.id}','ops',${wi},this.value)`)}</td>
+        <td style="text-align:center;white-space:nowrap">
+          ${wi===line.ops.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLOps('${line.id}')">+</button>`:''}
+          ${line.ops.length>1&&wi===line.ops.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLOps('${line.id}')">−</button>`:''}
+        </td>
+      </tr>`;
+    });
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// ── POST DEPTS ────────────────────────────────────────────────────────────────
+function renderPostDeptHTML(dept) {
+  let html = `<div class="section-card">
+    <div class="section-header ${dept.cls}">${dept.label}</div>
+    <table class="extras-table">
+    <thead><tr>
+      <th style="width:180px">Puesto</th>
+      <th style="width:90px">Turno</th>
+      <th>Trabajador/a</th>
+      <th style="width:60px;text-align:center">+/−</th>
+    </tr></thead><tbody>`;
+
+  dept.puestos.forEach(puesto => {
+    const arr = postW[dept.id][puesto.id] || [];
+    const rc = puesto.type==='sup'?'row-sup':puesto.type==='special'?'row-special':puesto.type==='green'?'row-green':'row-yellow';
+    arr.forEach((w,wi) => {
+      html += `<tr class="${rc}">
+        <td class="puesto-label">${wi===0?puesto.label:''}</td>
+        <td>${turnoSel(w.turno,`setPT('${dept.id}','${puesto.id}',${wi},this.value)`)}</td>
+        <td>${nombreInp(w.nombre,`setPN('${dept.id}','${puesto.id}',${wi},this.value)`)}</td>
+        <td style="text-align:center;white-space:nowrap">
+          <button class="ctrl-btn ctrl-add" onclick="addP('${dept.id}','${puesto.id}')">+</button>
+          ${arr.length>1?`<button class="ctrl-btn ctrl-del" onclick="remP('${dept.id}','${puesto.id}',${wi})">−</button>`:''}
+        </td>
+      </tr>`;
+    });
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// ─── SETTERS ──────────────────────────────────────────────────────────────────
+function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); }
+function setSpT(id,wi,v){ specialW[id][wi].turno=v; }
+function addSp(id){ specialW[id].push(mkW()); renderAll(); }
+function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
+
+function getL(id){ return lines.find(l=>l.id===id); }
+function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); }
+function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
+function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
+function remLMaq(lid){ const l=getL(lid); if(l.maq.length>1) l.maq.pop(); renderAll(); }
+function addLOps(lid){ getL(lid).ops.push(mkW()); renderAll(); }
+function remLOps(lid){ const l=getL(lid); if(l.ops.length>1) l.ops.pop(); renderAll(); }
+
+function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); }
+function setPT(did,pid,wi,v){ postW[did][pid][wi].turno=v; }
+function addP(did,pid){ postW[did][pid].push(mkW()); renderAll(); }
+function remP(did,pid,wi){ postW[did][pid].splice(wi,1); if(!postW[did][pid].length) postW[did][pid]=[mkW()]; renderAll(); }
+
+// ─── FECHA BADGE ─────────────────────────────────────────────────────────────
+function onFechaChange() {
+  const fecha = document.getElementById('fecha-extra').value;
+  const badge = document.getElementById('dia-badge');
+  badge.className = 'dia-badge'; badge.textContent = '';
+  if (!fecha) return;
+  const dow = new Date(fecha+'T12:00:00').getDay();
+  if      (FESTIVOS_2026.has(fecha))     { badge.classList.add('festivo'); badge.textContent='🔴 Festivo / Planta cerrada'; }
+  else if (SABADOS_LABORABLES.has(fecha)){ badge.classList.add('sab-lab'); badge.textContent='🟢 Sábado laborable'; }
+  else if (dow===0)                       { badge.classList.add('domingo'); badge.textContent='🟣 Domingo'; }
+  else if (dow===6)                       { badge.classList.add('sabado');  badge.textContent='🟠 Sábado'; }
+  cargarFecha(fecha);
+}
+
+// ─── BUILD PAYLOAD ────────────────────────────────────────────────────────────
+function buildPayload() {
+  const fecha = document.getElementById('fecha-extra').value;
+  if (!fecha) return null;
+
+  // Envasado
+  const envSpecial = {};
+  ALL_SPECIALS.forEach(p => {
+    const con = specialW[p.id].filter(w=>w.nombre);
+    if (con.length) envSpecial[p.id] = con;
+  });
+  const envLines = [];
+  lines.forEach(l => {
+    const maqCon = l.maq.filter(w=>w.nombre);
+    const opsCon = l.ops.filter(w=>w.nombre);
+    if (maqCon.length||opsCon.length) envLines.push({id:l.id,label:l.label,color:l.color,isL2sub:l.isL2sub,maq:maqCon,ops:opsCon});
+  });
+
+  // Post depts
+  const depts = {};
+  POST_DEPTS.forEach(d => {
+    const pCon = {};
+    d.puestos.forEach(p => {
+      const con = postW[d.id][p.id].filter(w=>w.nombre);
+      if (con.length) pCon[p.id] = con;
+    });
+    if (Object.keys(pCon).length) depts[d.id] = pCon;
+  });
+
+  return {
+    _version:1, tipo:'horas_extras', fecha,
+    responsable: document.getElementById('responsable').value.trim(),
+    timestamp: Date.now(),
+    envasado: {special:envSpecial, lines:envLines},
+    depts
+  };
+}
+
+// ─── GUARDAR / PUBLICAR ───────────────────────────────────────────────────────
+function guardar() {
+  const p = buildPayload();
+  if (!p) { toast('⚠️ Selecciona una fecha primero'); return; }
+  localStorage.setItem('ubesol_extras_'+p.fecha, JSON.stringify(p));
+  toast('💾 Guardado: '+formatFecha(p.fecha));
+}
+
+function publicar() {
+  const p = buildPayload();
+  if (!p) { toast('⚠️ Selecciona una fecha primero'); return; }
+  localStorage.setItem('ubesol_extras_'+p.fecha, JSON.stringify(p));
+  db.collection('horas_extras').doc('extras_'+p.fecha).set(p)
+    .then(()=>{ toast('✅ Publicado: '+formatFecha(p.fecha)); cargarHistorial(); })
+    .catch(e=>toast('⚠️ Error: '+e.message));
+}
+
+function limpiarFormulario() {
+  if (!confirm('¿Limpiar todos los datos?')) return;
+  initState(); renderAll();
+  document.getElementById('estado-txt').textContent='';
+  toast('🗑 Formulario limpiado');
+}
+
+// ─── CARGAR FECHA ─────────────────────────────────────────────────────────────
+function cargarFecha(fecha) {
+  const raw = localStorage.getItem('ubesol_extras_'+fecha);
+  if (raw) {
+    try { applyPayload(JSON.parse(raw)); document.getElementById('estado-txt').textContent='📂 Cargado local'; return; }
+    catch(e){}
+  }
+  db.collection('horas_extras').doc('extras_'+fecha).get()
+    .then(doc => {
+      if (doc.exists) { applyPayload(doc.data()); document.getElementById('estado-txt').textContent='☁️ Cargado Firebase'; }
+      else { initState(); renderAll(); document.getElementById('estado-txt').textContent='Sin datos para este día'; }
+    })
+    .catch(()=>{ initState(); renderAll(); });
+}
+
+function applyPayload(d) {
+  initState();
+  if (!d) { renderAll(); return; }
+  // Envasado especiales
+  if (d.envasado && d.envasado.special) {
+    Object.entries(d.envasado.special).forEach(([id,arr])=>{ if(specialW[id]) specialW[id]=arr; });
+  }
+  // Envasado líneas
+  if (d.envasado && d.envasado.lines) {
+    d.envasado.lines.forEach(sl => {
+      const l = lines.find(x=>x.id===sl.id);
+      if (l) { if(sl.maq&&sl.maq.length) l.maq=sl.maq; if(sl.ops&&sl.ops.length) l.ops=sl.ops; }
+    });
+  }
+  // Post depts
+  if (d.depts) {
+    POST_DEPTS.forEach(dept => {
+      if (d.depts[dept.id]) {
+        Object.entries(d.depts[dept.id]).forEach(([pid,arr])=>{ if(postW[dept.id]&&postW[dept.id][pid]) postW[dept.id][pid]=arr; });
+      }
+    });
+  }
+  if (d.responsable) document.getElementById('responsable').value=d.responsable;
+  renderAll();
+}
+
+// ─── HISTORIAL ────────────────────────────────────────────────────────────────
+function toggleHistorial() {
+  const body = document.getElementById('historial-body');
+  const arrow = document.getElementById('historial-arrow');
+  body.classList.toggle('open');
+  arrow.textContent = body.classList.contains('open')?'▼':'▶';
+  if (body.classList.contains('open')) cargarHistorial();
+}
+
+function cargarHistorial() {
+  const list = document.getElementById('historial-list');
+  list.innerHTML = '<div style="padding:16px;color:var(--faint);text-align:center">Cargando...</div>';
+  db.collection('horas_extras').orderBy('fecha','desc').limit(30).get()
+    .then(snap => {
+      if (snap.empty) { list.innerHTML='<div style="padding:16px;color:var(--faint);text-align:center">No hay días publicados aún</div>'; return; }
+      let html='';
+      snap.forEach(doc => {
+        const d=doc.data(); const fecha=d.fecha||'';
+        const dow=fecha?new Date(fecha+'T12:00:00').getDay():-1;
+        const esFest=FESTIVOS_2026.has(fecha); const esSabL=SABADOS_LABORABLES.has(fecha);
+        const tlabel=esFest?'🔴 Festivo':esSabL?'🟢 Sáb.lab.':dow===0?'🟣 Domingo':'🟠 Sábado';
+        const tbg=esFest?'#ffebee':esSabL?'#e8f5e9':dow===0?'#f3e5f5':'#fff3e0';
+        const tcol=esFest?'#b71c1c':esSabL?'#1b5e20':dow===0?'#6a1b9a':'#e65100';
+        let total=0;
+        Object.values(d.envasado&&d.envasado.special||{}).forEach(a=>total+=a.length);
+        (d.envasado&&d.envasado.lines||[]).forEach(l=>total+=(l.maq||[]).length+(l.ops||[]).length);
+        Object.values(d.depts||{}).forEach(dp=>Object.values(dp).forEach(a=>total+=a.length));
+        html+=`<div class="historial-item" onclick="cargarDesdeHistorial('${fecha}')">
+          <span class="fecha">${formatFecha(fecha)}</span>
+          <span class="tipo-badge" style="background:${tbg};color:${tcol}">${tlabel}</span>
+          <span style="color:var(--muted);font-size:11px">${total} persona${total!==1?'s':''}</span>
+          <span style="margin-left:auto;font-size:11px;color:#999">${d.responsable||''}</span>
+        </div>`;
+      });
+      list.innerHTML=html;
+    })
+    .catch(()=>{ list.innerHTML='<div style="padding:16px;color:var(--faint);text-align:center">Error al cargar</div>'; });
+}
+
+function cargarDesdeHistorial(fecha) {
+  document.getElementById('fecha-extra').value=fecha;
+  onFechaChange();
+  document.getElementById('historial-body').classList.remove('open');
+  document.getElementById('historial-arrow').textContent='▶';
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function formatFecha(fecha) {
+  if (!fecha) return '';
+  const [y,m,d]=fecha.split('-');
+  const dias=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  return `${dias[new Date(fecha+'T12:00:00').getDay()]} ${d}/${m}/${y}`;
+}
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── AUTOCOMPLETE ─────────────────────────────────────────────────────────────
+function buildAutocomplete() {
+  const names=new Set();
+  try {
+    for (let i=0;i<localStorage.length;i++) {
+      const k=localStorage.key(i);
+      if (!k||!k.startsWith('ubesol_historico_')) continue;
+      const d=JSON.parse(localStorage.getItem(k)||'null');
+      if (!d) continue;
+      const sa=a=>Array.isArray(a)?a:[];
+      if (d.envasado) {
+        sa(d.envasado.lines).forEach(l=>[...sa(l.maq),...sa(l.ops)].forEach(w=>{
+          if(w&&w.cells) Object.values(w.cells).forEach(v=>{if(v&&v.trim())names.add(v.trim());});
+        }));
+      }
+    }
+  } catch(e){}
+  const dl=document.createElement('datalist'); dl.id='ac-names';
+  [...names].sort().forEach(n=>{const o=document.createElement('option');o.value=n;dl.appendChild(o);});
+  document.body.appendChild(dl);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initState();
+renderAll();
+buildAutocomplete();
+const hoy=new Date();
+document.getElementById('fecha-extra').value=
+  hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
+onFechaChange();
+</script>
+</body>
+</html>
