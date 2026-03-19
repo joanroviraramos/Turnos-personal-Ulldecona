@@ -1179,9 +1179,29 @@ function buildExpandableRow(worker, wi, puesto, arr) {
 // ═══════════════════════════════════════════════════════════════════════
 //  GUARDAR MANUAL
 // ═══════════════════════════════════════════════════════════════════════
+function tieneTrabajadores(d) {
+  // Comprueba si un payload tiene al menos un nombre real
+  if (!d) return false;
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const tieneNombre = w => w && w.cells && Object.values(w.cells).some(v => v && String(v).trim().length > 0);
+  if (d.envasado) {
+    const e = d.envasado;
+    if (safeArr(e.lines).some(l => safeArr(l.maq).some(tieneNombre) || safeArr(l.ops).some(tieneNombre))) return true;
+    if (e.specialWorkers && Object.values(e.specialWorkers).some(arr => safeArr(arr).some(tieneNombre))) return true;
+  }
+  for (const dept of ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado']) {
+    if (d[dept] && d[dept].workers) {
+      if (Object.values(d[dept].workers).some(arr => safeArr(arr).some(tieneNombre))) return true;
+    }
+  }
+  return false;
+}
+
 function guardarManual() {
-  // 1. Primero recoger lo que hay en localStorage ANTES de escribir nada
-  //    para saber exactamente qué semanas existen realmente
+  // 1. Guardar semana activa en localStorage
+  autoSaveToKey(weekKey());
+
+  // 2. Leer localStorage y quedarse SOLO con semanas que tengan trabajadores reales
   const semanasLocales = {};
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -1192,6 +1212,7 @@ function guardarManual() {
       try {
         const d = JSON.parse(raw);
         if (!d || !d._version || !d.ano || !d.semana) continue;
+        if (!tieneTrabajadores(d)) continue; // ignorar semanas vacías
         const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
           .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
           .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
@@ -2520,11 +2541,7 @@ function payloadTieneDatos(payload) {
 
 function autoSaveToKey(key) {
   try {
-    const payload = buildPayload();
-    if (payloadTieneDatos(payload)) {
-      localStorage.setItem(key, JSON.stringify(payload));
-    }
-    // Si no tiene datos, NO escribir — así localStorage refleja solo semanas con contenido real
+    localStorage.setItem(key, JSON.stringify(buildPayload()));
   } catch(e) {
     console.error('autoSave error:', e);
   }
@@ -2577,23 +2594,7 @@ function autoPublicarTodasLasSemanas() {
       if (!activas.has(k)) localStorage.removeItem(k);
     });
 
-    // Sincronizar Firebase: borrar lo que no existe local, subir lo que sí
-    db.collection('cuadrantes').get().then(function(snap) {
-      const promesas = [];
-      snap.forEach(function(doc) {
-        if (!semanasLocales[doc.id]) {
-          promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
-        }
-      });
-      Object.entries(semanasLocales).forEach(function([docId, payload]) {
-        promesas.push(db.collection('cuadrantes').doc(docId).set(payload));
-      });
-      return Promise.all(promesas);
-    }).then(function() {
-      console.log('Firebase sincronizado: ' + Object.keys(semanasLocales).length + ' semanas');
-    }).catch(function(e) {
-      console.warn('Firebase sync error:', e);
-    });
+    // Firebase solo se actualiza desde guardarManual() o publicar() - no desde aquí
 
   } catch(e) {
     console.error('autoPublicar error:', e);
