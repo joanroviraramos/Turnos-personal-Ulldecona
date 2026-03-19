@@ -128,6 +128,45 @@ input.nombre-input:focus { outline:none; border-color:#e65100; }
 .ac-name { font-weight: 500; color: var(--text); }
 .ac-dni  { font-size: 10px; color: var(--faint); font-family: 'IBM Plex Mono', monospace; }
 .ac-empty { padding: 8px 10px; color: var(--faint); font-size: 11px; font-style: italic; }
+
+/* ── MODAL AVISO 60H ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.55);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+  animation: modalIn .2s ease;
+}
+@keyframes modalIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.modal-icon { font-size: 48px; margin-bottom: 12px; }
+.modal-title { font-size: 18px; font-weight: 700; color: #b71c1c; margin-bottom: 10px; }
+.modal-body  { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 20px; }
+.modal-body ul { text-align: left; margin: 10px 0 0 16px; }
+.modal-body li { margin-bottom: 4px; }
+.modal-aceptar {
+  background: #b71c1c; color: white;
+  border: none; border-radius: 6px;
+  padding: 10px 28px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: background .15s;
+}
+.modal-aceptar:hover { background: #7f0000; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -177,6 +216,20 @@ const db = firebase.firestore();
     </div>
   </div>
   <div id="sections-container"></div>
+</div>
+
+<!-- Modal aviso 60h -->
+<div class="modal-overlay" id="modal-60h">
+  <div class="modal-box">
+    <div class="modal-icon">🚨</div>
+    <div class="modal-title">Límite de 60h superado</div>
+    <div class="modal-body">
+      Los siguientes trabajadores superan el máximo de <strong>60 horas a pagar</strong> en el año:
+      <ul id="modal-60h-lista"></ul>
+      <br>Considera cambiar sus horas a <strong>🏖 Compensar</strong> o revisar el cuadrante.
+    </div>
+    <button class="modal-aceptar" onclick="cerrarModal60h()">Entendido — Continuar</button>
+  </div>
 </div>
 
 <div class="toast-container"><div class="toast" id="toast"></div></div>
@@ -394,17 +447,67 @@ function getHorasHoy(nombre) {
   return horas;
 }
 
+// Trabajadores que ya han visto el aviso esta sesión (para no repetirlo)
+const _avisoVisto = new Set();
+
+function mostrarModal60h(nombre, total) {
+  const key = nombre.trim().toUpperCase();
+  if (_avisoVisto.has(key)) return;
+  _avisoVisto.add(key);
+  const lista = document.getElementById('modal-60h-lista');
+  if (lista) {
+    lista.innerHTML = '<li><strong>' + nombre + '</strong> — ' + total + 'h a pagar este año</li>';
+  }
+  const modal = document.getElementById('modal-60h');
+  if (modal) modal.classList.add('show');
+}
+
+function cerrarModal60h() {
+  const modal = document.getElementById('modal-60h');
+  if (modal) modal.classList.remove('show');
+}
+
 function getAvisoHoras(nombre, esPagar) {
-  if (!esPagar || !nombre || !nombre.trim()) return '';
+  if (!nombre || !nombre.trim()) return '';
+  if (!esPagar) return '<div style="font-size:10px;color:#1b5e20;margin-top:2px">🏖 A compensar — sin límite</div>';
   const acum = getHorasPagar(nombre);
   const hoy  = getHorasHoy(nombre);
   const total = acum + hoy;
   if (total > 60) {
-    return '<div style="font-size:10px;color:#b71c1c;font-weight:600;margin-top:2px">⚠️ ' + total + 'h a pagar (máx 60h)</div>';
+    // Mostrar modal con un pequeño delay para que el render termine
+    setTimeout(function() { mostrarModal60h(nombre, total); }, 100);
+    return '<div style="font-size:11px;font-weight:700;color:white;background:#b71c1c;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">🚨 ' + total + 'h — SUPERA 60h</div>';
   } else if (total >= 52) {
-    return '<div style="font-size:10px;color:#e65100;font-weight:600;margin-top:2px">⚡ ' + total + 'h a pagar (cerca del límite)</div>';
+    return '<div style="font-size:11px;font-weight:700;color:white;background:#e65100;border-radius:4px;padding:3px 8px;margin-top:3px;display:inline-block">⚡ ' + total + 'h — cerca del límite</div>';
   }
-  return '<div style="font-size:10px;color:#555;margin-top:2px">' + total + 'h a pagar este año</div>';
+  return '<div style="font-size:10px;color:#555;margin-top:2px">💰 ' + total + 'h a pagar este año</div>';
+}
+
+function checkLimitesAntesDPublicar() {
+  // Devuelve array de {nombre, total} que superan 60h
+  const superan = [];
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const nombres = new Set();
+
+  // Recoger todos los nombres con tipo pagar del formulario actual
+  ALL_SPECIALS.forEach(p => safeArr(specialW[p.id]).forEach(w => {
+    if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase());
+  }));
+  lines.forEach(l => {
+    safeArr(l.maq).forEach(w => { if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase()); });
+    safeArr(l.ops).forEach(w => { if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase()); });
+  });
+  POST_DEPTS.forEach(d => d.puestos.forEach(p => safeArr(postW[d.id][p.id]).forEach(w => {
+    if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase());
+  })));
+
+  nombres.forEach(nombre => {
+    const acum = getHorasPagar(nombre);
+    const hoy  = getHorasHoy(nombre);
+    const total = acum + hoy;
+    if (total > 60) superan.push({ nombre, total });
+  });
+  return superan;
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
@@ -558,14 +661,14 @@ function renderPostDeptHTML(dept) {
 }
 
 // ─── SETTERS ──────────────────────────────────────────────────────────────────
-function setSpN(id,wi,v){ specialW[id][wi].nombre=v.trim(); renderAll(); }
+function setSpN(id,wi,v){ const prev=specialW[id][wi].nombre; specialW[id][wi].nombre=v.trim(); if(prev!==v.trim()) _avisoVisto.delete(v.trim().toUpperCase()); renderAll(); }
 function setSpT(id,wi,v){ specialW[id][wi].turno=v; }
 function setSpTipo(id,wi,v){ specialW[id][wi].tipo=v; renderAll(); }
 function addSp(id){ specialW[id].push(mkW()); renderAll(); }
 function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
 
 function getL(id){ return lines.find(l=>l.id===id); }
-function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); renderAll(); }
+function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); _avisoVisto.delete(v.trim().toUpperCase()); renderAll(); }
 function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
 function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); }
 function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
@@ -573,7 +676,7 @@ function remLMaq(lid){ const l=getL(lid); if(l.maq.length>1) l.maq.pop(); render
 function addLOps(lid){ getL(lid).ops.push(mkW()); renderAll(); }
 function remLOps(lid){ const l=getL(lid); if(l.ops.length>1) l.ops.pop(); renderAll(); }
 
-function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); renderAll(); }
+function setPN(did,pid,wi,v){ postW[did][pid][wi].nombre=v.trim(); _avisoVisto.delete(v.trim().toUpperCase()); renderAll(); }
 function setPT(did,pid,wi,v){ postW[did][pid][wi].turno=v; }
 function setPTipo(did,pid,wi,v){ postW[did][pid][wi].tipo=v; renderAll(); }
 function addP(did,pid){ postW[did][pid].push(mkW()); renderAll(); }
