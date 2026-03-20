@@ -1267,18 +1267,20 @@ function renderCalendario() {
   // Mapa de extras del trabajador
   const extrasMapCal = getExtrasByFecha();
 
-  // Calcular número de semana ISO para una fecha — usando siempre el lunes de esa semana
+  // Calcular número de semana ISO para una fecha — igual que en el cuadrante
   function getSemKey(fecha) {
-    // Encontrar el lunes de la semana de esta fecha
-    const diaSem = (fecha.getDay() + 6) % 7; // 0=lun
+    const diaSem = (fecha.getDay() + 6) % 7;
     const lunes = new Date(fecha);
     lunes.setDate(fecha.getDate() - diaSem);
-    // Calcular semana ISO del lunes
-    const jan4 = new Date(lunes.getFullYear(), 0, 4);
+    // Usar el jueves de la semana para determinar el año ISO
+    const jue = new Date(lunes);
+    jue.setDate(lunes.getDate() + 3);
+    const anoISO = jue.getFullYear();
+    const jan4 = new Date(anoISO, 0, 4);
     const sw1 = new Date(jan4);
     sw1.setDate(jan4.getDate() - ((jan4.getDay()+6)%7));
-    const sem = Math.ceil((lunes - sw1) / 604800000);
-    return lunes.getFullYear() + '_' + String(sem).padStart(2,'0');
+    const sem = Math.round((lunes - sw1) / 604800000) + 1;
+    return anoISO + '_' + String(sem).padStart(2,'0');
   }
 
   let html = `
