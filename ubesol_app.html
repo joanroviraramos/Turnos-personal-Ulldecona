@@ -751,6 +751,8 @@ const db = firebase.firestore();
 const CUADRANTE_URL = 'https://joanroviraramos.github.io/Turnos-personal-Ulldecona/cuadrante.json';
 const LS_USERS = 'ubesol_app_users';
 const LS_SESSION = 'ubesol_app_session';
+const LS_LAST_ACTIVITY = 'ubesol_app_last_activity';
+const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutos en ms
 const LS_EPIS = 'ubesol_app_epis';
 
 // ─── TRABAJADORES EMBEBIDOS ──────────────────────────
@@ -855,13 +857,59 @@ let workersLoaded = true;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
-  // Restaurar sesión si existe
+  // Restaurar sesión si existe y no ha expirado
   try {
     const sess = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
-    if (sess) { currentUser = sess; showHome(); }
+    const lastActivity = parseInt(localStorage.getItem(LS_LAST_ACTIVITY) || '0');
+    const ahora = Date.now();
+    if (sess && (ahora - lastActivity) < SESSION_TIMEOUT) {
+      currentUser = sess;
+      updateActivity();
+      showHome();
+    } else if (sess) {
+      // Sesión expirada
+      localStorage.removeItem(LS_SESSION);
+      localStorage.removeItem(LS_LAST_ACTIVITY);
+    }
   } catch(e) {}
   // Cargar cuadrante publicado
   loadCuadrante();
+  // Iniciar vigilancia de inactividad
+  startInactivityWatcher();
+}
+
+function updateActivity() {
+  localStorage.setItem(LS_LAST_ACTIVITY, Date.now().toString());
+}
+
+function startInactivityWatcher() {
+  // Actualizar actividad en cada interacción
+  ['touchstart','touchend','click','keydown','scroll'].forEach(function(ev) {
+    document.addEventListener(ev, function() {
+      if (currentUser) updateActivity();
+    }, { passive: true });
+  });
+
+  // Comprobar inactividad cada minuto
+  setInterval(function() {
+    if (!currentUser) return;
+    const lastActivity = parseInt(localStorage.getItem(LS_LAST_ACTIVITY) || '0');
+    if (Date.now() - lastActivity > SESSION_TIMEOUT) {
+      showToast('Sesión cerrada por inactividad');
+      setTimeout(function() { doLogout(); }, 1500);
+    }
+  }, 60 * 1000);
+
+  // Comprobar también al volver a la app (cambio de pestaña o pantalla)
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && currentUser) {
+      const lastActivity = parseInt(localStorage.getItem(LS_LAST_ACTIVITY) || '0');
+      if (Date.now() - lastActivity > SESSION_TIMEOUT) {
+        showToast('Sesión cerrada por inactividad');
+        setTimeout(function() { doLogout(); }, 1500);
+      }
+    }
+  });
 }
 
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
@@ -970,6 +1018,7 @@ async function doLogin() {
   err.classList.remove('show');
   currentUser = { dni, nombre: worker.nombre, departamento: worker.departamento };
   localStorage.setItem(LS_SESSION, JSON.stringify(currentUser));
+  updateActivity();
   showHome();
 }
 
