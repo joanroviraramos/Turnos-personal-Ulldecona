@@ -769,7 +769,16 @@ calWorkers = {}, calfqWorkers = {}, calmicroWorkers = {};
 calmatWorkers = {}, mcWorkers = {}, soplWorkers = {};
 
 function getWorkersForDept(dept) {
-  return allWorkers.filter(w => w.departamento === dept);
+  // Normalizar: todas las variantes de Calidad van juntas
+  const normDeptLocal = (d) => (d||'').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  const dNorm = normDeptLocal(dept);
+  const isCalidadTab = dNorm.startsWith('calidad');
+  return allWorkers.filter(w => {
+    const wNorm = normDeptLocal(w.departamento);
+    if (isCalidadTab) return wNorm.startsWith('calidad');
+    return wNorm === dNorm;
+  });
 }
 
 function rebuildUsedNames() {

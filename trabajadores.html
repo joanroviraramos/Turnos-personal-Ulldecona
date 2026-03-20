@@ -348,16 +348,28 @@ function cerrarModalPegar() {
 function normalizarDept(raw) {
   if (!raw) return '';
   const map = {
-    'ENVASADO':       'Envasado',
-    'ELABORACION':    'Elaboración',
-    'ELABORACIÓN':    'Elaboración',
-    'ALMACEN':        'Almacén',
-    'ALMACÉN':        'Almacén',
-    'MANTENIMIENTO':  'Mantenimiento',
-    'CALIDAD':        'Calidad',
-    'SOPLADO':        'Soplado',
-    'MEJORA CONTINUA':'Mejora Continua',
-    'MEJORA':         'Mejora Continua',
+    'ENVASADO':              'Envasado',
+    'ELABORACION':           'Elaboración',
+    'ELABORACIÓN':           'Elaboración',
+    'ALMACEN':               'Almacén',
+    'ALMACÉN':               'Almacén',
+    'MANTENIMIENTO':         'Mantenimiento',
+    'CALIDAD':               'Calidad',
+    'CALIDAD LINEAS':        'Calidad',
+    'CALIDAD LÍNEAS':        'Calidad',
+    'CALIDAD LINES':         'Calidad',
+    'CALIDAD FIS-QUIM':      'Calidad',
+    'CALIDAD FIS QUIM':      'Calidad',
+    'CALIDAD FISICO QUIMICO':'Calidad',
+    'CALIDAD FQ':            'Calidad',
+    'CALIDAD MICROBIOLOGIA': 'Calidad',
+    'CALIDAD MICRO':         'Calidad',
+    'CALIDAD MATERIALES':    'Calidad',
+    'CALIDAD MAT':           'Calidad',
+    'CALIDAD MATERIALES':    'Calidad',
+    'SOPLADO':               'Soplado',
+    'MEJORA CONTINUA':       'Mejora Continua',
+    'MEJORA':                'Mejora Continua',
   };
   const upper = raw.toUpperCase().trim()
     .normalize('NFD').replace(/[̀-ͯ]/g,''); // quitar acentos para comparar
