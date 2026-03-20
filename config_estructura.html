@@ -66,6 +66,14 @@ body{font-family:'Inter',sans-serif;background:#f0f0f0;color:#1a1a1a;font-size:1
 .roles-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .role-chip{background:var(--surface);border:1px solid var(--border-l);border-radius:12px;padding:2px 8px;font-size:11px;display:flex;align-items:center;gap:4px}
 .role-chip .del-role{color:var(--danger);cursor:pointer;font-size:12px;font-weight:700;margin-left:2px}
+
+/* Drag & drop */
+.item-row[draggable]{cursor:grab}
+.item-row[draggable]:active{cursor:grabbing}
+.item-row.drag-over{border-top:2px solid var(--green);background:var(--green-l)}
+.item-row.dragging{opacity:0.4}
+.drag-handle{color:var(--faint);font-size:14px;cursor:grab;padding:0 4px;flex-shrink:0;user-select:none}
+.drag-handle:hover{color:var(--muted)}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -262,7 +270,8 @@ function renderEnvasado() {
     </div>
     <div class="section-body">
       ${e.especiales_top.map((p,i) => `
-        <div class="item-row">
+        <div class="item-row" draggable="true" data-i="${i}" data-zona="top" data-type="esp">
+          <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
           <div class="item-id">${p.id}</div>
           <div class="item-label">${p.label}</div>
           <div class="item-type">${p.type}</div>
@@ -319,7 +328,8 @@ function renderEnvasado() {
     </div>
     <div class="section-body">
       ${e.especiales_bot.map((p,i) => `
-        <div class="item-row">
+        <div class="item-row" draggable="true" data-i="${i}" data-zona="bot" data-type="esp">
+          <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
           <div class="item-id">${p.id}</div>
           <div class="item-label">${p.label}</div>
           <div class="item-type">${p.type}</div>
@@ -349,8 +359,9 @@ function renderLineaRow(l, i, isL2sub) {
   ).join('')}
   <button class="btn-sm" onclick="addRoleLinea('${l.id}')" style="font-size:10px;padding:2px 6px">+ Rol</button>
   </div>`;
-  return `<div class="item-row" style="align-items:flex-start;flex-direction:column;gap:4px">
+  return `<div class="item-row" draggable="true" data-id="${l.id}" data-type="linea" data-l2sub="${isL2sub}" style="align-items:flex-start;flex-direction:column;gap:4px">
     <div style="display:flex;align-items:center;gap:8px;width:100%">
+      <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
       <div class="item-id">${l.id}</div>
       <div class="item-label" style="font-weight:700">${l.label}</div>
       ${colorBadge}
@@ -383,7 +394,8 @@ function renderSimple(id, dept) {
     </div>
     <div class="section-body">
       ${d.puestos.map((p,i) => `
-        <div class="item-row">
+        <div class="item-row" draggable="true" data-id="${p.id}" data-dept="${id}" data-type="puesto">
+          <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
           <div class="item-id">${p.id}</div>
           <div class="item-label">${p.label}</div>
           <div class="item-type">${p.type}</div>
@@ -514,6 +526,85 @@ function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+// ─── DRAG & DROP ──────────────────────────────────────────────────────────────
+let _dragSrc = null;
+
+function initDragDrop(container) {
+  const rows = container.querySelectorAll('.item-row[draggable]');
+  rows.forEach(row => {
+    row.addEventListener('dragstart', e => {
+      _dragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      container.querySelectorAll('.item-row').forEach(r => r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      container.querySelectorAll('.item-row').forEach(r => r.classList.remove('drag-over'));
+      if (row !== _dragSrc) row.classList.add('drag-over');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!_dragSrc || _dragSrc === row) return;
+      row.classList.remove('drag-over');
+
+      const type = _dragSrc.dataset.type;
+
+      if (type === 'linea') {
+        const isL2sub = _dragSrc.dataset.l2sub === 'true';
+        const fromId = _dragSrc.dataset.id;
+        const toId = row.dataset.id;
+        const arr = isL2sub ? config.envasado.lineas.filter(l => l.isL2sub)
+                            : config.envasado.lineas.filter(l => !l.isL2sub);
+        const allLines = config.envasado.lineas;
+        const fromIdx = allLines.findIndex(l => l.id === fromId);
+        const toIdx   = allLines.findIndex(l => l.id === toId);
+        if (fromIdx < 0 || toIdx < 0) return;
+        const [item] = allLines.splice(fromIdx, 1);
+        allLines.splice(toIdx, 0, item);
+        config.envasado.lineas = allLines;
+
+      } else if (type === 'puesto') {
+        const deptId = _dragSrc.dataset.dept;
+        const fromId = _dragSrc.dataset.id;
+        const toId   = row.dataset.id;
+        const arr = config[deptId] && config[deptId].puestos;
+        if (!arr) return;
+        const fromIdx = arr.findIndex(p => p.id === fromId);
+        const toIdx   = arr.findIndex(p => p.id === toId);
+        if (fromIdx < 0 || toIdx < 0) return;
+        const [item] = arr.splice(fromIdx, 1);
+        arr.splice(toIdx, 0, item);
+
+      } else if (type === 'esp') {
+        const zona = _dragSrc.dataset.zona;
+        const arr = zona === 'top' ? config.envasado.especiales_top : config.envasado.especiales_bot;
+        const fromI = parseInt(_dragSrc.dataset.i);
+        const toI   = parseInt(row.dataset.i);
+        if (isNaN(fromI) || isNaN(toI) || fromI === toI) return;
+        const [item] = arr.splice(fromI, 1);
+        arr.splice(toI, 0, item);
+      }
+
+      renderDept(currentDept);
+      toast('↕ Orden actualizado — recuerda guardar');
+    });
+  });
+}
+
+// Llamar initDragDrop después de cada render
+const _origRenderDept = renderDept;
+function renderDept(id) {
+  _origRenderDept(id);
+  // Inicializar drag en todos los contenedores de items
+  document.querySelectorAll('.section-body').forEach(initDragDrop);
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
