@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión de Trabajadores — GrupoUbesol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f0f0;color:#1a1a1a;font-size:13px}
+:root{
+  --green:#1b5e20;--green-l:#e8f5e9;--border:#d0d0d0;--border-l:#e0e0e0;
+  --white:#fff;--surface:#f8f8f8;--muted:#666;--faint:#999;--danger:#b71c1c;
+}
+.doc-header{background:var(--white);border-bottom:2px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.logo{font-size:13px;font-weight:700;color:var(--green);letter-spacing:.04em;text-transform:uppercase}
+.title{font-size:13px;font-weight:600;color:#e65100}
+.toolbar{background:var(--white);border-bottom:1px solid var(--border-l);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:4px;border:1px solid var(--border);cursor:pointer;background:var(--white);color:#333;transition:all .15s}
+.btn:hover{background:#f5f5f5}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green)}
+.btn-green:hover{background:#145214}
+.btn-orange{background:#e65100;color:var(--white);border-color:#e65100}
+.btn-orange:hover{background:#bf360c}
+.btn-danger{background:var(--danger);color:var(--white);border-color:var(--danger)}
+.main{padding:16px;max-width:1100px;margin:0 auto}
+
+/* Filtros */
+.filters{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.filters label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.filters select,.filters input{font-family:'Inter',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:4px;padding:5px 8px;background:var(--white)}
+.stat-badge{font-size:11px;font-weight:600;background:var(--green-l);color:var(--green);padding:3px 10px;border-radius:12px}
+
+/* Tabla */
+.table-wrap{background:var(--white);border:1px solid var(--border-l);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#f5f5f5;border-bottom:2px solid var(--border);padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border-l);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#fafafa}
+tbody td{padding:6px 10px;vertical-align:middle}
+tbody td input,tbody td select{font-family:'Inter',sans-serif;font-size:12px;border:1px solid transparent;border-radius:3px;padding:4px 6px;width:100%;background:transparent;transition:all .15s}
+tbody td input:hover,tbody td select:hover{border-color:var(--border-l);background:var(--white)}
+tbody td input:focus,tbody td select:focus{border-color:var(--green);background:var(--white);outline:none}
+.td-num{width:36px;text-align:center;color:var(--faint);font-size:11px}
+.td-del{width:36px;text-align:center}
+.btn-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:14px;padding:2px 6px;border-radius:3px;transition:all .15s}
+.btn-del:hover{color:var(--danger);background:#ffebee}
+.td-dni input{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em}
+tr.row-new{background:#f0faf0}
+tr.row-dup{background:#fff3e0}
+tr.row-dup td input{color:#e65100}
+
+/* Modal pegar Excel */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--white);border-radius:10px;padding:24px;max-width:600px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5}
+.modal-box textarea{width:100%;height:180px;font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:10px;resize:vertical;outline:none}
+.modal-box textarea:focus{border-color:var(--green)}
+.modal-preview{margin-top:12px;font-size:11px;color:var(--muted)}
+.modal-preview span{font-weight:700;color:var(--green)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.btn-cancel{background:var(--white);color:var(--muted);border-color:var(--border)}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1b5e20;color:var(--white);font-size:13px;font-weight:500;padding:10px 20px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* Empty */
+.empty{text-align:center;padding:40px;color:var(--faint)}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",authDomain:"maverick-turnos-81d4a.firebaseapp.com",projectId:"maverick-turnos-81d4a",storageBucket:"maverick-turnos-81d4a.firebasestorage.app",messagingSenderId:"170123467344",appId:"1:170123467344:web:142eee4473940ebd924f55"};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+</script>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="logo">GrupoUbesol</div>
+  <div class="title">👥 Gestión de Trabajadores</div>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-orange" onclick="abrirModalPegar()">📋 Pegar desde Excel</button>
+    <button class="btn btn-green" onclick="guardar()">💾 Guardar cambios</button>
+    <button class="btn" onclick="window.location.href='index.html'">‹ Portal</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="filters">
+    <label>Departamento:</label>
+    <select id="filtro-dept" onchange="renderTabla()">
+      <option value="">Todos</option>
+      <option value="Envasado">Envasado</option>
+      <option value="Elaboración">Elaboración</option>
+      <option value="Almacén">Almacén</option>
+      <option value="Mantenimiento">Mantenimiento</option>
+      <option value="Calidad">Calidad</option>
+      <option value="Soplado">Soplado</option>
+      <option value="Mejora Continua">Mejora Continua</option>
+    </select>
+    <label style="margin-left:8px">Buscar:</label>
+    <input id="filtro-buscar" placeholder="Nombre o DNI..." style="width:180px" oninput="renderTabla()">
+    <span class="stat-badge" id="stat-badge">0 trabajadores</span>
+  </div>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="estado-txt"></span>
+</div>
+
+<div class="main">
+  <div class="table-wrap">
+    <table id="tabla-trabajadores">
+      <thead>
+        <tr>
+          <th class="td-num">#</th>
+          <th style="min-width:260px">Nombre completo</th>
+          <th style="min-width:120px">DNI</th>
+          <th style="min-width:160px">Departamento</th>
+          <th class="td-del"></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px">
+    <button class="btn" onclick="addFila()">+ Añadir trabajador</button>
+  </div>
+</div>
+
+<!-- Modal pegar Excel -->
+<div class="modal-overlay" id="modal-pegar">
+  <div class="modal-box">
+    <div class="modal-title">📋 Pegar desde Excel</div>
+    <div class="modal-sub">
+      En Excel selecciona las filas con <strong>Nombre, DNI y Departamento</strong> (en ese orden),
+      copia con Ctrl+C y pega aquí con Ctrl+V.
+    </div>
+    <textarea id="textarea-excel" placeholder="Pega aquí el contenido del Excel...&#10;Ejemplo:&#10;CARLOS MARTINEZ LOPEZ	12345678A	Envasado&#10;MARIA GARCIA FERNANDEZ	23456789B	Elaboración" oninput="previsualizarPegado()"></textarea>
+    <div class="modal-preview" id="preview-pegado"></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="cerrarModalPegar()">Cancelar</button>
+      <button class="btn btn-green" onclick="importarPegado()">Importar filas</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DEPTS ────────────────────────────────────────────────────────────────────
+const DEPTS = ['Envasado','Elaboración','Almacén','Mantenimiento','Calidad','Soplado','Mejora Continua'];
+const DEPT_MAP_CAL = ['Calidad']; // subdepts que se unifican
+
+// ─── SESIÓN ───────────────────────────────────────────────────────────────────
+const sess = JSON.parse(localStorage.getItem('ubesol_portal_session') || 'null');
+if (!sess) { window.location.href = 'index.html'; }
+const isAdmin = sess && sess.user === 'admin';
+const miDept  = sess ? sess.departamento : '';
+
+// Ajustar filtro dept para encargados
+window.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('filtro-dept');
+  if (!isAdmin) {
+    // Encargado solo ve su dept
+    const deptNorm = normDept(miDept);
+    Array.from(sel.options).forEach(o => {
+      if (o.value && normDept(o.value) !== deptNorm) o.style.display = 'none';
+    });
+    sel.value = DEPTS.find(d => normDept(d) === deptNorm) || '';
+  }
+  cargarTrabajadores();
+});
+
+function normDept(d) {
+  return (d||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+
+// ─── DATOS ────────────────────────────────────────────────────────────────────
+let trabajadores = []; // [{id, nombre, dni, departamento}]
+let _dirty = false;
+
+async function cargarTrabajadores() {
+  document.getElementById('estado-txt').textContent = 'Cargando...';
+  try {
+    const snap = await db.collection('trabajadores').get();
+    trabajadores = [];
+    snap.forEach(doc => trabajadores.push({id: doc.id, ...doc.data()}));
+    trabajadores.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+    document.getElementById('estado-txt').textContent = 'Cargado ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    renderTabla();
+  } catch(e) {
+    document.getElementById('estado-txt').textContent = 'Error al cargar';
+    toast('⚠️ Error Firebase: ' + e.message);
+  }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderTabla() {
+  const filtroDept   = document.getElementById('filtro-dept').value;
+  const filtroBuscar = document.getElementById('filtro-buscar').value.trim().toLowerCase();
+
+  let filtrados = trabajadores.filter(t => {
+    if (!isAdmin && normDept(t.departamento) !== normDept(miDept)) return false;
+    if (filtroDept && t.departamento !== filtroDept) return false;
+    if (filtroBuscar) {
+      const hayNombre = (t.nombre||'').toLowerCase().includes(filtroBuscar);
+      const hayDni    = (t.dni||'').toLowerCase().includes(filtroBuscar);
+      if (!hayNombre && !hayDni) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('stat-badge').textContent = filtrados.length + ' trabajador' + (filtrados.length!==1?'es':'');
+
+  const tbody = document.getElementById('tbody');
+  if (!filtrados.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">No hay trabajadores${filtroDept?' en '+filtroDept:''}. Añade uno o pega desde Excel.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtrados.map((t, i) => `
+    <tr id="row-${t.id}" ${t._nuevo?'class="row-new"':t._dup?'class="row-dup"':''}>
+      <td class="td-num">${i+1}</td>
+      <td><input value="${esc(t.nombre)}" placeholder="Nombre completo..." oninput="updateField('${t.id}','nombre',this.value)" style="text-transform:uppercase"></td>
+      <td class="td-dni"><input value="${esc(t.dni)}" placeholder="12345678A" maxlength="9" oninput="updateField('${t.id}','dni',this.value.toUpperCase())" style="font-family:monospace;text-transform:uppercase"></td>
+      <td>
+        <select onchange="updateField('${t.id}','departamento',this.value)" ${!isAdmin&&!isCalidad()?'disabled':''}>
+          ${DEPTS.map(d => `<option value="${d}" ${t.departamento===d?'selected':''}>${d}</option>`).join('')}
+        </select>
+      </td>
+      <td class="td-del"><button class="btn-del" onclick="eliminar('${t.id}')" title="Eliminar trabajador">✕</button></td>
+    </tr>`).join('');
+}
+
+function isCalidad() {
+  return normDept(miDept).includes('calidad');
+}
+
+function esc(s) { return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+function updateField(id, field, value) {
+  const t = trabajadores.find(t => t.id === id);
+  if (t) { t[field] = field === 'nombre' ? value.toUpperCase() : value; _dirty = true; }
+}
+
+function addFila() {
+  const deptDefault = isAdmin ? 'Envasado' : (DEPTS.find(d => normDept(d) === normDept(miDept)) || 'Envasado');
+  const nuevo = { id: 'new_' + Date.now(), nombre: '', dni: '', departamento: deptDefault, _nuevo: true };
+  trabajadores.push(nuevo);
+  _dirty = true;
+  renderTabla();
+  // Focus en el primer input de la nueva fila
+  setTimeout(() => {
+    const row = document.getElementById('row-' + nuevo.id);
+    if (row) row.querySelector('input').focus();
+  }, 50);
+}
+
+function eliminar(id) {
+  const t = trabajadores.find(t => t.id === id);
+  if (!t) return;
+  if (!confirm(`¿Eliminar a ${t.nombre || 'este trabajador'}?`)) return;
+  trabajadores = trabajadores.filter(t => t.id !== id);
+  _dirty = true;
+  renderTabla();
+  toast('🗑 Trabajador eliminado — recuerda guardar');
+}
+
+// ─── GUARDAR ──────────────────────────────────────────────────────────────────
+async function guardar() {
+  // Validar
+  const errores = [];
+  const dnisVistos = new Set();
+  trabajadores.forEach((t, i) => {
+    if (!t.nombre || !t.nombre.trim()) errores.push(`Fila ${i+1}: falta el nombre`);
+    if (!t.dni || !t.dni.trim()) errores.push(`Fila ${i+1}: falta el DNI`);
+    if (t.dni && !/^\d{8}[A-Za-z]$/.test(t.dni.trim())) errores.push(`Fila ${i+1}: DNI inválido (${t.dni})`);
+    if (t.dni && dnisVistos.has(t.dni.trim().toUpperCase())) errores.push(`DNI duplicado: ${t.dni}`);
+    if (t.dni) dnisVistos.add(t.dni.trim().toUpperCase());
+  });
+
+  if (errores.length) { toast('⚠️ ' + errores[0]); return; }
+
+  document.getElementById('estado-txt').textContent = 'Guardando...';
+  try {
+    const batch = db.batch();
+
+    // Obtener IDs actuales en Firebase
+    const snap = await db.collection('trabajadores').get();
+    const existingIds = new Set(snap.docs.map(d => d.id));
+
+    // Borrar los que ya no están
+    existingIds.forEach(id => {
+      if (!id.startsWith('new_') && !trabajadores.find(t => t.id === id)) {
+        batch.delete(db.collection('trabajadores').doc(id));
+      }
+    });
+
+    // Guardar/actualizar todos
+    trabajadores.forEach(t => {
+      const dni = (t.dni||'').trim().toUpperCase();
+      const docId = dni || t.id;
+      const data = {
+        nombre: (t.nombre||'').trim().toUpperCase(),
+        dni: dni,
+        departamento: t.departamento || 'Envasado'
+      };
+      batch.set(db.collection('trabajadores').doc(docId), data);
+      t.id = docId; // actualizar id local
+      delete t._nuevo;
+      delete t._dup;
+    });
+
+    await batch.commit();
+    _dirty = false;
+    document.getElementById('estado-txt').textContent = 'Guardado ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    toast('✅ ' + trabajadores.length + ' trabajadores guardados');
+    renderTabla();
+  } catch(e) {
+    document.getElementById('estado-txt').textContent = 'Error al guardar';
+    toast('⚠️ Error: ' + e.message);
+  }
+}
+
+// ─── PEGAR DESDE EXCEL ────────────────────────────────────────────────────────
+function abrirModalPegar() {
+  document.getElementById('textarea-excel').value = '';
+  document.getElementById('preview-pegado').innerHTML = '';
+  document.getElementById('modal-pegar').classList.add('show');
+  setTimeout(() => document.getElementById('textarea-excel').focus(), 100);
+}
+
+function cerrarModalPegar() {
+  document.getElementById('modal-pegar').classList.remove('show');
+}
+
+function parsearExcel(texto) {
+  const filas = [];
+  const lineas = texto.trim().split('\n');
+  lineas.forEach(linea => {
+    if (!linea.trim()) return;
+    const cols = linea.split('\t');
+    if (cols.length < 2) return;
+    const nombre = (cols[0]||'').trim().toUpperCase();
+    const dni    = (cols[1]||'').trim().toUpperCase();
+    const dept   = (cols[2]||'').trim();
+    if (nombre || dni) filas.push({nombre, dni, departamento: dept || 'Envasado'});
+  });
+  return filas;
+}
+
+function previsualizarPegado() {
+  const texto = document.getElementById('textarea-excel').value;
+  const filas = parsearExcel(texto);
+  const prev = document.getElementById('preview-pegado');
+  if (!filas.length) { prev.innerHTML = ''; return; }
+  const dnis = new Set(trabajadores.map(t => t.dni));
+  const nuevos = filas.filter(f => !dnis.has(f.dni)).length;
+  const dups   = filas.filter(f => dnis.has(f.dni)).length;
+  prev.innerHTML = `Se importarán <span>${filas.length} filas</span>: ${nuevos} nuevas${dups > 0 ? ', <span style="color:#e65100">' + dups + ' ya existen (se actualizarán)</span>' : ''}`;
+}
+
+function importarPegado() {
+  const texto = document.getElementById('textarea-excel').value;
+  const filas = parsearExcel(texto);
+  if (!filas.length) { toast('⚠️ No se detectaron filas válidas'); return; }
+
+  let nuevos = 0, actualizados = 0;
+  filas.forEach(f => {
+    const existe = trabajadores.find(t => t.dni === f.dni);
+    if (existe) {
+      existe.nombre = f.nombre;
+      existe.departamento = f.departamento || existe.departamento;
+      actualizados++;
+    } else {
+      trabajadores.push({id: 'new_' + Date.now() + '_' + Math.random(), ...f, _nuevo: true});
+      nuevos++;
+    }
+  });
+
+  _dirty = true;
+  cerrarModalPegar();
+  renderTabla();
+  toast(`✅ ${nuevos} añadidos, ${actualizados} actualizados — recuerda guardar`);
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Avisar si hay cambios sin guardar
+window.addEventListener('beforeunload', e => {
+  if (_dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>

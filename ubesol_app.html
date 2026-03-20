@@ -850,10 +850,10 @@ const WORKERS_EMBEDDED = [
   {nombre:"LARA GARCIA ALONSO",dni:"00011133L",departamento:"Soplado"},
 ];
 
-let allWorkers = WORKERS_EMBEDDED;
+let allWorkers = WORKERS_EMBEDDED; // se reemplaza con Firebase al cargar
 let cuadrante = null;
 let currentUser = null;
-let workersLoaded = true;
+let workersLoaded = false;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
@@ -912,7 +912,30 @@ function startInactivityWatcher() {
   });
 }
 
-async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
+async function loadWorkers() {
+  try {
+    const snap = await db.collection('trabajadores').get();
+    if (!snap.empty) {
+      allWorkers = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.nombre && d.dni) allWorkers.push({nombre: d.nombre, dni: d.dni, departamento: d.departamento||''});
+      });
+      // Guardar en localStorage como caché offline
+      localStorage.setItem('ubesol_workers_cache', JSON.stringify(allWorkers));
+    } else if (!allWorkers.length) {
+      // Intentar caché offline
+      const cache = localStorage.getItem('ubesol_workers_cache');
+      if (cache) allWorkers = JSON.parse(cache);
+    }
+  } catch(e) {
+    // Sin conexión — usar caché si existe
+    const cache = localStorage.getItem('ubesol_workers_cache');
+    if (cache) allWorkers = JSON.parse(cache);
+    else allWorkers = WORKERS_EMBEDDED; // último recurso: datos embebidos
+  }
+  workersLoaded = true;
+}
 
 // ─── CONFIG DINÁMICA ─────────────────────────────────────────────────────────
 let _appConfig = null;
@@ -949,6 +972,7 @@ function getPuestoLabel(id) {
 function loadCuadrante() {
   // Cargar todos los cuadrantes desde Firebase en tiempo real
   loadAppConfig();
+  loadWorkers(); // cargar trabajadores de Firebase en background
   try {
     db.collection('cuadrantes').onSnapshot(function(snap) {
       const keysBorrar = [];

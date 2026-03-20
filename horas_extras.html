@@ -821,7 +821,7 @@ function toast(msg) {
 }
 
 // ─── WORKERS DATA ────────────────────────────────────────────────────────────
-const WORKERS_DATA = [
+let WORKERS_DATA = [
   {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
   {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
   {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
@@ -938,7 +938,7 @@ function getWorkersForSection(deptId) {
     elaboracion:  ["Elaboración"],
     almacen:      ["Almacén"],
     mantenimiento:["Mantenimiento"],
-    calidad:      ["Calidad Líneas","Calidad Fís-Quím","Calidad Microbiología","Calidad Materiales"],
+    calidad:      ["Calidad","Calidad Líneas","Calidad Fís-Quím","Calidad Microbiología","Calidad Materiales"],
     soplado:      ["Soplado"],
     mejora:       ["Mejora Continua"],
   };
@@ -1011,7 +1011,28 @@ function makeAcInput(currentVal, deptId, onSelect) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-loadConfig().then(() => {
+loadConfig().then(async () => {
+  // Cargar trabajadores de Firebase
+  try {
+    const snap = await db.collection('trabajadores').get();
+    if (!snap.empty) {
+      WORKERS_DATA.length = 0;
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.nombre && d.dni) {
+          // Mapear departamento a los valores que usa horas_extras
+          WORKERS_DATA.push({nombre:d.nombre, dni:d.dni, departamento:d.departamento||''});
+        }
+      });
+      localStorage.setItem('ubesol_workers_cache', JSON.stringify(WORKERS_DATA));
+    } else {
+      const cache = localStorage.getItem('ubesol_workers_cache');
+      if (cache) { WORKERS_DATA.length=0; JSON.parse(cache).forEach(w=>WORKERS_DATA.push(w)); }
+    }
+  } catch(e) {
+    const cache = localStorage.getItem('ubesol_workers_cache');
+    if (cache) { WORKERS_DATA.length=0; JSON.parse(cache).forEach(w=>WORKERS_DATA.push(w)); }
+  }
   initState();
   renderAll();
   const hoy=new Date();

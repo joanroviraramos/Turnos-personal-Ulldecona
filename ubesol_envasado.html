@@ -806,7 +806,25 @@ function rebuildUsedNames() {
   });
 }
 
-async function loadWorkers() { /* datos ya embebidos — no hace falta fetch */ }
+async function loadWorkers() {
+  try {
+    const snap = await db.collection('trabajadores').get();
+    if (!snap.empty) {
+      allWorkers = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.nombre && d.dni) allWorkers.push({nombre:d.nombre, dni:d.dni, departamento:d.departamento||''});
+      });
+      localStorage.setItem('ubesol_workers_cache', JSON.stringify(allWorkers));
+    } else {
+      const cache = localStorage.getItem('ubesol_workers_cache');
+      if (cache) allWorkers = JSON.parse(cache);
+    }
+  } catch(e) {
+    const cache = localStorage.getItem('ubesol_workers_cache');
+    if (cache) allWorkers = JSON.parse(cache);
+  }
+}
 
 // ── AUTOCOMPLETE ENGINE ────────────────────────────────────────────────
 function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
