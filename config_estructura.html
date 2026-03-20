@@ -255,6 +255,10 @@ function renderDept(id) {
   } else {
     c.innerHTML = renderSimple(id, dept);
   }
+  // Activar drag & drop en todos los section-body
+  setTimeout(() => {
+    document.querySelectorAll('.section-body').forEach(initDragDrop);
+  }, 0);
 }
 
 // ─── RENDER ENVASADO ──────────────────────────────────────────────────────────
@@ -599,13 +603,7 @@ function initDragDrop(container) {
   });
 }
 
-// Llamar initDragDrop después de cada render
-const _origRenderDept = renderDept;
-function renderDept(id) {
-  _origRenderDept(id);
-  // Inicializar drag en todos los contenedores de items
-  document.querySelectorAll('.section-body').forEach(initDragDrop);
-}
+// initDragDrop se llama desde selectDept y renderDept directamente
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 cargarConfig();
