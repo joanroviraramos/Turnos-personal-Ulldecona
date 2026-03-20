@@ -896,7 +896,8 @@ const TURNOS = ['M','T','N','P'];
 
 // ─── CONFIG DINÁMICA DESDE FIREBASE ──────────────────────────────────────────
 let lines = []; // DEBE declararse antes de loadConfig/applyConfig
-let _cfg = null; // se carga de Firebase o usa defaults
+let _cfg = null;
+let isAdminMode = false; // se actualiza al leer el param dept // se carga de Firebase o usa defaults
 
 async function loadConfig() {
   try {
@@ -1130,9 +1131,9 @@ function renderLineRows(tbody, line) {
         tdLinea.rowSpan = totalRows;
         tdLinea.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
           <span>${line.label}</span>
-          <button onclick="removeLine('${line.id}')" title="Eliminar línea"
+          ${isAdminMode ? `<button onclick="removeLine('${line.id}')" title="Eliminar línea"
             style="font-size:9px;color:#ccc;background:none;border:none;cursor:pointer;padding:0;transition:color .12s"
-            onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#ccc'">✕</button>
+            onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#ccc'">✕</button>` : ''}
         </div>`;
         tr.appendChild(tdLinea);
       }
@@ -2802,6 +2803,7 @@ function toast(msg) {
     .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
     .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
   const isAdmin = raw === 'admin';
+  isAdminMode = isAdmin; // actualizar variable global
   const deptName = isAdmin ? 'Envasado' : (DEPT_MAP[raw] || 'Envasado');
   currentTab = deptName;
 
