@@ -1554,7 +1554,19 @@ function loadJSON(input) {
       // ── Envasado ──
       if (d.envasado) {
         if (d.envasado.specialWorkers) Object.assign(specialWorkers, d.envasado.specialWorkers);
-        if (d.envasado.lines)          lines      = d.envasado.lines;
+        if (d.envasado.lines) {
+          // No sobreescribir lines con localStorage — solo restaurar workers
+          const savedMapH = {};
+          d.envasado.lines.forEach(l => { savedMapH[l.id] = l; });
+          lines.forEach(l => {
+            const saved = savedMapH[l.id];
+            if (!saved) return;
+            const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+            roles.forEach(r => { if (saved[r.id]) l[r.id] = saved[r.id]; });
+            if (!l.maq && saved.maq) l.maq = saved.maq;
+            if (!l.ops && saved.ops) l.ops = saved.ops;
+          });
+        }
         if (d.envasado.bajas)          bajas      = d.envasado.bajas;
         if (d.envasado.vacaciones)     vacaciones = d.envasado.vacaciones;
       }
@@ -2687,43 +2699,44 @@ function applyPayload(d) {
   if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
   updateWeekFromSelector();
 
-  const merge = (target, src) => { if(src) Object.assign(target, src); };
+  // Merge filtrado — solo copia workers de puestos que existen en la config actual
+  const mergeFiltered = (target, src, validIds) => {
+    if (!src) return;
+    validIds.forEach(id => { if (src[id] !== undefined) target[id] = src[id]; });
+  };
+
   if (d.envasado) {
-    merge(specialWorkers, d.envasado.specialWorkers);
+    // Especiales — solo los que existen en SPECIAL_TOP y SPECIAL_BOT actuales
+    const validSpecials = [...SPECIAL_TOP, ...SPECIAL_BOT].map(p => p.id);
+    mergeFiltered(specialWorkers, d.envasado.specialWorkers, validSpecials);
+
+    // Líneas — solo las que existen en config, con roles filtrados
     if (d.envasado.lines) {
-      // Fusionar: mantener líneas de config Firebase, rellenar workers del localStorage
-      const savedLines = d.envasado.lines;
-      const savedMap = {}; // id -> linea guardada
-      savedLines.forEach(l => { savedMap[l.id] = l; });
+      const savedMap = {};
+      d.envasado.lines.forEach(l => { savedMap[l.id] = l; });
       lines.forEach(l => {
         const saved = savedMap[l.id];
-        if (!saved) return; // línea nueva de config — queda vacía, OK
-        // Copiar workers del localStorage a la línea de config
+        if (!saved) return;
         const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
-        roles.forEach(r => {
-          if (saved[r.id]) l[r.id] = saved[r.id];
-        });
-        // Compatibilidad maq/ops legacy
-        if (saved.maq) l.maq = saved.maq;
-        if (saved.ops) l.ops = saved.ops;
-      });
-      // Añadir líneas del localStorage que no estén en config (legacy)
-      savedLines.forEach(sl => {
-        if (!lines.find(l => l.id === sl.id)) lines.push(sl);
+        // Solo restaurar roles que existen en la config actual
+        roles.forEach(r => { if (saved[r.id]) l[r.id] = saved[r.id]; });
+        if (!l.maq && saved.maq) l.maq = saved.maq;
+        if (!l.ops && saved.ops) l.ops = saved.ops;
       });
     }
     if (d.envasado.bajas) bajas = d.envasado.bajas;
     if (d.envasado.vacaciones) vacaciones = d.envasado.vacaciones;
   }
-  if (d.elaboracion)    { merge(elabWorkers, d.elaboracion.workers);    if(d.elaboracion.bajas)    elabBajas=d.elaboracion.bajas;       if(d.elaboracion.vacaciones)    elabVacaciones=d.elaboracion.vacaciones; }
-  if (d.almacen)        { merge(almWorkers,  d.almacen.workers);        if(d.almacen.bajas)        almBajas=d.almacen.bajas;            if(d.almacen.vacaciones)        almVacaciones=d.almacen.vacaciones; }
-  if (d.mantenimiento)  { merge(mtoWorkers,  d.mantenimiento.workers);  if(d.mantenimiento.bajas)  mtoBajas=d.mantenimiento.bajas;      if(d.mantenimiento.vacaciones)  mtoVacaciones=d.mantenimiento.vacaciones; }
-  if (d.calidadLineas)  { merge(calWorkers,  d.calidadLineas.workers);  if(d.calidadLineas.bajas)  calBajas=d.calidadLineas.bajas;      if(d.calidadLineas.vacaciones)  calVacaciones=d.calidadLineas.vacaciones; }
-  if (d.calidadFQ)      { merge(calfqWorkers,d.calidadFQ.workers);      if(d.calidadFQ.bajas)      calfqBajas=d.calidadFQ.bajas;        if(d.calidadFQ.vacaciones)      calfqVacaciones=d.calidadFQ.vacaciones; }
-  if (d.calidadMicro)   { merge(calmicroWorkers,d.calidadMicro.workers);if(d.calidadMicro.bajas)   calmicroBajas=d.calidadMicro.bajas;  if(d.calidadMicro.vacaciones)   calmicroVacaciones=d.calidadMicro.vacaciones; }
-  if (d.calidadMat)     { merge(calmatWorkers,d.calidadMat.workers);    if(d.calidadMat.bajas)     calmatBajas=d.calidadMat.bajas;      if(d.calidadMat.vacaciones)     calmatVacaciones=d.calidadMat.vacaciones; }
-  if (d.mejoraContinua) { merge(mcWorkers,   d.mejoraContinua.workers); if(d.mejoraContinua.bajas) mcBajas=d.mejoraContinua.bajas;      if(d.mejoraContinua.vacaciones) mcVacaciones=d.mejoraContinua.vacaciones; }
-  if (d.soplado)        { merge(soplWorkers, d.soplado.workers);        if(d.soplado.bajas)        soplBajas=d.soplado.bajas;           if(d.soplado.vacaciones)        soplVacaciones=d.soplado.vacaciones; }
+  // Post-depts — solo workers de puestos que existen en los arrays de config actuales
+  if (d.elaboracion)    { mergeFiltered(elabWorkers,    d.elaboracion.workers,    ELAB_PUESTOS.map(p=>p.id));    if(d.elaboracion.bajas)    elabBajas=d.elaboracion.bajas;       if(d.elaboracion.vacaciones)    elabVacaciones=d.elaboracion.vacaciones; }
+  if (d.almacen)        { mergeFiltered(almWorkers,     d.almacen.workers,        ALMC_PUESTOS.map(p=>p.id));    if(d.almacen.bajas)        almBajas=d.almacen.bajas;            if(d.almacen.vacaciones)        almVacaciones=d.almacen.vacaciones; }
+  if (d.mantenimiento)  { mergeFiltered(mtoWorkers,     d.mantenimiento.workers,  MTO_PUESTOS.map(p=>p.id));     if(d.mantenimiento.bajas)  mtoBajas=d.mantenimiento.bajas;      if(d.mantenimiento.vacaciones)  mtoVacaciones=d.mantenimiento.vacaciones; }
+  if (d.calidadLineas)  { mergeFiltered(calWorkers,     d.calidadLineas.workers,  CAL_PUESTOS.map(p=>p.id));     if(d.calidadLineas.bajas)  calBajas=d.calidadLineas.bajas;      if(d.calidadLineas.vacaciones)  calVacaciones=d.calidadLineas.vacaciones; }
+  if (d.calidadFQ)      { mergeFiltered(calfqWorkers,   d.calidadFQ.workers,      CALFQ_PUESTOS.map(p=>p.id));   if(d.calidadFQ.bajas)      calfqBajas=d.calidadFQ.bajas;        if(d.calidadFQ.vacaciones)      calfqVacaciones=d.calidadFQ.vacaciones; }
+  if (d.calidadMicro)   { mergeFiltered(calmicroWorkers,d.calidadMicro.workers,   CALMICRO_PUESTOS.map(p=>p.id));if(d.calidadMicro.bajas)   calmicroBajas=d.calidadMicro.bajas;  if(d.calidadMicro.vacaciones)   calmicroVacaciones=d.calidadMicro.vacaciones; }
+  if (d.calidadMat)     { mergeFiltered(calmatWorkers,  d.calidadMat.workers,     CALMAT_PUESTOS.map(p=>p.id));  if(d.calidadMat.bajas)     calmatBajas=d.calidadMat.bajas;      if(d.calidadMat.vacaciones)     calmatVacaciones=d.calidadMat.vacaciones; }
+  if (d.mejoraContinua) { mergeFiltered(mcWorkers,      d.mejoraContinua.workers, MC_PUESTOS.map(p=>p.id));      if(d.mejoraContinua.bajas) mcBajas=d.mejoraContinua.bajas;      if(d.mejoraContinua.vacaciones) mcVacaciones=d.mejoraContinua.vacaciones; }
+  if (d.soplado)        { mergeFiltered(soplWorkers,    d.soplado.workers,        SOPL_PUESTOS.map(p=>p.id));    if(d.soplado.bajas)        soplBajas=d.soplado.bajas;           if(d.soplado.vacaciones)        soplVacaciones=d.soplado.vacaciones; }
   return true;
 }
 
