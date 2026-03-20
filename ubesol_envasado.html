@@ -909,12 +909,11 @@ async function loadConfig() {
 }
 
 function applyConfig() {
-  if (!_cfg) return; // sin config, usar hardcoded
+  if (!_cfg) return;
 
-  // Actualizar envasado
+  // ── Envasado especiales ──
   if (_cfg.envasado) {
     if (_cfg.envasado.especiales_top) {
-      // Reemplazar SPECIAL_TOP
       SPECIAL_TOP.length = 0;
       _cfg.envasado.especiales_top.forEach(p => SPECIAL_TOP.push(p));
     }
@@ -923,42 +922,38 @@ function applyConfig() {
       _cfg.envasado.especiales_bot.forEach(p => SPECIAL_BOT.push(p));
     }
     if (_cfg.envasado.lineas) {
-      // Reconstruir lines con los roles de la config
       lines = _cfg.envasado.lineas.map(l => mkLine(l.id, l.label, l.color, l.isL2sub||false, l.roles));
     }
   }
 
-  // Actualizar post depts
-  const deptMap = {
-    elaboracion:  { puestosArr: 'ELAB_PUESTOS',    workers: 'elabWorkers',    init: initElaboracion },
-    almacen:      { puestosArr: 'ALMC_PUESTOS',     workers: 'almWorkers',     init: initAlmacen },
-    mantenimiento:{ puestosArr: 'MTO_PUESTOS',      workers: 'mtoWorkers',     init: initMantenimiento },
-    calidad:      { puestosArr: 'CAL_PUESTOS',      workers: 'calWorkers',     init: initCalidad },
-    soplado:      { puestosArr: 'SOPL_PUESTOS',     workers: 'soplWorkers',    init: initSoplado },
-    mejora:       { puestosArr: 'MC_PUESTOS',       workers: 'mcWorkers',      init: initMejoraContinua },
-  };
+  // ── Post depts — se aplican en applyConfigPostDepts() llamado después de declarar los arrays ──
+}
 
-  // Actualizamos los arrays de puestos globales
-  const arrMap = {
-    'ELAB_PUESTOS': ELAB_PUESTOS, 'ALMC_PUESTOS': ALMC_PUESTOS,
-    'MTO_PUESTOS': MTO_PUESTOS, 'CAL_PUESTOS': CAL_PUESTOS,
-    'SOPL_PUESTOS': SOPL_PUESTOS, 'MC_PUESTOS': MC_PUESTOS,
-  };
+function applyConfigPostDepts() {
+  if (!_cfg) return;
 
-  const cfgDeptMap = {
-    elaboracion: _cfg.elaboracion, almacen: _cfg.almacen,
-    mantenimiento: _cfg.mantenimiento, calidad: _cfg.calidad,
-    soplado: _cfg.soplado, mejora: _cfg.mejora
-  };
-
-  Object.entries(deptMap).forEach(([deptId, info]) => {
-    const cfgDept = cfgDeptMap[deptId];
-    if (!cfgDept || !cfgDept.puestos) return;
-    const arr = arrMap[info.puestosArr];
-    if (!arr) return;
+  // Depts simples
+  const simple = [
+    { cfgKey:'elaboracion',   arr: ELAB_PUESTOS  },
+    { cfgKey:'almacen',       arr: ALMC_PUESTOS  },
+    { cfgKey:'mantenimiento', arr: MTO_PUESTOS   },
+    { cfgKey:'soplado',       arr: SOPL_PUESTOS  },
+    { cfgKey:'mejora',        arr: MC_PUESTOS    },
+  ];
+  simple.forEach(({cfgKey, arr}) => {
+    const d = _cfg[cfgKey];
+    if (!d || !d.puestos) return;
     arr.length = 0;
-    cfgDept.puestos.forEach(p => arr.push(p));
+    d.puestos.forEach(p => arr.push(p));
   });
+
+  // Calidad — todos los puestos van a CAL_PUESTOS
+  // Los sub-arrays (CALMAT, CALFQ, CALMICRO) mantienen sus valores hardcoded
+  // a menos que haya config específica
+  if (_cfg.calidad && _cfg.calidad.puestos) {
+    CAL_PUESTOS.length = 0;
+    _cfg.calidad.puestos.forEach(p => CAL_PUESTOS.push(p));
+  }
 }
 
 // State
@@ -1104,70 +1099,77 @@ function render() {
 
 function renderLineRows(tbody, line) {
   const color = line.color;
-  const totalRows = line.maq.length + line.ops.length;
+  const roles = line.roles && line.roles.length ? line.roles : [{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}];
 
-  // ── OPERADOR/A MÁQUINA rows ──
-  line.maq.forEach((w, wi) => {
-    const tr = document.createElement('tr');
-    tr.className = `line-maq${color==='yellow'?' yellow':''}`;
+  // Asegurar que existen arrays de workers para cada rol
+  roles.forEach(r => {
+    if (!line[r.id]) line[r.id] = [mkWorker(r.id+'_'+line.id+'_0')];
+  });
 
-    // Line label cell — spans all rows of this line, only on first row
-    if(wi === 0) {
-      const tdLinea = document.createElement('td');
-      tdLinea.className = 'linea-label';
-      tdLinea.rowSpan = totalRows;
-      tdLinea.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-        <span>${line.label}</span>
-        <button onclick="removeLine('${line.id}')" title="Eliminar línea"
-          style="font-size:9px;color:#ccc;background:none;border:none;cursor:pointer;padding:0;transition:color .12s"
-          onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#ccc'">✕</button>
+  // Calcular total de filas para el rowspan del label de línea
+  const totalRows = roles.reduce((sum, r) => sum + (line[r.id]||[]).length, 0);
+  let firstRow = true;
+
+  roles.forEach((role, roleIdx) => {
+    const arr = line[role.id] || [];
+    const rowClass = roleIdx === 0
+      ? `line-maq${color==='yellow'?' yellow':''}`
+      : `line-op${color==='yellow'?' yellow':''}`;
+
+    arr.forEach((w, wi) => {
+      const tr = document.createElement('tr');
+      tr.className = rowClass;
+
+      // Label de línea — solo en la primera fila total
+      if (firstRow) {
+        firstRow = false;
+        const tdLinea = document.createElement('td');
+        tdLinea.className = 'linea-label';
+        tdLinea.rowSpan = totalRows;
+        tdLinea.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          <span>${line.label}</span>
+          <button onclick="removeLine('${line.id}')" title="Eliminar línea"
+            style="font-size:9px;color:#ccc;background:none;border:none;cursor:pointer;padding:0;transition:color .12s"
+            onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#ccc'">✕</button>
+        </div>`;
+        tr.appendChild(tdLinea);
+      }
+
+      // Puesto label + controles
+      const tdPuesto = document.createElement('td');
+      tdPuesto.className = 'puesto-label';
+      tdPuesto.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <span>${role.label}</span>
+        <div style="display:flex;gap:2px;flex-shrink:0">
+          ${arr.length > 1 && wi === arr.length-1
+            ? `<button class="ctrl-btn ctrl-del" onclick="removeRoleWorker('${line.id}','${role.id}')" title="Quitar">−</button>`
+            : ''}
+          ${wi === arr.length-1
+            ? `<button class="ctrl-btn ctrl-add" onclick="addRoleWorker('${line.id}','${role.id}')" title="Añadir">+</button>`
+            : ''}
+        </div>
       </div>`;
-      tr.appendChild(tdLinea);
-    }
+      tr.appendChild(tdPuesto);
 
-    // Puesto label + controls
-    const tdPuesto = document.createElement('td');
-    tdPuesto.className = 'puesto-label';
-    tdPuesto.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-      <span>OPERADOR/A MÁQUINA</span>
-      <div style="display:flex;gap:2px;flex-shrink:0">
-        ${line.maq.length > 1 && wi === line.maq.length-1
-          ? `<button class="ctrl-btn ctrl-del" onclick="removeMaq('${line.id}')" title="Quitar operador/a máquina">−</button>`
-          : ''}
-        ${wi === line.maq.length-1
-          ? `<button class="ctrl-btn ctrl-add" onclick="addMaq('${line.id}')" title="Añadir operador/a máquina">+</button>`
-          : ''}
-      </div>
-    </div>`;
-    tr.appendChild(tdPuesto);
-
-    TURNOS.forEach(t => tr.appendChild(buildNameCell(w, t)));
-    tbody.appendChild(tr);
+      TURNOS.forEach(t => tr.appendChild(buildNameCell(w, t)));
+      tbody.appendChild(tr);
+    });
   });
+}
 
-  // ── OPERARIA/O rows ──
-  line.ops.forEach((w, wi) => {
-    const tr = document.createElement('tr');
-    tr.className = `line-op${color==='yellow'?' yellow':''}`;
-
-    const tdPuesto = document.createElement('td');
-    tdPuesto.className = 'puesto-label';
-    tdPuesto.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-      <span>OPERARIA/O</span>
-      <div style="display:flex;gap:2px;flex-shrink:0">
-        ${line.ops.length > 1 && wi === line.ops.length-1
-          ? `<button class="ctrl-btn ctrl-del" onclick="removeOp('${line.id}')" title="Quitar operaria/o">−</button>`
-          : ''}
-        ${wi === line.ops.length-1
-          ? `<button class="ctrl-btn ctrl-add" onclick="addOp('${line.id}')" title="Añadir operaria/o">+</button>`
-          : ''}
-      </div>
-    </div>`;
-    tr.appendChild(tdPuesto);
-
-    TURNOS.forEach(t => tr.appendChild(buildNameCell(w, t)));
-    tbody.appendChild(tr);
-  });
+// Funciones genéricas para añadir/quitar workers por rol
+function addRoleWorker(lineId, roleId) {
+  const line = lines.find(l => l.id === lineId);
+  if (!line) return;
+  if (!line[roleId]) line[roleId] = [];
+  line[roleId].push(mkWorker(roleId+'_'+lineId+'_'+line[roleId].length));
+  render();
+}
+function removeRoleWorker(lineId, roleId) {
+  const line = lines.find(l => l.id === lineId);
+  if (!line || !line[roleId] || line[roleId].length <= 1) return;
+  line[roleId].pop();
+  render();
 }
 
 function buildNameCell(worker, turno) {
@@ -1259,7 +1261,10 @@ function tieneTrabajadores(d) {
   const tieneNombre = w => w && w.cells && Object.values(w.cells).some(v => v && String(v).trim().length > 0);
   if (d.envasado) {
     const e = d.envasado;
-    if (safeArr(e.lines).some(l => safeArr(l.maq).some(tieneNombre) || safeArr(l.ops).some(tieneNombre))) return true;
+    if (safeArr(e.lines).some(l => {
+      const roles2 = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+      return roles2.some(r => safeArr(l[r.id]).some(tieneNombre));
+    })) return true;
     if (e.specialWorkers && Object.values(e.specialWorkers).some(arr => safeArr(arr).some(tieneNombre))) return true;
   }
   for (const dept of ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado']) {
@@ -1324,33 +1329,11 @@ function guardarManual() {
     ? '💾 Limpiando Firebase...'
     : '💾 Sincronizando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
 }
-function addMaq(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line) return;
-  line.maq.push(mkWorker('maq_'+lineId+'_'+Date.now()));
-  render();
-}
-
-function removeMaq(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line || line.maq.length <= 1) { toast('Mínimo 1 operador/a máquina'); return; }
-  line.maq.pop();
-  render();
-}
-
-function addOp(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line) return;
-  line.ops.push(mkWorker('op_'+lineId+'_'+Date.now()));
-  render();
-}
-
-function removeOp(lineId) {
-  const line = lines.find(l => l.id === lineId);
-  if(!line || line.ops.length <= 1) { toast('Mínimo 1 operaria/o'); return; }
-  line.ops.pop();
-  render();
-}
+// Aliases de compatibilidad — delegan en addRoleWorker/removeRoleWorker
+function addMaq(lineId)    { addRoleWorker(lineId, 'maq'); }
+function removeMaq(lineId) { removeRoleWorker(lineId, 'maq'); }
+function addOp(lineId)     { addRoleWorker(lineId, 'ops'); }
+function removeOp(lineId)  { removeRoleWorker(lineId, 'ops'); }
 
 function removeLine(lineId) {
   if(lines.length <= 1) { toast('Mínimo 1 línea'); return; }
@@ -1855,11 +1838,11 @@ function generarPdfTV() {
       });
     }
     safeArr(env.lines).forEach(line => {
-      [...safeArr(line.maq),...safeArr(line.ops)].forEach((w,wi) => {
-        if (w && w.cells) {
-          const p = wi < line.maq.length ? line.label+' — O.Máquina' : line.label+' — Operaria/O';
-          rows.push({puesto:p, ...w.cells});
-        }
+      const printRoles = line.roles && line.roles.length ? line.roles : [{id:'maq',label:'O.Máquina'},{id:'ops',label:'Operario/a'}];
+      printRoles.forEach(r => {
+        safeArr(line[r.id]).forEach(w => {
+          if (w && w.cells) rows.push({puesto: line.label+' — '+r.label, ...w.cells});
+        });
       });
     });
     pages += page('Envasado', rows);
@@ -1960,13 +1943,16 @@ function generarProximasSemanas() {
         });
       }
       safeArr(payload.envasado.lines).forEach(line => {
-        [...safeArr(line.maq), ...safeArr(line.ops)].forEach(w => {
-          if (!w || !w.cells) return;
-          const newCells = { M:'', T:'', N:'', P:'' };
-          Object.entries(w.cells).forEach(([t, nombre]) => {
-            if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+        const rotRoles = line.roles && line.roles.length ? line.roles : [{id:'maq'},{id:'ops'}];
+        rotRoles.forEach(r => {
+          safeArr(line[r.id]).forEach(w => {
+            if (!w || !w.cells) return;
+            const newCells = { M:'', T:'', N:'', P:'' };
+            Object.entries(w.cells).forEach(([t, nombre]) => {
+              if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+            });
+            w.cells = newCells;
           });
-          w.cells = newCells;
         });
       });
       ['bajas','vacaciones'].forEach(k => {
@@ -2231,9 +2217,10 @@ const SOPL_PUESTOS = [
 ];
 function initSoplado() {
   soplWorkers = {};
-  const counts = { sopl_sup:1, sopl_s12:1, sopl_s3:1, sopl_s46:1, sopl_s5t:1, sopl_pal:2, sopl_ref:2 };
+  const defaultCountsSopl = { sopl_sup:1, sopl_s12:1, sopl_s3:1, sopl_s46:1, sopl_s5t:1, sopl_pal:2, sopl_ref:2 };
   SOPL_PUESTOS.forEach(p => {
-    soplWorkers[p.id] = Array.from({length: counts[p.id]||1}, (_,i) => mkWorker(p.id+'_'+i));
+    const n = p.count || defaultCountsSopl[p.id] || 1;
+    soplWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
   });
   soplBajas      = [mkWorker('sopl_baja_0')];
   soplVacaciones = [mkWorker('sopl_vac_0')];
@@ -2245,7 +2232,10 @@ const MC_PUESTOS = [
 ];
 function initMejoraContinua() {
   mcWorkers = {};
-  MC_PUESTOS.forEach(p => { mcWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
+  MC_PUESTOS.forEach(p => {
+    const n = p.count || 4;
+    mcWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
   mcBajas      = [mkWorker('mc_baja_0')];
   mcVacaciones = [mkWorker('mc_vac_0')];
 }
@@ -2256,7 +2246,10 @@ const CALMAT_PUESTOS = [
 ];
 function initCalidadMat() {
   calmatWorkers = {};
-  CALMAT_PUESTOS.forEach(p => { calmatWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
+  CALMAT_PUESTOS.forEach(p => {
+    const n = p.count || 4;
+    calmatWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
   calmatBajas      = [mkWorker('calmat_baja_0')];
   calmatVacaciones = [mkWorker('calmat_vac_0')];
 }
@@ -2267,7 +2260,8 @@ const CALFQ_PUESTOS = [
 ];
 function initCalidadFQ() {
   calfqWorkers = {};
-  CALFQ_PUESTOS.forEach(p => { calfqWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
+  CALFQ_PUESTOS.forEach(p => { const n = p.count || 4;
+    calfqWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i)); });
   calfqBajas      = [mkWorker('calfq_baja_0')];
   calfqVacaciones = [mkWorker('calfq_vac_0')];
 }
@@ -2278,7 +2272,8 @@ const CALMICRO_PUESTOS = [
 ];
 function initCalidadMicro() {
   calmicroWorkers = {};
-  CALMICRO_PUESTOS.forEach(p => { calmicroWorkers[p.id] = Array.from({length:4}, (_,i) => mkWorker(p.id+'_'+i)); });
+  CALMICRO_PUESTOS.forEach(p => { const n = p.count || 4;
+    calmicroWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i)); });
   calmicroBajas      = [mkWorker('calmicro_baja_0')];
   calmicroVacaciones = [mkWorker('calmicro_vac_0')];
 }
@@ -2294,7 +2289,8 @@ const CAL_PUESTOS = [
 function initCalidad() {
   calWorkers = {};
   CAL_PUESTOS.forEach(p => {
-    calWorkers[p.id] = Array.from({length: 2}, (_, i) => mkWorker(p.id+'_'+i));
+    const n = p.count || 2;
+    calWorkers[p.id] = Array.from({length: n}, (_, i) => mkWorker(p.id+'_'+i));
   });
   calBajas      = [mkWorker('cal_baja_0')];
   calVacaciones = [mkWorker('cal_vac_0')];
@@ -2312,9 +2308,11 @@ const ELAB_PUESTOS = [
 
 function initElaboracion() {
   elabWorkers = {};
-  const counts = { elab_sup:1, elab_elab:10, elab_pes:2, elab_hig:3, elab_desc:2 };
+  // Usar p.count si existe en config (Firebase), sino defaults hardcoded
+  const defaultCounts = { elab_sup:1, elab_elab:10, elab_pes:2, elab_hig:3, elab_desc:2 };
   ELAB_PUESTOS.forEach(p => {
-    elabWorkers[p.id] = Array.from({length: counts[p.id]||1}, (_,i) => mkWorker(p.id+'_'+i));
+    const n = p.count || defaultCounts[p.id] || 1;
+    elabWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
   });
   elabBajas      = [mkWorker('elab_baja_0')];
   elabVacaciones = [mkWorker('elab_vac_0')];
@@ -2331,9 +2329,9 @@ const MTO_PUESTOS = [
 
 function initMantenimiento() {
   mtoWorkers = {};
+  const defaultCountsMto = { mto_tec: 6 };
   MTO_PUESTOS.forEach(p => {
-    // Técnico Mto. starts with 6 rows as in the Excel; rest start with 1
-    const count = p.id === 'mto_tec' ? 6 : 1;
+    const count = p.count || defaultCountsMto[p.id] || 1;
     mtoWorkers[p.id] = Array.from({length: count}, (_, i) => mkWorker(p.id+'_'+i));
   });
   mtoBajas      = [mkWorker('mto_baja_0')];
@@ -2358,7 +2356,10 @@ const ALMC_PUESTOS = [
 
 function initAlmacen() {
   almWorkers = {};
-  ALMC_PUESTOS.forEach(p => { almWorkers[p.id] = [mkWorker(p.id+'_0')]; });
+  ALMC_PUESTOS.forEach(p => {
+    const n = p.count || 1;
+    almWorkers[p.id] = Array.from({length:n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
   almBajas      = [mkWorker('alm_baja_0')];
   almVacaciones = [mkWorker('alm_vac_0')];
 }
@@ -2600,7 +2601,10 @@ function payloadTieneDatos(payload) {
 
   if (payload.envasado) {
     const e = payload.envasado;
-    if (safeArr(e.lines).some(l => safeArr(l.maq).some(tieneNombre) || safeArr(l.ops).some(tieneNombre))) return true;
+    if (safeArr(e.lines).some(l => {
+      const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+      return roles.some(r => safeArr(l[r.id]).some(tieneNombre));
+    })) return true;
     if (e.specialWorkers && Object.values(e.specialWorkers).some(arr => safeArr(arr).some(tieneNombre))) return true;
   }
   const depts = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
@@ -2696,7 +2700,13 @@ function applyPayload(d) {
 
 function loadWeekFromStorage(key) {
   // Reset all departments to empty before loading
-  lines = defaultLines(); initSpecialWorkers();
+  applyConfigPostDepts(); // asegurar puestos de post depts actualizados
+  if (!_cfg || !_cfg.envasado || !_cfg.envasado.lineas) {
+    lines = defaultLines();
+  } else {
+    lines = _cfg.envasado.lineas.map(l => mkLine(l.id, l.label, l.color, l.isL2sub||false, l.roles));
+  }
+  initSpecialWorkers();
   bajas = [mkWorker('baja_0')]; vacaciones = [mkWorker('vac_0')];
   initSoplado(); initMejoraContinua(); initCalidadMat();
   initCalidadFQ(); initCalidadMicro(); initCalidad();
@@ -2802,7 +2812,13 @@ function toast(msg) {
 
 // Cargar config de Firebase y luego inicializar
 loadConfig().then(() => {
-  lines = defaultLines();
+  // Ahora todos los arrays de puestos están declarados — aplicar config de post depts
+  applyConfigPostDepts();
+
+  // Líneas: usar config Firebase si existe, si no defaultLines
+  if (!_cfg || !_cfg.envasado || !_cfg.envasado.lineas) {
+    lines = defaultLines();
+  }
   initSpecialWorkers();
   bajas = [mkWorker('baja_0')];
   vacaciones = [mkWorker('vac_0')];

@@ -343,7 +343,12 @@ let postW = {};
 function mkW() { return {nombre:'', turno:'M', tipo:'pagar'}; }
 
 function initState() {
-  lines = DEFAULT_LINES.map(l => ({...l, maq:[mkW()], ops:[mkW()]}));
+  lines = DEFAULT_LINES.map(l => {
+    const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+    const obj = {...l, roles};
+    roles.forEach(r => { obj[r.id] = [mkW()]; });
+    return obj;
+  });
   specialW = {};
   ALL_SPECIALS.forEach(p => { specialW[p.id] = [mkW()]; });
   postW = {};
@@ -385,8 +390,8 @@ function checkLimitesAntesDPublicar() {
     if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase());
   }));
   lines.forEach(l => {
-    safeArr(l.maq).forEach(w => { if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase()); });
-    safeArr(l.ops).forEach(w => { if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase()); });
+    const acRoles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+    acRoles.forEach(r => safeArr(l[r.id]).forEach(w => { if (w && w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase()); }));
   });
   POST_DEPTS.forEach(d => d.puestos.forEach(p => safeArr(postW[d.id][p.id]).forEach(w => {
     if (w.nombre && w.tipo === 'pagar') nombres.add(w.nombre.trim().toUpperCase());
@@ -483,33 +488,29 @@ function renderEnvasadoHTML() {
   lines.forEach(line => {
     const mg = line.color==='green'?'row-maq-g':'row-maq-y';
     const og = line.color==='green'?'row-green':'row-yellow';
-    const totalRows = line.maq.length + line.ops.length;
+    const lineRoles = line.roles && line.roles.length ? line.roles : [{id:'maq',label:'Op. Máquina'},{id:'ops',label:'Operario/a'}];
+    // Asegurar arrays de workers para cada rol
+    lineRoles.forEach(r => { if (!line[r.id]) line[r.id] = [mkW()]; });
+    const totalRows = lineRoles.reduce((s,r) => s + (line[r.id]||[]).length, 0);
+    let firstRoleRow = true;
 
-    line.maq.forEach((w,wi) => {
-      html += `<tr class="${mg}">
-        ${wi===0?`<td class="linea-label" rowspan="${totalRows}">${line.label}</td>`:''}
-        <td class="rol-label">Op. Máquina</td>
-        <td>${turnoSel(w.turno,"setLT('" + line.id + "','maq'," + wi + ",this.value)")}</td>
-        <td>${tipoSel(w.tipo,"setLTipo('" + line.id + "','maq'," + wi + ",this.value)")}</td>
-        <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'maq',wi,v);})}</div></td>
-        <td style="text-align:center;white-space:nowrap">
-          ${wi===line.maq.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLMaq('${line.id}')">+</button>`:''}
-          ${line.maq.length>1&&wi===line.maq.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLMaq('${line.id}')">−</button>`:''}
-        </td>
-      </tr>`;
-    });
-
-    line.ops.forEach((w,wi) => {
-      html += `<tr class="${og}">
-        <td class="rol-label">Operario/a</td>
-        <td>${turnoSel(w.turno,"setLT('" + line.id + "','ops'," + wi + ",this.value)")}</td>
-        <td>${tipoSel(w.tipo,"setLTipo('" + line.id + "','ops'," + wi + ",this.value)")}</td>
-        <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,'envasado', function(v){setLN(''+line.id,'ops',wi,v);})}</div></td>
-        <td style="text-align:center;white-space:nowrap">
-          ${wi===line.ops.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLOps('${line.id}')">+</button>`:''}
-          ${line.ops.length>1&&wi===line.ops.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLOps('${line.id}')">−</button>`:''}
-        </td>
-      </tr>`;
+    lineRoles.forEach((role, roleIdx) => {
+      const rowCls = roleIdx===0 ? mg : og;
+      const arr = line[role.id] || [];
+      arr.forEach((w,wi) => {
+        const rid = role.id; const lid = line.id;
+        html += `<tr class="${rowCls}">
+          ${firstRoleRow && wi===0 ? (firstRoleRow=false, `<td class="linea-label" rowspan="${totalRows}">${line.label}</td>`) : (firstRoleRow && (firstRoleRow=false), '')}
+          <td class="rol-label">${role.label}</td>
+          <td>${turnoSel(w.turno,"setLT('" + lid + "','" + rid + "'," + wi + ",this.value)")}</td>
+          <td>${tipoSel(w.tipo,"setLTipo('" + lid + "','" + rid + "'," + wi + ",this.value)")}</td>
+          <td style="min-width:0"><div style="width:100%">${regNombreInp(w.nombre,'envasado', function(v){setLN(''+lid,''+rid,wi,v);})}</div></td>
+          <td style="text-align:center;white-space:nowrap">
+            ${wi===arr.length-1?`<button class="ctrl-btn ctrl-add" onclick="addLRole('${lid}','${rid}')">+</button>`:''}
+            ${arr.length>1&&wi===arr.length-1?`<button class="ctrl-btn ctrl-del" onclick="remLRole('${lid}','${rid}')">−</button>`:''}
+          </td>
+        </tr>`;
+      });
     });
   });
 
@@ -559,10 +560,12 @@ function addSp(id){ specialW[id].push(mkW()); renderAll(); }
 function remSp(id,wi){ specialW[id].splice(wi,1); if(!specialW[id].length) specialW[id]=[mkW()]; renderAll(); }
 
 function getL(id){ return lines.find(l=>l.id===id); }
-function setLN(lid,rol,wi,v){ getL(lid)[rol][wi].nombre=v.trim(); }
-function setLT(lid,rol,wi,v){ getL(lid)[rol][wi].turno=v; }
-function setLTipo(lid,rol,wi,v){ getL(lid)[rol][wi].tipo=v; renderAll(); }
-function addLMaq(lid){ getL(lid).maq.push(mkW()); renderAll(); }
+function setLN(lid,rol,wi,v){ const l=getL(lid); if(!l[rol])l[rol]=[]; l[rol][wi].nombre=v.trim(); }
+function setLT(lid,rol,wi,v){ const l=getL(lid); if(!l[rol])l[rol]=[]; l[rol][wi].turno=v; }
+function setLTipo(lid,rol,wi,v){ const l=getL(lid); if(!l[rol])l[rol]=[]; l[rol][wi].tipo=v; renderAll(); }
+function addLRole(lid,rid){ const l=getL(lid); if(!l[rid])l[rid]=[]; l[rid].push(mkW()); renderAll(); }
+function remLRole(lid,rid){ const l=getL(lid); if(!l[rid]||l[rid].length<=1)return; l[rid].splice(l[rid].length-1,1); renderAll(); }
+function addLMaq(lid){ addLRole(lid,'maq'); }
 function remLMaq(lid){ const l=getL(lid); if(l.maq.length>1) l.maq.pop(); renderAll(); }
 function addLOps(lid){ getL(lid).ops.push(mkW()); renderAll(); }
 function remLOps(lid){ const l=getL(lid); if(l.ops.length>1) l.ops.pop(); renderAll(); }
@@ -600,9 +603,15 @@ function buildPayload() {
   });
   const envLines = [];
   lines.forEach(l => {
-    const maqCon = l.maq.filter(w=>w.nombre);
-    const opsCon = l.ops.filter(w=>w.nombre);
-    if (maqCon.length||opsCon.length) envLines.push({id:l.id,label:l.label,color:l.color,isL2sub:l.isL2sub,maq:maqCon,ops:opsCon});
+    const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+    const lineOut = {id:l.id,label:l.label,color:l.color,isL2sub:l.isL2sub,roles};
+    let hasData = false;
+    roles.forEach(r => {
+      const con = (l[r.id]||[]).filter(w=>w.nombre);
+      lineOut[r.id] = con;
+      if (con.length) hasData = true;
+    });
+    if (hasData) envLines.push(lineOut);
   });
 
   // Post depts
@@ -711,7 +720,10 @@ function deptTienePersonas(d) {
 
   if (deptParam === 'envasado') {
     if (Object.values(d.envasado&&d.envasado.special||{}).some(tieneNombre)) return true;
-    if (safeArr(d.envasado&&d.envasado.lines).some(l => tieneNombre(l.maq)||tieneNombre(l.ops))) return true;
+    if (safeArr(d.envasado&&d.envasado.lines).some(l => {
+      const r2 = l.roles&&l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+      return r2.some(r => tieneNombre(l[r.id]));
+    })) return true;
     return false;
   }
   // Mapear deptParam al id interno del POST_DEPT
@@ -740,7 +752,10 @@ function contarPersonasDept(d) {
   if (deptParam === 'envasado') {
     let t = 0;
     Object.values(d.envasado&&d.envasado.special||{}).forEach(a => t += contarArr(a));
-    safeArr(d.envasado&&d.envasado.lines).forEach(l => { t += contarArr(l.maq); t += contarArr(l.ops); });
+    safeArr(d.envasado&&d.envasado.lines).forEach(l => {
+      const r3 = l.roles&&l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+      r3.forEach(r => { t += contarArr(l[r.id]); });
+    });
     return t;
   }
   const deptMap = {
