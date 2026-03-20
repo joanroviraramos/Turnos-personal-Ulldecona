@@ -519,6 +519,16 @@ footer {
           <div class="card-desc">Consulta las horas extras acumuladas por trabajador y departamento.</div>
           <div class="card-arrow">›</div>
         </a>
+
+        <a class="portal-card" id="card-config" href="config_estructura.html" style="display:none">
+          <div class="card-icon">⚙️</div>
+          <div>
+            <div class="card-label">Administración</div>
+            <div class="card-name">Configuración</div>
+          </div>
+          <div class="card-desc">Gestiona líneas, puestos y departamentos del cuadrante.</div>
+          <div class="card-arrow">›</div>
+        </a>
       </div>
 
       <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
@@ -629,6 +639,9 @@ function showPortal(responsable) {
   document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
   document.getElementById('card-extras').href = 'horas_extras.html?dept=' + dept;
   document.getElementById('card-dashboard-extras').href = 'dashboard_extras.html?dept=' + dept;
+  // Config solo visible para admin
+  const cardConfig = document.getElementById('card-config');
+  if (cardConfig) cardConfig.style.display = dept === 'admin' ? '' : 'none';
   contarEpisPendientes(responsable);
   document.getElementById('portal-section').classList.add('active');
 }

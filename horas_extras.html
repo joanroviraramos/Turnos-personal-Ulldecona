@@ -199,12 +199,12 @@ const SABADOS_LABORABLES = new Set(['2026-01-10','2026-12-12']);
 const deptParam = new URLSearchParams(window.location.search).get('dept') || 'admin';
 
 // ─── DEFINICIONES ─────────────────────────────────────────────────────────────
-const SPECIAL_TOP = [
+let SPECIAL_TOP = [
   { id:'sup',   label:'SUPERVISOR/A DE TURNO', type:'sup'     },
   { id:'tr1',   label:'TRACKING NAVE 1',       type:'special' },
   { id:'sum',   label:'SUMINISTRO',            type:'special' },
 ];
-const SPECIAL_BOT = [
+let SPECIAL_BOT = [
   { id:'tol3',  label:'TOLVAS NAVE 3',      type:'special' },
   { id:'tras3', label:'TRASLADO NAVE 3',    type:'special' },
   { id:'trk3',  label:'TRACKING NAVE 3',   type:'special' },
@@ -212,9 +212,9 @@ const SPECIAL_BOT = [
   { id:'comp4', label:'COMPONENTES NAVE 4', type:'special' },
   { id:'trk4',  label:'TRACKING NAVE 4',   type:'special' },
 ];
-const ALL_SPECIALS = [...SPECIAL_TOP, ...SPECIAL_BOT];
+let ALL_SPECIALS = [...SPECIAL_TOP, ...SPECIAL_BOT];
 
-const DEFAULT_LINES = [
+let DEFAULT_LINES = [
   {id:'L1',    label:'L1',    color:'green',  isL2sub:false},
   {id:'L2',    label:'L2',    color:'yellow', isL2sub:false},
   {id:'L3',    label:'L3',    color:'green',  isL2sub:false},
@@ -232,7 +232,7 @@ const DEFAULT_LINES = [
   {id:'L2.10', label:'L2.10', color:'green',  isL2sub:true},
 ];
 
-const POST_DEPTS = [
+let POST_DEPTS = [
   { id:'elaboracion', label:'Elaboración', cls:'dept-elaboracion', deptKey:'elaboracion',
     puestos:[
       {id:'elab_sup', label:'SUPERVISOR/A TURNO',type:'sup'},
@@ -293,6 +293,44 @@ const POST_DEPTS = [
     ]
   },
 ];
+
+// ─── CONFIG DINÁMICA DESDE FIREBASE ──────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const doc = await db.collection('config').doc('estructura').get();
+    if (!doc.exists) return;
+    const cfg = doc.data();
+
+    // Actualizar envasado
+    if (cfg.envasado) {
+      if (cfg.envasado.especiales_top) { SPECIAL_TOP.length=0; cfg.envasado.especiales_top.forEach(p=>SPECIAL_TOP.push(p)); }
+      if (cfg.envasado.especiales_bot) { SPECIAL_BOT.length=0; cfg.envasado.especiales_bot.forEach(p=>SPECIAL_BOT.push(p)); }
+      ALL_SPECIALS.length=0; [...SPECIAL_TOP,...SPECIAL_BOT].forEach(p=>ALL_SPECIALS.push(p));
+      if (cfg.envasado.lineas) {
+        DEFAULT_LINES.length=0;
+        cfg.envasado.lineas.forEach(l => DEFAULT_LINES.push({id:l.id,label:l.label,color:l.color,isL2sub:l.isL2sub||false,roles:l.roles||[]}));
+      }
+    }
+
+    // Actualizar post depts
+    const DEPT_META = {
+      elaboracion:  {cls:'dept-elaboracion', deptKey:'elaboracion'},
+      almacen:      {cls:'dept-almacen',     deptKey:'almacen'},
+      mantenimiento:{cls:'dept-mto',         deptKey:'mantenimiento'},
+      calidad:      {cls:'dept-calidad',     deptKey:'calidadlineas'},
+      soplado:      {cls:'dept-soplado',     deptKey:'soplado'},
+      mejora:       {cls:'dept-mejora',      deptKey:'mejoracontinua'},
+    };
+    POST_DEPTS.length=0;
+    Object.entries(DEPT_META).forEach(([id, meta]) => {
+      const d = cfg[id];
+      if (!d || !d.puestos) return;
+      const label = {elaboracion:'Elaboración',almacen:'Almacén',mantenimiento:'Mantenimiento',
+                     calidad:'Calidad',soplado:'Soplado',mejora:'Mejora Continua'}[id]||id;
+      POST_DEPTS.push({id, label, cls:meta.cls, deptKey:meta.deptKey, puestos:d.puestos});
+    });
+  } catch(e) { console.warn('loadConfig error:', e); }
+}
 
 const TURNOS = ['M','T','N','P'];
 const TURNO_LABELS = {M:'Mañana',T:'Tarde',N:'Noche',P:'Partido'};
@@ -958,12 +996,14 @@ function makeAcInput(currentVal, deptId, onSelect) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-initState();
-renderAll();
-const hoy=new Date();
-document.getElementById('fecha-extra').value=
-  hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
-onFechaChange();
+loadConfig().then(() => {
+  initState();
+  renderAll();
+  const hoy=new Date();
+  document.getElementById('fecha-extra').value=
+    hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');
+  onFechaChange();
+});
 </script>
 </body>
 </html>

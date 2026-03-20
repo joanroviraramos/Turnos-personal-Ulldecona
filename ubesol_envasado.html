@@ -894,6 +894,73 @@ function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
 
 const TURNOS = ['M','T','N','P'];
 
+// ─── CONFIG DINÁMICA DESDE FIREBASE ──────────────────────────────────────────
+let _cfg = null; // se carga de Firebase o usa defaults
+
+async function loadConfig() {
+  try {
+    const doc = await db.collection('config').doc('estructura').get();
+    if (doc.exists) {
+      _cfg = doc.data();
+    }
+  } catch(e) {}
+  // Si no hay config en Firebase, _cfg queda null y se usan los arrays hardcoded
+  applyConfig();
+}
+
+function applyConfig() {
+  if (!_cfg) return; // sin config, usar hardcoded
+
+  // Actualizar envasado
+  if (_cfg.envasado) {
+    if (_cfg.envasado.especiales_top) {
+      // Reemplazar SPECIAL_TOP
+      SPECIAL_TOP.length = 0;
+      _cfg.envasado.especiales_top.forEach(p => SPECIAL_TOP.push(p));
+    }
+    if (_cfg.envasado.especiales_bot) {
+      SPECIAL_BOT.length = 0;
+      _cfg.envasado.especiales_bot.forEach(p => SPECIAL_BOT.push(p));
+    }
+    if (_cfg.envasado.lineas) {
+      // Reconstruir lines con los roles de la config
+      lines = _cfg.envasado.lineas.map(l => mkLine(l.id, l.label, l.color, l.isL2sub||false, l.roles));
+    }
+  }
+
+  // Actualizar post depts
+  const deptMap = {
+    elaboracion:  { puestosArr: 'ELAB_PUESTOS',    workers: 'elabWorkers',    init: initElaboracion },
+    almacen:      { puestosArr: 'ALMC_PUESTOS',     workers: 'almWorkers',     init: initAlmacen },
+    mantenimiento:{ puestosArr: 'MTO_PUESTOS',      workers: 'mtoWorkers',     init: initMantenimiento },
+    calidad:      { puestosArr: 'CAL_PUESTOS',      workers: 'calWorkers',     init: initCalidad },
+    soplado:      { puestosArr: 'SOPL_PUESTOS',     workers: 'soplWorkers',    init: initSoplado },
+    mejora:       { puestosArr: 'MC_PUESTOS',       workers: 'mcWorkers',      init: initMejoraContinua },
+  };
+
+  // Actualizamos los arrays de puestos globales
+  const arrMap = {
+    'ELAB_PUESTOS': ELAB_PUESTOS, 'ALMC_PUESTOS': ALMC_PUESTOS,
+    'MTO_PUESTOS': MTO_PUESTOS, 'CAL_PUESTOS': CAL_PUESTOS,
+    'SOPL_PUESTOS': SOPL_PUESTOS, 'MC_PUESTOS': MC_PUESTOS,
+  };
+
+  const cfgDeptMap = {
+    elaboracion: _cfg.elaboracion, almacen: _cfg.almacen,
+    mantenimiento: _cfg.mantenimiento, calidad: _cfg.calidad,
+    soplado: _cfg.soplado, mejora: _cfg.mejora
+  };
+
+  Object.entries(deptMap).forEach(([deptId, info]) => {
+    const cfgDept = cfgDeptMap[deptId];
+    if (!cfgDept || !cfgDept.puestos) return;
+    const arr = arrMap[info.puestosArr];
+    if (!arr) return;
+    arr.length = 0;
+    cfgDept.puestos.forEach(p => arr.push(p));
+  });
+}
+
 // State
 let lines = [];
 
@@ -946,12 +1013,18 @@ function defaultLines() {
   ];
 }
 
-function mkLine(id, label, color, isL2sub=false) {
-  return {
-    id, label, color, isL2sub,
-    maq: [mkWorker('maq_'+id+'_0')],
-    ops: [mkWorker('op_'+id+'_0')],
-  };
+function mkLine(id, label, color, isL2sub=false, roles=null) {
+  const defaultRoles = [{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}];
+  const lineRoles = roles || defaultRoles;
+  const obj = { id, label, color, isL2sub, roles: lineRoles };
+  // Crear arrays de workers por rol (compatible con maq/ops existente)
+  lineRoles.forEach(r => {
+    obj[r.id] = [mkWorker(r.id+'_'+id+'_0')];
+  });
+  // Alias para compatibilidad
+  if (!obj.maq && obj[lineRoles[0]?.id]) obj.maq = obj[lineRoles[0].id];
+  if (!obj.ops && lineRoles[1] && obj[lineRoles[1].id]) obj.ops = obj[lineRoles[1].id];
+  return obj;
 }
 
 function mkWorker(id) {
@@ -2720,23 +2793,26 @@ function toast(msg) {
   document.getElementById('meta-ano').value = ano;
 })();
 
-lines = defaultLines();
-initSpecialWorkers();
-bajas = [mkWorker('baja_0')];
-vacaciones = [mkWorker('vac_0')];
-initSoplado();
-initMejoraContinua();
-initCalidadMat();
-initCalidadFQ();
-initCalidadMicro();
-initCalidad();
-initElaboracion();
-initAlmacen();
-initMantenimiento();
+// Cargar config de Firebase y luego inicializar
+loadConfig().then(() => {
+  lines = defaultLines();
+  initSpecialWorkers();
+  bajas = [mkWorker('baja_0')];
+  vacaciones = [mkWorker('vac_0')];
+  initSoplado();
+  initMejoraContinua();
+  initCalidadMat();
+  initCalidadFQ();
+  initCalidadMicro();
+  initCalidad();
+  initElaboracion();
+  initAlmacen();
+  initMantenimiento();
 
-// Load workers CSV then restore week data
-loadWorkers().finally(() => {
-  loadWeekFromStorage();
+  // Load workers CSV then restore week data
+  loadWorkers().finally(() => {
+    loadWeekFromStorage();
+  });
 });
 </script>
 </body>

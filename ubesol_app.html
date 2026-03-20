@@ -914,8 +914,41 @@ function startInactivityWatcher() {
 
 async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
+// ─── CONFIG DINÁMICA ─────────────────────────────────────────────────────────
+let _appConfig = null;
+
+function loadAppConfig() {
+  db.collection('config').doc('estructura').onSnapshot(function(doc) {
+    if (doc.exists) _appConfig = doc.data();
+  });
+}
+
+// Obtener label de un puesto/rol dinámico
+function getPuestoLabel(id) {
+  if (!_appConfig) return id;
+  // Buscar en envasado especiales
+  const env = _appConfig.envasado;
+  if (env) {
+    for (const arr of [env.especiales_top||[], env.especiales_bot||[]]) {
+      const f = arr.find(p => p.id === id);
+      if (f) return f.label;
+    }
+  }
+  // Buscar en post depts
+  const deptIds = ['elaboracion','almacen','mantenimiento','calidad','soplado','mejora'];
+  for (const dId of deptIds) {
+    const d = _appConfig[dId];
+    if (d && d.puestos) {
+      const f = d.puestos.find(p => p.id === id);
+      if (f) return f.label;
+    }
+  }
+  return id;
+}
+
 function loadCuadrante() {
   // Cargar todos los cuadrantes desde Firebase en tiempo real
+  loadAppConfig();
   try {
     db.collection('cuadrantes').onSnapshot(function(snap) {
       const keysBorrar = [];
@@ -1537,17 +1570,24 @@ function findTurnoWorkerInData(nombre, data) {
           if (!w || !w.cells) continue;
           for (const t of TURNOS) {
             if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-              return { turno: t, puesto: PLABELS[id] || id.toUpperCase() };
+              return { turno: t, puesto: PLABELS[id] || getPuestoLabel(id) || id.toUpperCase() };
           }
         }
       }
     }
     for (const line of safeArr(env.lines)) {
-      for (const w of [...safeArr(line.maq), ...safeArr(line.ops)]) {
+      // Roles dinámicos: maq, ops, y cualquier rol adicional
+      const roles = line.roles ? line.roles.map(r => r.id) : ['maq','ops'];
+      const allWorkers = [];
+      for (const roleId of roles) {
+        const roleLabel = (line.roles && line.roles.find(r=>r.id===roleId)?.label) || (roleId==='maq'?'Op. Máquina':'Operario/a');
+        safeArr(line[roleId]).forEach(w => allWorkers.push({w, label: roleLabel + ' ' + line.label}));
+      }
+      for (const {w, label} of allWorkers) {
         if (!w || !w.cells) continue;
         for (const t of TURNOS) {
           if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-            return { turno: t, puesto: line.label };
+            return { turno: t, puesto: label };
         }
       }
     }
@@ -1578,7 +1618,7 @@ function findTurnoWorkerInData(nombre, data) {
           if (!w || !w.cells) continue;
           for (const t of TURNOS) {
             if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-              return { turno: t, puesto: PLABELS[pid] || pid };
+              return { turno: t, puesto: PLABELS[pid] || getPuestoLabel(pid) || pid };
           }
         }
       }
@@ -1854,16 +1894,15 @@ function findExtraWorker(nombreUpper, d) {
       }
     }
   }
-  // Envasado líneas
+  // Envasado líneas (con roles dinámicos)
   if (d.envasado && d.envasado.lines) {
     for (const line of safeArr(d.envasado.lines)) {
-      for (const w of safeArr(line.maq)) {
-        const r = check(w, 'Op. Máquina ' + line.label, 'Envasado');
-        if (r) return r;
-      }
-      for (const w of safeArr(line.ops)) {
-        const r = check(w, 'Operario/a ' + line.label, 'Envasado');
-        if (r) return r;
+      const roles = line.roles ? line.roles : [{id:'maq',label:'Op. Máquina'},{id:'ops',label:'Operario/a'}];
+      for (const role of roles) {
+        for (const w of safeArr(line[role.id])) {
+          const r = check(w, role.label + ' ' + line.label, 'Envasado');
+          if (r) return r;
+        }
       }
     }
   }

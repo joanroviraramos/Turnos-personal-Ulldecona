@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuración Estructura — GrupoUbesol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f0f0;color:#1a1a1a;font-size:13px}
+:root{
+  --green:#1b5e20;--green-l:#e8f5e9;--border:#d0d0d0;--border-l:#e0e0e0;
+  --white:#fff;--surface:#f8f8f8;--muted:#666;--faint:#999;--danger:#b71c1c;
+}
+.doc-header{background:var(--white);border-bottom:2px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.logo{font-size:13px;font-weight:700;color:var(--green);letter-spacing:.04em;text-transform:uppercase}
+.title{font-size:13px;font-weight:600;color:#e65100}
+.toolbar{background:var(--white);border-bottom:1px solid var(--border-l);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:4px;border:1px solid var(--border);cursor:pointer;background:var(--white);color:#333;transition:all .15s}
+.btn:hover{background:#f5f5f5}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green)}
+.btn-green:hover{background:#145214}
+.btn-danger{background:var(--danger);color:var(--white);border-color:var(--danger)}
+.btn-danger:hover{background:#7f0000}
+.main{padding:16px;max-width:1000px;margin:0 auto}
+/* Tabs */
+.dept-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.dept-tab{padding:6px 14px;border-radius:20px;border:1px solid var(--border-l);font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);transition:all .15s}
+.dept-tab:hover{background:#f5f5f5}
+.dept-tab.active{background:var(--green);color:var(--white);border-color:var(--green)}
+/* Cards */
+.section-card{background:var(--white);border:1px solid var(--border-l);border-radius:8px;margin-bottom:16px;overflow:hidden}
+.section-header{background:var(--green);color:var(--white);font-size:12px;font-weight:700;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;text-transform:uppercase;letter-spacing:.05em}
+.section-body{padding:12px}
+/* Tabla items */
+.item-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-l)}
+.item-row:last-child{border-bottom:none}
+.item-id{font-size:10px;font-weight:700;color:var(--faint);width:80px;flex-shrink:0;font-family:monospace}
+.item-label{flex:1;font-size:13px;font-weight:500}
+.item-type{font-size:11px;color:var(--muted);width:90px;flex-shrink:0}
+.item-color{width:20px;height:20px;border-radius:3px;flex-shrink:0}
+.item-count{font-size:11px;color:var(--muted);width:70px;text-align:center}
+.btn-sm{font-family:'Inter',sans-serif;font-size:11px;padding:3px 9px;border-radius:3px;border:1px solid var(--border);cursor:pointer;background:var(--white);transition:all .15s}
+.btn-sm:hover{background:#f5f5f5}
+.btn-sm.del{color:var(--danger);border-color:#ef9a9a}
+.btn-sm.del:hover{background:#ffebee}
+/* Form añadir */
+.add-form{background:var(--surface);border:1px solid var(--border-l);border-radius:6px;padding:12px;margin-top:10px;display:none}
+.add-form.show{display:block}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-group label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.form-group input,.form-group select{font-family:'Inter',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:4px;padding:5px 8px;background:var(--white)}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--green)}
+/* Info especial para lineas */
+.linea-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700}
+.badge-green{background:#e8f5e9;color:#1b5e20}
+.badge-yellow{background:#fff8e1;color:#854F0B}
+.badge-l2sub{background:#e3f2fd;color:#0d47a1}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1b5e20;color:var(--white);font-size:13px;font-weight:500;padding:10px 20px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1}
+/* Loading */
+.loading{text-align:center;padding:32px;color:var(--faint)}
+/* Roles */
+.roles-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.role-chip{background:var(--surface);border:1px solid var(--border-l);border-radius:12px;padding:2px 8px;font-size:11px;display:flex;align-items:center;gap:4px}
+.role-chip .del-role{color:var(--danger);cursor:pointer;font-size:12px;font-weight:700;margin-left:2px}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",authDomain:"maverick-turnos-81d4a.firebaseapp.com",projectId:"maverick-turnos-81d4a",storageBucket:"maverick-turnos-81d4a.firebasestorage.app",messagingSenderId:"170123467800",appId:"1:170123467344:web:142eee4473940ebd924f55"};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+</script>
+</head>
+<body>
+<div class="doc-header">
+  <div class="logo">GrupoUbesol</div>
+  <div class="title">⚙️ Configuración de estructura</div>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-green" onclick="guardarConfig()">💾 Guardar cambios</button>
+    <button class="btn" onclick="window.location.href='index.html'">‹ Portal</button>
+  </div>
+</div>
+<div class="toolbar">
+  <span style="font-size:11px;color:var(--muted)">Los cambios se aplican en tiempo real al cuadrante, horas extras y app del trabajador.</span>
+  <span id="estado-txt" style="margin-left:auto;font-size:11px;color:var(--muted)"></span>
+</div>
+
+<div class="main">
+  <div class="dept-tabs" id="dept-tabs"></div>
+  <div id="dept-content"><div class="loading">Cargando configuración...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG POR DEFECTO ───────────────────────────────────────────────────────
+const CONFIG_DEFAULT = {
+  envasado: {
+    especiales_top: [
+      {id:'sup',  label:'SUPERVISOR/A DE TURNO', type:'sup'},
+      {id:'tr1',  label:'TRACKING NAVE 1',       type:'special'},
+      {id:'sum',  label:'SUMINISTRO',            type:'special'},
+    ],
+    especiales_bot: [
+      {id:'tol3',  label:'TOLVAS NAVE 3',      type:'special'},
+      {id:'tras3', label:'TRASLADO NAVE 3',    type:'special'},
+      {id:'trk3',  label:'TRACKING NAVE 3',   type:'special'},
+      {id:'tol4',  label:'TOLVAS NAVE 4',      type:'special'},
+      {id:'comp4', label:'COMPONENTES NAVE 4', type:'special'},
+      {id:'trk4',  label:'TRACKING NAVE 4',   type:'special'},
+    ],
+    lineas: [
+      {id:'L1',   label:'L1',    color:'green',  isL2sub:false, roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2',   label:'L2',    color:'yellow', isL2sub:false, roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L3',   label:'L3',    color:'green',  isL2sub:false, roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L4',   label:'L4',    color:'yellow', isL2sub:false, roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L7',   label:'L7',    color:'green',  isL2sub:false, roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L5.1', label:'L5.1',  color:'yellow', isL2sub:false, roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.1', label:'L2.1',  color:'green',  isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.2', label:'L2.2',  color:'yellow', isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.3', label:'L2.3',  color:'green',  isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.5', label:'L2.5',  color:'yellow', isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.6', label:'L2.6',  color:'green',  isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.7', label:'L2.7',  color:'yellow', isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.8', label:'L2.8',  color:'green',  isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.9', label:'L2.9',  color:'yellow', isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+      {id:'L2.10',label:'L2.10', color:'green',  isL2sub:true,  roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]},
+    ]
+  },
+  elaboracion: {puestos:[
+    {id:'elab_sup',  label:'SUPERVISOR/A TURNO',  type:'sup',    count:1},
+    {id:'elab_elab', label:'ELABORADOR/A',         type:'yellow', count:10},
+    {id:'elab_pes',  label:'PESADAS',              type:'green',  count:2},
+    {id:'elab_hig',  label:'HIGIENE',              type:'yellow', count:3},
+    {id:'elab_desc', label:'DESCARGA CISTERNAS',   type:'green',  count:2},
+  ]},
+  almacen: {puestos:[
+    {id:'alm_sup',    label:'SUPERVISOR/A TURNO',      type:'sup',    count:1},
+    {id:'alm_desc',   label:'DESCARGA / UBICAR',        type:'green',  count:1},
+    {id:'alm_sopl',   label:'SOPLADO / UBICAR',         type:'yellow', count:1},
+    {id:'alm_ab3',    label:'ABAST. NAVE 3 / UBICAR',   type:'green',  count:1},
+    {id:'alm_ab1',    label:'ABAST. NAVE 1 / UBICAR',   type:'yellow', count:1},
+    {id:'alm_res',    label:'RESIDUOS / DESTRUCCIONES', type:'green',  count:1},
+    {id:'alm_ubi',    label:'UBICAR',                   type:'yellow', count:1},
+    {id:'alm_mmpp',   label:'MMPP',                     type:'green',  count:1},
+    {id:'alm_sala',   label:'SALA BLANCA',               type:'yellow', count:1},
+    {id:'alm_cargas', label:'CARGAS',                    type:'green',  count:1},
+    {id:'alm_silo',   label:'SILO',                      type:'yellow', count:1},
+    {id:'alm_destr',  label:'DESTRUCCIONES',             type:'green',  count:1},
+  ]},
+  mantenimiento: {puestos:[
+    {id:'mto_coord', label:'COORDINADOR',           type:'green',  count:1},
+    {id:'mto_back',  label:'BACKOFFICE',             type:'yellow', count:1},
+    {id:'mto_sup',   label:'SUPERVISOR/A DE TURNO', type:'sup',    count:1},
+    {id:'mto_tec',   label:'TÉCNICO MTO.',           type:'yellow', count:6},
+  ]},
+  calidad: {puestos:[
+    {id:'cal_nave1',    label:'NAVE 1-MK1',           type:'green',  count:2},
+    {id:'cal_nave3',    label:'NAVE 3-NAVE 4',         type:'yellow', count:2},
+    {id:'cal_tec',      label:'TÉCNICO',               type:'green',  count:2},
+    {id:'calfq_tec',    label:'TÉCNICO LABORATORIO',   type:'green',  count:4},
+    {id:'calmicro_tec', label:'TÉCNICO MICROBIOLOGIA', type:'yellow', count:4},
+    {id:'calmat_tec',   label:'TÉCNICO MATERIALES',    type:'green',  count:4},
+  ]},
+  soplado: {puestos:[
+    {id:'sopl_sup',   label:'SUPERVISOR/A DE TURNO',  type:'sup',    count:1},
+    {id:'sopl_s12',   label:'SOPLADORA 1 Y 2',         type:'green',  count:1},
+    {id:'sopl_s3',    label:'SOPLADORA 3',              type:'yellow', count:1},
+    {id:'sopl_s46',   label:'SOPLADORA 4 Y 6',         type:'green',  count:1},
+    {id:'sopl_s5t',   label:'SOPLADORA 5 Y TRACKING',  type:'yellow', count:1},
+    {id:'sopl_pal',   label:'PALETIZADORES',            type:'green',  count:2},
+    {id:'sopl_ref',   label:'REFUERZO TURNO',           type:'yellow', count:2},
+  ]},
+  mejora: {puestos:[
+    {id:'mc_tec', label:'TÉCNICO PROCESOS', type:'yellow', count:4},
+  ]}
+};
+
+const DEPTS = [
+  {id:'envasado',      label:'Envasado',       color:'#1b5e20', tipo:'envasado'},
+  {id:'elaboracion',   label:'Elaboración',    color:'#0d47a1', tipo:'simple'},
+  {id:'almacen',       label:'Almacén',        color:'#4a148c', tipo:'simple'},
+  {id:'mantenimiento', label:'Mantenimiento',  color:'#bf360c', tipo:'simple'},
+  {id:'calidad',       label:'Calidad',        color:'#006064', tipo:'simple'},
+  {id:'soplado',       label:'Soplado',        color:'#33691e', tipo:'simple'},
+  {id:'mejora',        label:'Mejora Continua',color:'#4e342e', tipo:'simple'},
+];
+
+let config = null;
+let currentDept = 'envasado';
+
+// ─── CARGAR ───────────────────────────────────────────────────────────────────
+async function cargarConfig() {
+  try {
+    const doc = await db.collection('config').doc('estructura').get();
+    if (doc.exists) {
+      config = doc.data();
+      toast('✅ Configuración cargada de Firebase');
+    } else {
+      config = JSON.parse(JSON.stringify(CONFIG_DEFAULT));
+      toast('📋 Usando configuración por defecto');
+    }
+  } catch(e) {
+    config = JSON.parse(JSON.stringify(CONFIG_DEFAULT));
+    toast('⚠️ Error Firebase, usando config por defecto');
+  }
+  renderTabs();
+  renderDept(currentDept);
+}
+
+// ─── GUARDAR ──────────────────────────────────────────────────────────────────
+async function guardarConfig() {
+  document.getElementById('estado-txt').textContent = 'Guardando...';
+  try {
+    await db.collection('config').doc('estructura').set(config);
+    document.getElementById('estado-txt').textContent = 'Guardado ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    toast('✅ Configuración guardada en Firebase');
+  } catch(e) {
+    toast('⚠️ Error al guardar: ' + e.message);
+    document.getElementById('estado-txt').textContent = 'Error al guardar';
+  }
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function renderTabs() {
+  document.getElementById('dept-tabs').innerHTML = DEPTS.map(d =>
+    `<button class="dept-tab ${d.id===currentDept?'active':''}" onclick="selectDept('${d.id}')">${d.label}</button>`
+  ).join('');
+}
+
+function selectDept(id) {
+  currentDept = id;
+  renderTabs();
+  renderDept(id);
+}
+
+// ─── RENDER DEPT ──────────────────────────────────────────────────────────────
+function renderDept(id) {
+  const dept = DEPTS.find(d => d.id === id);
+  const c = document.getElementById('dept-content');
+  if (dept.tipo === 'envasado') {
+    c.innerHTML = renderEnvasado();
+  } else {
+    c.innerHTML = renderSimple(id, dept);
+  }
+}
+
+// ─── RENDER ENVASADO ──────────────────────────────────────────────────────────
+function renderEnvasado() {
+  const e = config.envasado;
+  let html = '';
+
+  // Especiales TOP
+  html += `<div class="section-card">
+    <div class="section-header" style="background:#006064">
+      <span>Puestos especiales — Parte superior</span>
+      <button class="btn-sm" onclick="showFormEsp('top')" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir</button>
+    </div>
+    <div class="section-body">
+      ${e.especiales_top.map((p,i) => `
+        <div class="item-row">
+          <div class="item-id">${p.id}</div>
+          <div class="item-label">${p.label}</div>
+          <div class="item-type">${p.type}</div>
+          <button class="btn-sm del" onclick="delEsp('top',${i})">✕ Quitar</button>
+        </div>`).join('')}
+      <div class="add-form" id="form-esp-top">
+        <div class="form-row">
+          <div class="form-group"><label>ID (sin espacios)</label><input id="esp-top-id" placeholder="ej: tol5" maxlength="20"></div>
+          <div class="form-group"><label>Nombre</label><input id="esp-top-label" placeholder="ej: TOLVAS NAVE 5" style="width:220px"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="esp-top-type"><option value="sup">Supervisor</option><option value="special" selected>Especial</option></select>
+          </div>
+          <button class="btn btn-green" onclick="addEsp('top')" style="align-self:flex-end">Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // Líneas
+  const mainLines = e.lineas.filter(l => !l.isL2sub);
+  const l2subs    = e.lineas.filter(l => l.isL2sub);
+  html += `<div class="section-card">
+    <div class="section-header" style="background:#1b5e20">
+      <span>Líneas de producción</span>
+      <button class="btn-sm" onclick="showFormLinea(false)" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir línea</button>
+    </div>
+    <div class="section-body">
+      ${mainLines.map((l,i) => renderLineaRow(l, i, false)).join('')}
+      <div class="add-form" id="form-linea-main">
+        ${formLineaHTML('main')}
+      </div>
+    </div>
+  </div>`;
+
+  // Líneas L2 subgrupo
+  html += `<div class="section-card">
+    <div class="section-header" style="background:#1565c0">
+      <span>Líneas L2 — Subgrupo</span>
+      <button class="btn-sm" onclick="showFormLinea(true)" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir L2.x</button>
+    </div>
+    <div class="section-body">
+      ${l2subs.map((l,i) => renderLineaRow(l, i, true)).join('')}
+      <div class="add-form" id="form-linea-l2sub">
+        ${formLineaHTML('l2sub')}
+      </div>
+    </div>
+  </div>`;
+
+  // Especiales BOT
+  html += `<div class="section-card">
+    <div class="section-header" style="background:#006064">
+      <span>Puestos especiales — Parte inferior</span>
+      <button class="btn-sm" onclick="showFormEsp('bot')" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir</button>
+    </div>
+    <div class="section-body">
+      ${e.especiales_bot.map((p,i) => `
+        <div class="item-row">
+          <div class="item-id">${p.id}</div>
+          <div class="item-label">${p.label}</div>
+          <div class="item-type">${p.type}</div>
+          <button class="btn-sm del" onclick="delEsp('bot',${i})">✕ Quitar</button>
+        </div>`).join('')}
+      <div class="add-form" id="form-esp-bot">
+        <div class="form-row">
+          <div class="form-group"><label>ID (sin espacios)</label><input id="esp-bot-id" placeholder="ej: tol5" maxlength="20"></div>
+          <div class="form-group"><label>Nombre</label><input id="esp-bot-label" placeholder="ej: TOLVAS NAVE 5" style="width:220px"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="esp-bot-type"><option value="sup">Supervisor</option><option value="special" selected>Especial</option></select>
+          </div>
+          <button class="btn btn-green" onclick="addEsp('bot')" style="align-self:flex-end">Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  return html;
+}
+
+function renderLineaRow(l, i, isL2sub) {
+  const colorBadge = `<span class="linea-badge badge-${l.color}">${l.color}</span>`;
+  const roles = (l.roles||[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]);
+  const rolesHTML = `<div class="roles-list">${roles.map((r,ri) =>
+    `<div class="role-chip">${r.label}<span class="del-role" onclick="delRoleLinea('${l.id}',${ri})">✕</span></div>`
+  ).join('')}
+  <button class="btn-sm" onclick="addRoleLinea('${l.id}')" style="font-size:10px;padding:2px 6px">+ Rol</button>
+  </div>`;
+  return `<div class="item-row" style="align-items:flex-start;flex-direction:column;gap:4px">
+    <div style="display:flex;align-items:center;gap:8px;width:100%">
+      <div class="item-id">${l.id}</div>
+      <div class="item-label" style="font-weight:700">${l.label}</div>
+      ${colorBadge}
+      ${isL2sub ? '<span class="linea-badge badge-l2sub">L2 sub</span>' : ''}
+      <button class="btn-sm del" style="margin-left:auto" onclick="delLinea('${l.id}')">✕ Quitar</button>
+    </div>
+    <div style="padding-left:88px">${rolesHTML}</div>
+  </div>`;
+}
+
+function formLineaHTML(key) {
+  return `<div class="form-row">
+    <div class="form-group"><label>ID</label><input id="linea-${key}-id" placeholder="ej: L8" maxlength="10"></div>
+    <div class="form-group"><label>Etiqueta</label><input id="linea-${key}-label" placeholder="ej: L8" maxlength="10"></div>
+    <div class="form-group"><label>Color</label>
+      <select id="linea-${key}-color"><option value="green">Verde</option><option value="yellow">Amarillo</option></select>
+    </div>
+    <button class="btn btn-green" onclick="addLinea('${key}')" style="align-self:flex-end">Añadir línea</button>
+  </div>`;
+}
+
+// ─── RENDER SIMPLE (dept sin líneas) ─────────────────────────────────────────
+function renderSimple(id, dept) {
+  const d = config[id];
+  if (!d) return '<div class="loading">Sin datos</div>';
+  return `<div class="section-card">
+    <div class="section-header" style="background:${dept.color}">
+      <span>Puestos — ${dept.label}</span>
+      <button class="btn-sm" onclick="showFormPuesto('${id}')" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir puesto</button>
+    </div>
+    <div class="section-body">
+      ${d.puestos.map((p,i) => `
+        <div class="item-row">
+          <div class="item-id">${p.id}</div>
+          <div class="item-label">${p.label}</div>
+          <div class="item-type">${p.type}</div>
+          <div class="item-count" title="Filas iniciales">${p.count||1} fila${(p.count||1)!==1?'s':''}</div>
+          <button class="btn-sm del" onclick="delPuesto('${id}',${i})">✕ Quitar</button>
+        </div>`).join('')}
+      <div class="add-form" id="form-puesto-${id}">
+        <div class="form-row">
+          <div class="form-group"><label>ID</label><input id="p-${id}-id" placeholder="ej: alm_nuevo" maxlength="20"></div>
+          <div class="form-group"><label>Nombre</label><input id="p-${id}-label" placeholder="ej: NUEVO PUESTO" style="width:200px"></div>
+          <div class="form-group"><label>Tipo</label>
+            <select id="p-${id}-type">
+              <option value="sup">Supervisor</option>
+              <option value="green" selected>Verde</option>
+              <option value="yellow">Amarillo</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Filas iniciales</label>
+            <input id="p-${id}-count" type="number" min="1" max="20" value="1" style="width:60px">
+          </div>
+          <button class="btn btn-green" onclick="addPuesto('${id}')" style="align-self:flex-end">Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── ACCIONES ─────────────────────────────────────────────────────────────────
+function showFormEsp(zona) {
+  const f = document.getElementById('form-esp-'+zona);
+  f.classList.toggle('show');
+}
+function showFormLinea(isL2sub) {
+  document.getElementById('form-linea-' + (isL2sub?'l2sub':'main')).classList.toggle('show');
+}
+function showFormPuesto(id) {
+  document.getElementById('form-puesto-'+id).classList.toggle('show');
+}
+
+function sanitizeId(s) {
+  return s.trim().toLowerCase().replace(/[^a-z0-9_\.]/g,'_');
+}
+
+// Especiales
+function addEsp(zona) {
+  const id    = sanitizeId(document.getElementById('esp-'+zona+'-id').value);
+  const label = document.getElementById('esp-'+zona+'-label').value.trim().toUpperCase();
+  const type  = document.getElementById('esp-'+zona+'-type').value;
+  if (!id || !label) { toast('⚠️ Rellena ID y nombre'); return; }
+  const arr = zona==='top' ? config.envasado.especiales_top : config.envasado.especiales_bot;
+  if (arr.find(p => p.id === id)) { toast('⚠️ Ya existe ese ID'); return; }
+  arr.push({id, label, type});
+  renderDept(currentDept);
+  toast('✅ Puesto añadido — recuerda guardar');
+}
+function delEsp(zona, i) {
+  const arr = zona==='top' ? config.envasado.especiales_top : config.envasado.especiales_bot;
+  if (!confirm('¿Quitar "'+arr[i].label+'"?')) return;
+  arr.splice(i, 1);
+  renderDept(currentDept);
+  toast('🗑 Puesto eliminado — recuerda guardar');
+}
+
+// Líneas
+function addLinea(key) {
+  const isL2sub = key === 'l2sub';
+  const id    = document.getElementById('linea-'+key+'-id').value.trim();
+  const label = document.getElementById('linea-'+key+'-label').value.trim().toUpperCase();
+  const color = document.getElementById('linea-'+key+'-color').value;
+  if (!id || !label) { toast('⚠️ Rellena ID y etiqueta'); return; }
+  if (config.envasado.lineas.find(l => l.id === id)) { toast('⚠️ Ya existe esa línea'); return; }
+  config.envasado.lineas.push({
+    id, label, color, isL2sub,
+    roles:[{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}]
+  });
+  renderDept(currentDept);
+  toast('✅ Línea añadida — recuerda guardar');
+}
+function delLinea(id) {
+  if (!confirm('¿Quitar línea "'+id+'"?')) return;
+  config.envasado.lineas = config.envasado.lineas.filter(l => l.id !== id);
+  renderDept(currentDept);
+  toast('🗑 Línea eliminada — recuerda guardar');
+}
+
+// Roles de línea
+function addRoleLinea(lineaId) {
+  const label = prompt('Nombre del nuevo rol (ej: CALIDAD LÍNEA):');
+  if (!label || !label.trim()) return;
+  const linea = config.envasado.lineas.find(l => l.id === lineaId);
+  if (!linea) return;
+  if (!linea.roles) linea.roles = [];
+  const id = sanitizeId(label) + '_' + Date.now().toString(36);
+  linea.roles.push({id, label: label.trim().toUpperCase()});
+  renderDept(currentDept);
+  toast('✅ Rol añadido — recuerda guardar');
+}
+function delRoleLinea(lineaId, ri) {
+  const linea = config.envasado.lineas.find(l => l.id === lineaId);
+  if (!linea || !linea.roles) return;
+  if (linea.roles.length <= 1) { toast('⚠️ Debe haber al menos un rol'); return; }
+  linea.roles.splice(ri, 1);
+  renderDept(currentDept);
+  toast('🗑 Rol eliminado — recuerda guardar');
+}
+
+// Puestos simples
+function addPuesto(deptId) {
+  const id    = sanitizeId(document.getElementById('p-'+deptId+'-id').value);
+  const label = document.getElementById('p-'+deptId+'-label').value.trim().toUpperCase();
+  const type  = document.getElementById('p-'+deptId+'-type').value;
+  const count = parseInt(document.getElementById('p-'+deptId+'-count').value) || 1;
+  if (!id || !label) { toast('⚠️ Rellena ID y nombre'); return; }
+  if (config[deptId].puestos.find(p => p.id === id)) { toast('⚠️ Ya existe ese ID'); return; }
+  config[deptId].puestos.push({id, label, type, count});
+  renderDept(currentDept);
+  toast('✅ Puesto añadido — recuerda guardar');
+}
+function delPuesto(deptId, i) {
+  const p = config[deptId].puestos[i];
+  if (!confirm('¿Quitar "'+p.label+'"?')) return;
+  config[deptId].puestos.splice(i, 1);
+  renderDept(currentDept);
+  toast('🗑 Puesto eliminado — recuerda guardar');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+cargarConfig();
+</script>
+</body>
+</html>
