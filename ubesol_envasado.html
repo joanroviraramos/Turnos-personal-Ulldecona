@@ -895,6 +895,7 @@ function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
 const TURNOS = ['M','T','N','P'];
 
 // ─── CONFIG DINÁMICA DESDE FIREBASE ──────────────────────────────────────────
+let lines = []; // DEBE declararse antes de loadConfig/applyConfig
 let _cfg = null; // se carga de Firebase o usa defaults
 
 async function loadConfig() {
@@ -902,14 +903,19 @@ async function loadConfig() {
     const doc = await db.collection('config').doc('estructura').get();
     if (doc.exists) {
       _cfg = doc.data();
+      const nLineas = (_cfg.envasado && _cfg.envasado.lineas) ? _cfg.envasado.lineas.length : 0;
+      console.log('[CONFIG] OK - Líneas en Firebase:', nLineas, '| IDs:', (_cfg.envasado&&_cfg.envasado.lineas||[]).map(l=>l.id).join(','));
+    } else {
+      console.log('[CONFIG] No existe doc en Firebase — usando defaults hardcoded');
     }
-  } catch(e) {}
-  // Si no hay config en Firebase, _cfg queda null y se usan los arrays hardcoded
+  } catch(e) {
+    console.error('[CONFIG] Error Firebase:', e.message);
+  }
   applyConfig();
 }
 
 function applyConfig() {
-  if (!_cfg) return;
+  if (!_cfg) { console.log('[CONFIG] applyConfig: _cfg null, sin cambios'); return; }
 
   // ── Envasado especiales ──
   if (_cfg.envasado) {
@@ -923,10 +929,9 @@ function applyConfig() {
     }
     if (_cfg.envasado.lineas) {
       lines = _cfg.envasado.lineas.map(l => mkLine(l.id, l.label, l.color, l.isL2sub||false, l.roles));
+      console.log('[CONFIG] applyConfig: lines asignadas ->', lines.map(l=>l.id).join(','));
     }
   }
-
-  // ── Post depts — se aplican en applyConfigPostDepts() llamado después de declarar los arrays ──
 }
 
 function applyConfigPostDepts() {
@@ -955,9 +960,6 @@ function applyConfigPostDepts() {
     _cfg.calidad.puestos.forEach(p => CAL_PUESTOS.push(p));
   }
 }
-
-// State
-let lines = [];
 
 // Servicios transversales: cada puesto es un array expandible de workers
 const SPECIAL_TOP = [
