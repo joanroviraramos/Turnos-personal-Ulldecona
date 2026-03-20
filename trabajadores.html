@@ -249,7 +249,7 @@ function updateField(id, field, value) {
 }
 
 function addFila() {
-  const deptDefault = isAdmin ? 'Envasado' : (DEPTS.find(d => normDept(d) === normDept(miDept)) || 'Envasado');
+  const deptDefault = isAdmin ? 'Envasado' : (DEPTS.find(d => normDept(d) === normDept(miDept)) || miDept);
   const nuevo = { id: 'new_' + Date.now(), nombre: '', dni: '', departamento: deptDefault, _nuevo: true };
   trabajadores.push(nuevo);
   _dirty = true;
@@ -276,12 +276,17 @@ async function guardar() {
   // Validar
   const errores = [];
   const dnisVistos = new Set();
+  const miDeptNorm = normDept(miDept);
   trabajadores.forEach((t, i) => {
     if (!t.nombre || !t.nombre.trim()) errores.push(`Fila ${i+1}: falta el nombre`);
     if (!t.dni || !t.dni.trim()) errores.push(`Fila ${i+1}: falta el DNI`);
     if (t.dni && !/^\d{8}[A-Za-z]$/.test(t.dni.trim())) errores.push(`Fila ${i+1}: DNI inválido (${t.dni})`);
     if (t.dni && dnisVistos.has(t.dni.trim().toUpperCase())) errores.push(`DNI duplicado: ${t.dni}`);
     if (t.dni) dnisVistos.add(t.dni.trim().toUpperCase());
+    // Encargado no puede guardar trabajadores de otro dept
+    if (!isAdmin && normDept(t.departamento) !== miDeptNorm) {
+      errores.push(`${t.nombre || 'Fila '+( i+1)}: departamento "${t.departamento}" no permitido. Solo puedes gestionar "${miDept}"`);
+    }
   });
 
   if (errores.length) { toast('⚠️ ' + errores[0]); return; }
@@ -339,6 +344,32 @@ function cerrarModalPegar() {
   document.getElementById('modal-pegar').classList.remove('show');
 }
 
+// Normalizar nombre de departamento desde Excel (ENVASADO -> Envasado, ALMACEN -> Almacén, etc.)
+function normalizarDept(raw) {
+  if (!raw) return '';
+  const map = {
+    'ENVASADO':       'Envasado',
+    'ELABORACION':    'Elaboración',
+    'ELABORACIÓN':    'Elaboración',
+    'ALMACEN':        'Almacén',
+    'ALMACÉN':        'Almacén',
+    'MANTENIMIENTO':  'Mantenimiento',
+    'CALIDAD':        'Calidad',
+    'SOPLADO':        'Soplado',
+    'MEJORA CONTINUA':'Mejora Continua',
+    'MEJORA':         'Mejora Continua',
+  };
+  const upper = raw.toUpperCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g,''); // quitar acentos para comparar
+  // Buscar coincidencia exacta primero
+  for (const [key, val] of Object.entries(map)) {
+    const keyNorm = key.normalize('NFD').replace(/[̀-ͯ]/g,'');
+    if (keyNorm === upper) return val;
+  }
+  // Si no hay coincidencia, capitalizar primera letra
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+}
+
 function parsearExcel(texto) {
   const filas = [];
   const lineas = texto.trim().split('\n');
@@ -348,8 +379,9 @@ function parsearExcel(texto) {
     if (cols.length < 2) return;
     const nombre = (cols[0]||'').trim().toUpperCase();
     const dni    = (cols[1]||'').trim().toUpperCase();
-    const dept   = (cols[2]||'').trim();
-    if (nombre || dni) filas.push({nombre, dni, departamento: dept || 'Envasado'});
+    const deptRaw = (cols[2]||'').trim();
+    const dept = normalizarDept(deptRaw) || 'Envasado';
+    if (nombre || dni) filas.push({nombre, dni, departamento: dept});
   });
   return filas;
 }
@@ -369,6 +401,19 @@ function importarPegado() {
   const texto = document.getElementById('textarea-excel').value;
   const filas = parsearExcel(texto);
   if (!filas.length) { toast('⚠️ No se detectaron filas válidas'); return; }
+
+  // Si no es admin, validar que todos los trabajadores son de su departamento
+  if (!isAdmin) {
+    const miDeptNorm = normDept(miDept);
+    const fuera = filas.filter(f => f.departamento && normDept(f.departamento) !== miDeptNorm);
+    if (fuera.length > 0) {
+      const deptsMal = [...new Set(fuera.map(f => f.departamento))].join(', ');
+      alert(`❌ No puedes añadir trabajadores de otro departamento.\n\nSe han detectado ${fuera.length} trabajador(es) de: ${deptsMal}\n\nSolo puedes gestionar trabajadores de: ${miDept}`);
+      return;
+    }
+    // Forzar departamento correcto para todos
+    filas.forEach(f => { f.departamento = DEPTS.find(d => normDept(d) === miDeptNorm) || miDept; });
+  }
 
   let nuevos = 0, actualizados = 0;
   filas.forEach(f => {
