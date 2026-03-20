@@ -1072,13 +1072,36 @@ function showTurnos() {
   const startW1 = new Date(jan4.getFullYear(), 0, jan4.getDate() - ((jan4.getDay()+6)%7));
   const semActual = Math.round((thu - startW1) / 604800000) + 1;
 
-  // Recoger histórico, máximo 10 semanas
+  // Recoger histórico
   let historico = getHistorico();
   const actKey = anoActual * 100 + semActual;
-  historico = historico.filter(d => {
+  const historicoPub = historico.filter(d => {
     const k = parseInt(d.ano) * 100 + parseInt(d.semana);
-    return k >= actKey; // semana actual y futuras
-  }).slice(0, 10);
+    return k >= actKey;
+  });
+
+  // Calcular rango de semanas a mostrar (semana actual + 9 más)
+  // Incluir semanas aunque no estén publicadas (fábrica cerrada)
+  const semanasPub = new Set(historicoPub.map(d => d.ano + '_' + String(d.semana).padStart(2,'0')));
+  const semanasVer = []; // [{ano, semana, data|null}]
+  for (let i = 0; i < 10; i++) {
+    let s = semActual + i;
+    let a = anoActual;
+    // Calcular semanas máximas del año
+    const maxSem = (function(y) {
+      const d28 = new Date(y, 11, 28);
+      const dow28 = (d28.getDay() + 6) % 7;
+      const thu = new Date(y, 11, 28 - dow28 + 3);
+      const jan4 = new Date(thu.getFullYear(), 0, 4);
+      const sw1 = new Date(jan4.getFullYear(), 0, jan4.getDate() - ((jan4.getDay()+6)%7));
+      return Math.round((thu - sw1) / 604800000) + 1;
+    })(a);
+    if (s > maxSem) { s -= maxSem; a += 1; }
+    const key = a + '_' + String(s).padStart(2,'0');
+    const data = historicoPub.find(d => d.ano == a && parseInt(d.semana) == s) || null;
+    semanasVer.push({ ano: a, semana: s, key, data });
+  }
+  historico = semanasVer;
 
   const c = document.getElementById('turnos-content');
   c.style.display = 'flex';
@@ -1107,10 +1130,12 @@ function showTurnos() {
   document.getElementById('calendario-content').style.display = 'none';
 
   let html = '';
-  historico.forEach(data => {
-    const turnoInfo = findTurnoWorkerInData(currentUser.nombre, data);
-    const sem = parseInt(data.semana);
-    const ano = parseInt(data.ano);
+  historico.forEach(item => {
+    const data = item.data; // null si semana sin publicar
+    const sinPublicar = !data;
+    const turnoInfo = data ? findTurnoWorkerInData(currentUser.nombre, data) : null;
+    const sem = item.semana;
+    const ano = item.ano;
     const { monday, sunday } = getWeekDates(ano, sem);
     const semKey = ano * 100 + sem;
     const sigKey = anoActual * 100 + (semActual + 1);
@@ -1121,10 +1146,10 @@ function showTurnos() {
     else if (semKey > sigKey)   { tipo = 'futura';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
     else                        { tipo = 'pasada';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
 
-    const sinAsignar   = !turnoInfo;
+    const sinAsignar   = !turnoInfo && !sinPublicar;
     const esBaja       = turnoInfo && turnoInfo.esBaja;
     const esVacaciones = turnoInfo && turnoInfo.esVacaciones;
-    const turnoNombre  = esBaja ? '🏥 Baja' : esVacaciones ? '🌴 Vacaciones' : turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
+    const turnoNombre  = sinPublicar ? '🏭 Sin publicar' : esBaja ? '🏥 Baja' : esVacaciones ? '🌴 Vacaciones' : turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
 
     // Buscar extras en esta semana
     const extrasMap = getExtrasByFecha();
@@ -1134,8 +1159,8 @@ function showTurnos() {
       const fkey = dia.getFullYear() + '-' + String(dia.getMonth()+1).padStart(2,'0') + '-' + String(dia.getDate()).padStart(2,'0');
       if (extrasMap[fkey]) extrasEnSemana.push({ fecha: fkey, dia, ...extrasMap[fkey] });
     }
-    const puestoNombre = turnoInfo ? turnoInfo.puesto : 'Sin asignar';
-    const borderColor  = tipo === 'futura' ? '#6366f1' : '#d1d5db';
+    const puestoNombre = sinPublicar ? 'Consulta con tu encargado' : turnoInfo ? turnoInfo.puesto : 'Sin asignar';
+    const borderColor  = sinPublicar ? '#9e9e9e' : tipo === 'futura' ? '#6366f1' : '#d1d5db';
 
     const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const TC = {M:'#4a7c2f',T:'#c47a00',N:'#1a6eb5',P:'#7c3a8a'};
@@ -1155,7 +1180,7 @@ function showTurnos() {
       </div>`;
     }).join('');
 
-    const cardStyle = esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
+    const cardStyle = sinPublicar ? 'style="background:#f5f5f5"' : esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
     if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
       html += `<div class="${cardClass}" ${cardStyle}>
         <span class="sem-label ${tipo}">${labelTxt}</span>
