@@ -1672,7 +1672,7 @@ function getExtrasForUser() {
       if (!d || !d.fecha) continue;
       // Buscar al trabajador en este día
       const info = findExtraWorker(nombre, d);
-      if (info) extras.push({ fecha: d.fecha, turno: info.turno, puesto: info.puesto, dept: info.dept });
+      if (info) extras.push({ fecha: d.fecha, turno: info.turno, tipo: info.tipo || 'pagar', puesto: info.puesto, dept: info.dept });
     } catch(e) {}
   }
   return extras.sort((a,b) => a.fecha.localeCompare(b.fecha));
