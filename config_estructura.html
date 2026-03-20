@@ -218,6 +218,33 @@ async function cargarConfig() {
     const doc = await db.collection('config').doc('estructura').get();
     if (doc.exists) {
       config = doc.data();
+      // Migrar formato antiguo de calidad (puestos planos -> sub-secciones)
+      if (config.calidad && config.calidad.puestos && !config.calidad.puestos_lineas) {
+        const todos = config.calidad.puestos;
+        const lineasIds = ['cal_nave1','cal_nave3','cal_tec'];
+        const fqIds = ['calfq_tec'];
+        const microIds = ['calmicro_tec'];
+        const matIds = ['calmat_tec'];
+        config.calidad.puestos_lineas = todos.filter(p => lineasIds.includes(p.id) || (!fqIds.includes(p.id) && !microIds.includes(p.id) && !matIds.includes(p.id) && !todos.some(pp => fqIds.includes(pp.id) || microIds.includes(pp.id) || matIds.includes(pp.id))));
+        config.calidad.puestos_fq    = todos.filter(p => fqIds.includes(p.id));
+        config.calidad.puestos_micro = todos.filter(p => microIds.includes(p.id));
+        config.calidad.puestos_mat   = todos.filter(p => matIds.includes(p.id));
+        // Si puestos_lineas quedó vacío, usar los defaults
+        if (!config.calidad.puestos_lineas.length) {
+          config.calidad.puestos_lineas = CONFIG_DEFAULT.calidad.puestos_lineas;
+        }
+        if (!config.calidad.puestos_fq.length)    config.calidad.puestos_fq    = CONFIG_DEFAULT.calidad.puestos_fq;
+        if (!config.calidad.puestos_micro.length)  config.calidad.puestos_micro = CONFIG_DEFAULT.calidad.puestos_micro;
+        if (!config.calidad.puestos_mat.length)    config.calidad.puestos_mat   = CONFIG_DEFAULT.calidad.puestos_mat;
+        delete config.calidad.puestos; // limpiar formato antiguo
+        console.log('[CONFIG] Migrado formato calidad a sub-secciones');
+      }
+      // Si no existe calidad en Firebase, usar defaults
+      if (!config.calidad) config.calidad = JSON.parse(JSON.stringify(CONFIG_DEFAULT.calidad));
+      if (!config.calidad.puestos_lineas) config.calidad.puestos_lineas = CONFIG_DEFAULT.calidad.puestos_lineas;
+      if (!config.calidad.puestos_fq)     config.calidad.puestos_fq     = CONFIG_DEFAULT.calidad.puestos_fq;
+      if (!config.calidad.puestos_micro)  config.calidad.puestos_micro  = CONFIG_DEFAULT.calidad.puestos_micro;
+      if (!config.calidad.puestos_mat)    config.calidad.puestos_mat    = CONFIG_DEFAULT.calidad.puestos_mat;
       toast('✅ Configuración cargada de Firebase');
     } else {
       config = JSON.parse(JSON.stringify(CONFIG_DEFAULT));
