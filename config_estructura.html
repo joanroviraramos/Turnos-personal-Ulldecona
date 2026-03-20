@@ -417,14 +417,14 @@ function renderSimple(id, dept) {
 }
 
 function renderSimpleData(id, dept, d, puestosKey) {
-  const d = config[id];
+  const puestos = d[puestosKey] || d.puestos || [];
   return `<div class="section-card">
     <div class="section-header" style="background:${dept.color}">
       <span>Puestos — ${dept.label}</span>
       <button class="btn-sm" onclick="showFormPuesto('${id}','${puestosKey}')" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir puesto</button>
     </div>
     <div class="section-body">
-      ${d.puestos.map((p,i) => `
+      ${puestos.map((p,i) => `
         <div class="item-row" draggable="true" data-id="${p.id}" data-dept="${id}" data-type="puesto" data-key="${puestosKey}">
           <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
           <div class="item-id">${p.id}</div>
