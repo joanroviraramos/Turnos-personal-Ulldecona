@@ -166,14 +166,22 @@ const CONFIG_DEFAULT = {
     {id:'mto_sup',   label:'SUPERVISOR/A DE TURNO', type:'sup',    count:1},
     {id:'mto_tec',   label:'TÉCNICO MTO.',           type:'yellow', count:6},
   ]},
-  calidad: {puestos:[
-    {id:'cal_nave1',    label:'NAVE 1-MK1',           type:'green',  count:2},
-    {id:'cal_nave3',    label:'NAVE 3-NAVE 4',         type:'yellow', count:2},
-    {id:'cal_tec',      label:'TÉCNICO',               type:'green',  count:2},
-    {id:'calfq_tec',    label:'TÉCNICO LABORATORIO',   type:'green',  count:4},
-    {id:'calmicro_tec', label:'TÉCNICO MICROBIOLOGIA', type:'yellow', count:4},
-    {id:'calmat_tec',   label:'TÉCNICO MATERIALES',    type:'green',  count:4},
-  ]},
+  calidad: {
+    puestos_lineas:[
+      {id:'cal_nave1', label:'NAVE 1-MK1',   type:'green',  count:2},
+      {id:'cal_nave3', label:'NAVE 3-NAVE 4', type:'yellow', count:2},
+      {id:'cal_tec',   label:'TÉCNICO',       type:'green',  count:2},
+    ],
+    puestos_fq:[
+      {id:'calfq_tec', label:'TÉCNICO LABORATORIO', type:'green', count:4},
+    ],
+    puestos_micro:[
+      {id:'calmicro_tec', label:'TÉCNICO MICROBIOLOGIA', type:'yellow', count:4},
+    ],
+    puestos_mat:[
+      {id:'calmat_tec', label:'TÉCNICO MATERIALES', type:'green', count:4},
+    ],
+  },
   soplado: {puestos:[
     {id:'sopl_sup',   label:'SUPERVISOR/A DE TURNO',  type:'sup',    count:1},
     {id:'sopl_s12',   label:'SOPLADORA 1 Y 2',         type:'green',  count:1},
@@ -193,7 +201,10 @@ const DEPTS = [
   {id:'elaboracion',   label:'Elaboración',    color:'#0d47a1', tipo:'simple'},
   {id:'almacen',       label:'Almacén',        color:'#4a148c', tipo:'simple'},
   {id:'mantenimiento', label:'Mantenimiento',  color:'#bf360c', tipo:'simple'},
-  {id:'calidad',       label:'Calidad',        color:'#006064', tipo:'simple'},
+  {id:'calidad_lineas', label:'Cal. Líneas',    color:'#006064', tipo:'calidad', subKey:'puestos_lineas'},
+  {id:'calidad_fq',     label:'Cal. Fís-Quím',  color:'#00838f', tipo:'calidad', subKey:'puestos_fq'},
+  {id:'calidad_micro',  label:'Cal. Micro',      color:'#0097a7', tipo:'calidad', subKey:'puestos_micro'},
+  {id:'calidad_mat',    label:'Cal. Materiales', color:'#00acc1', tipo:'calidad', subKey:'puestos_mat'},
   {id:'soplado',       label:'Soplado',        color:'#33691e', tipo:'simple'},
   {id:'mejora',        label:'Mejora Continua',color:'#4e342e', tipo:'simple'},
 ];
@@ -252,6 +263,8 @@ function renderDept(id) {
   const c = document.getElementById('dept-content');
   if (dept.tipo === 'envasado') {
     c.innerHTML = renderEnvasado();
+  } else if (dept.tipo === 'calidad') {
+    c.innerHTML = renderCalidadSub(id, dept);
   } else {
     c.innerHTML = renderSimple(id, dept);
   }
@@ -388,23 +401,37 @@ function formLineaHTML(key) {
 }
 
 // ─── RENDER SIMPLE (dept sin líneas) ─────────────────────────────────────────
+function renderCalidadSub(id, dept) {
+  // Leer puestos del sub-key correcto de config.calidad
+  const subKey = dept.subKey;
+  if (!config.calidad) config.calidad = {};
+  if (!config.calidad[subKey]) config.calidad[subKey] = [];
+  const d = { puestos: config.calidad[subKey] };
+  return renderSimpleData(id, dept, d, subKey);
+}
+
 function renderSimple(id, dept) {
   const d = config[id];
   if (!d) return '<div class="loading">Sin datos</div>';
+  return renderSimpleData(id, dept, d, 'puestos');
+}
+
+function renderSimpleData(id, dept, d, puestosKey) {
+  const d = config[id];
   return `<div class="section-card">
     <div class="section-header" style="background:${dept.color}">
       <span>Puestos — ${dept.label}</span>
-      <button class="btn-sm" onclick="showFormPuesto('${id}')" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir puesto</button>
+      <button class="btn-sm" onclick="showFormPuesto('${id}','${puestosKey}')" style="background:rgba(255,255,255,.2);color:white;border-color:rgba(255,255,255,.4)">+ Añadir puesto</button>
     </div>
     <div class="section-body">
       ${d.puestos.map((p,i) => `
-        <div class="item-row" draggable="true" data-id="${p.id}" data-dept="${id}" data-type="puesto">
+        <div class="item-row" draggable="true" data-id="${p.id}" data-dept="${id}" data-type="puesto" data-key="${puestosKey}">
           <span class="drag-handle" title="Arrastrar para reordenar">⠿</span>
           <div class="item-id">${p.id}</div>
           <div class="item-label">${p.label}</div>
           <div class="item-type">${p.type}</div>
           <div class="item-count" title="Filas iniciales">${p.count||1} fila${(p.count||1)!==1?'s':''}</div>
-          <button class="btn-sm del" onclick="delPuesto('${id}',${i})">✕ Quitar</button>
+          <button class="btn-sm del" onclick="delPuesto('${id}',${i},'${puestosKey}')">✕ Quitar</button>
         </div>`).join('')}
       <div class="add-form" id="form-puesto-${id}">
         <div class="form-row">
@@ -507,21 +534,40 @@ function delRoleLinea(lineaId, ri) {
 }
 
 // Puestos simples
+function getPuestosArr(deptId, puestosKey) {
+  const k = puestosKey || 'puestos';
+  const dept = DEPTS.find(d => d.id === deptId);
+  if (dept && dept.tipo === 'calidad') {
+    if (!config.calidad) config.calidad = {};
+    if (!config.calidad[k]) config.calidad[k] = [];
+    return config.calidad[k];
+  }
+  if (!config[deptId]) config[deptId] = {puestos:[]};
+  return config[deptId][k] || config[deptId].puestos;
+}
+function showFormPuesto(id, puestosKey) {
+  document.getElementById('form-puesto-'+id).classList.toggle('show');
+  document.getElementById('form-puesto-'+id).dataset.key = puestosKey || 'puestos';
+}
 function addPuesto(deptId) {
+  const form = document.getElementById('form-puesto-'+deptId);
+  const puestosKey = form ? form.dataset.key : 'puestos';
   const id    = sanitizeId(document.getElementById('p-'+deptId+'-id').value);
   const label = document.getElementById('p-'+deptId+'-label').value.trim().toUpperCase();
   const type  = document.getElementById('p-'+deptId+'-type').value;
   const count = parseInt(document.getElementById('p-'+deptId+'-count').value) || 1;
   if (!id || !label) { toast('⚠️ Rellena ID y nombre'); return; }
-  if (config[deptId].puestos.find(p => p.id === id)) { toast('⚠️ Ya existe ese ID'); return; }
-  config[deptId].puestos.push({id, label, type, count});
+  const arr = getPuestosArr(deptId, puestosKey);
+  if (arr.find(p => p.id === id)) { toast('⚠️ Ya existe ese ID'); return; }
+  arr.push({id, label, type, count});
   renderDept(currentDept);
   toast('✅ Puesto añadido — recuerda guardar');
 }
-function delPuesto(deptId, i) {
-  const p = config[deptId].puestos[i];
+function delPuesto(deptId, i, puestosKey) {
+  const arr = getPuestosArr(deptId, puestosKey || 'puestos');
+  const p = arr[i];
   if (!confirm('¿Quitar "'+p.label+'"?')) return;
-  config[deptId].puestos.splice(i, 1);
+  arr.splice(i, 1);
   renderDept(currentDept);
   toast('🗑 Puesto eliminado — recuerda guardar');
 }

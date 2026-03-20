@@ -980,12 +980,32 @@ function applyConfigPostDepts() {
     d.puestos.forEach(p => arr.push(p));
   });
 
-  // Calidad — todos los puestos van a CAL_PUESTOS
-  // Los sub-arrays (CALMAT, CALFQ, CALMICRO) mantienen sus valores hardcoded
-  // a menos que haya config específica
-  if (_cfg.calidad && _cfg.calidad.puestos) {
-    CAL_PUESTOS.length = 0;
-    _cfg.calidad.puestos.forEach(p => CAL_PUESTOS.push(p));
+  // Calidad — 4 sub-arrays separados
+  if (_cfg.calidad) {
+    // Calidad Líneas (CAL_PUESTOS)
+    if (_cfg.calidad.puestos_lineas) {
+      CAL_PUESTOS.length = 0;
+      _cfg.calidad.puestos_lineas.forEach(p => CAL_PUESTOS.push(p));
+    } else if (_cfg.calidad.puestos) {
+      // Retrocompat: si solo hay puestos generales, solo van a CAL_PUESTOS
+      CAL_PUESTOS.length = 0;
+      _cfg.calidad.puestos.forEach(p => CAL_PUESTOS.push(p));
+    }
+    // Calidad FQ
+    if (_cfg.calidad.puestos_fq) {
+      CALFQ_PUESTOS.length = 0;
+      _cfg.calidad.puestos_fq.forEach(p => CALFQ_PUESTOS.push(p));
+    }
+    // Calidad Micro
+    if (_cfg.calidad.puestos_micro) {
+      CALMICRO_PUESTOS.length = 0;
+      _cfg.calidad.puestos_micro.forEach(p => CALMICRO_PUESTOS.push(p));
+    }
+    // Calidad Materiales
+    if (_cfg.calidad.puestos_mat) {
+      CALMAT_PUESTOS.length = 0;
+      _cfg.calidad.puestos_mat.forEach(p => CALMAT_PUESTOS.push(p));
+    }
   }
 }
 
