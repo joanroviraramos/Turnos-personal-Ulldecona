@@ -2687,7 +2687,33 @@ function applyPayload(d) {
   updateWeekFromSelector();
 
   const merge = (target, src) => { if(src) Object.assign(target, src); };
-  if (d.envasado)       { merge(specialWorkers, d.envasado.specialWorkers); if(d.envasado.lines) lines=d.envasado.lines; if(d.envasado.bajas) bajas=d.envasado.bajas; if(d.envasado.vacaciones) vacaciones=d.envasado.vacaciones; }
+  if (d.envasado) {
+    merge(specialWorkers, d.envasado.specialWorkers);
+    if (d.envasado.lines) {
+      // Fusionar: mantener líneas de config Firebase, rellenar workers del localStorage
+      const savedLines = d.envasado.lines;
+      const savedMap = {}; // id -> linea guardada
+      savedLines.forEach(l => { savedMap[l.id] = l; });
+      lines.forEach(l => {
+        const saved = savedMap[l.id];
+        if (!saved) return; // línea nueva de config — queda vacía, OK
+        // Copiar workers del localStorage a la línea de config
+        const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+        roles.forEach(r => {
+          if (saved[r.id]) l[r.id] = saved[r.id];
+        });
+        // Compatibilidad maq/ops legacy
+        if (saved.maq) l.maq = saved.maq;
+        if (saved.ops) l.ops = saved.ops;
+      });
+      // Añadir líneas del localStorage que no estén en config (legacy)
+      savedLines.forEach(sl => {
+        if (!lines.find(l => l.id === sl.id)) lines.push(sl);
+      });
+    }
+    if (d.envasado.bajas) bajas = d.envasado.bajas;
+    if (d.envasado.vacaciones) vacaciones = d.envasado.vacaciones;
+  }
   if (d.elaboracion)    { merge(elabWorkers, d.elaboracion.workers);    if(d.elaboracion.bajas)    elabBajas=d.elaboracion.bajas;       if(d.elaboracion.vacaciones)    elabVacaciones=d.elaboracion.vacaciones; }
   if (d.almacen)        { merge(almWorkers,  d.almacen.workers);        if(d.almacen.bajas)        almBajas=d.almacen.bajas;            if(d.almacen.vacaciones)        almVacaciones=d.almacen.vacaciones; }
   if (d.mantenimiento)  { merge(mtoWorkers,  d.mantenimiento.workers);  if(d.mantenimiento.bajas)  mtoBajas=d.mantenimiento.bajas;      if(d.mantenimiento.vacaciones)  mtoVacaciones=d.mantenimiento.vacaciones; }
