@@ -2763,21 +2763,28 @@ function toast(msg) {
   const raw = (params.get('dept')||'envasado').toLowerCase()
     .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
     .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
-  const deptName = DEPT_MAP[raw] || 'Envasado';
+  const isAdmin = raw === 'admin';
+  const deptName = isAdmin ? 'Envasado' : (DEPT_MAP[raw] || 'Envasado');
   currentTab = deptName;
 
-  // 2. Ocultar todas las tabs excepto la activa
+  // 2. Ocultar tabs según rol — admin ve todas, encargado solo la suya
   document.querySelectorAll('.tab').forEach(btn => {
     const id = btn.id.replace('tab-','');
-    if (id === deptName) { btn.classList.add('active'); btn.style.display=''; }
-    else btn.style.display='none';
+    if (isAdmin) {
+      // Admin: todas visibles, activar la primera (Envasado)
+      btn.style.display = '';
+      if (id === 'Envasado') btn.classList.add('active');
+    } else {
+      if (id === deptName) { btn.classList.add('active'); btn.style.display=''; }
+      else btn.style.display='none';
+    }
   });
 
   // 3. Actualizar breadcrumb y título
   const bc = document.getElementById('dept-breadcrumb');
-  if (bc) bc.textContent = deptName.toUpperCase();
-  document.getElementById('dept-title').textContent = deptName;
-  document.title = 'Cuadrante ' + deptName + ' — GrupoUbesol';
+  if (bc) bc.textContent = isAdmin ? 'ADMIN — TODOS LOS DEPTS' : deptName.toUpperCase();
+  document.getElementById('dept-title').textContent = isAdmin ? 'Todos los departamentos' : deptName;
+  document.title = isAdmin ? 'Cuadrante Admin — GrupoUbesol' : 'Cuadrante ' + deptName + ' — GrupoUbesol';
 
   // 4. Semana actual ISO con fecha local (evita bug zona horaria)
   const now = new Date();
