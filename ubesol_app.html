@@ -1116,8 +1116,10 @@ function showTurnos() {
     else if (semKey > sigKey)   { tipo = 'futura';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
     else                        { tipo = 'pasada';  labelTxt = 'Semana ' + sem;  cardClass = 'turno-card-hist'; }
 
-    const sinAsignar = !turnoInfo;
-    const turnoNombre  = turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
+    const sinAsignar   = !turnoInfo;
+    const esBaja       = turnoInfo && turnoInfo.esBaja;
+    const esVacaciones = turnoInfo && turnoInfo.esVacaciones;
+    const turnoNombre  = esBaja ? '🏥 Baja' : esVacaciones ? '🌴 Vacaciones' : turnoInfo ? (TURNO_NOMBRES[turnoInfo.turno] || turnoInfo.turno) : '—';
 
     // Buscar extras en esta semana
     const extrasMap = getExtrasByFecha();
@@ -1148,21 +1150,24 @@ function showTurnos() {
       </div>`;
     }).join('');
 
+    const cardStyle = esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
     if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
-      html += `<div class="${cardClass}">
+      html += `<div class="${cardClass}" ${cardStyle}>
         <span class="sem-label ${tipo}">${labelTxt}</span>
         <div class="tc-turno">${turnoNombre}</div>
-        <div class="tc-puesto">${puestoNombre}</div>
+        <div class="tc-puesto">${esBaja || esVacaciones ? '' : puestoNombre}</div>
         <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
         ${extrasHTML}
       </div>`;
     } else {
-      html += `<div class="${cardClass}" style="border-left-color:${borderColor}">
+      const histBg = esBaja ? '#ffebee' : esVacaciones ? '#e8f5e9' : '';
+      const histBorder = esBaja ? '#b71c1c' : esVacaciones ? '#2e7d32' : borderColor;
+      html += `<div class="${cardClass}" style="border-left-color:${histBorder};${histBg?'background:'+histBg:''}" >
         <span class="sem-label ${tipo}">${labelTxt}</span>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
           <div>
-            <div style="font-size:18px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.2">${turnoNombre}</div>
-            <div style="font-size:16px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2">${puestoNombre}</div>
+            <div style="font-size:18px;font-weight:700;color:${esBaja?'#b71c1c':esVacaciones?'#2e7d32':sinAsignar?'#ccc':'var(--text)'};letter-spacing:-0.01em;line-height:1.2">${turnoNombre}</div>
+            <div style="font-size:16px;font-weight:700;color:${sinAsignar?'#ccc':'var(--text-2)'};letter-spacing:-0.01em;line-height:1.2">${esBaja||esVacaciones?'':puestoNombre}</div>
           </div>
           <div style="text-align:right;font-size:12px;color:#999;font-family:'DM Mono',monospace;line-height:1.7;flex-shrink:0;padding-top:2px">
             ${fmtDate(monday)}<br>${fmtDate(sunday)}
@@ -1304,6 +1309,14 @@ function renderCalendario() {
           <div style="width:12px;height:12px;border-radius:50%;background:#FFD600;border:1.5px solid #e65100"></div>
           <span style="font-size:12px;color:var(--text-2)">Horas extra</span>
         </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:12px;height:12px;border-radius:3px;background:#b71c1c"></div>
+          <span style="font-size:12px;color:var(--text-2)">Baja</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:12px;height:12px;border-radius:3px;background:#2e7d32"></div>
+          <span style="font-size:12px;color:var(--text-2)">Vacaciones</span>
+        </div>
       </div>
     </div>`;
 
@@ -1364,6 +1377,12 @@ function renderCalendario() {
       } else if (esSabLab) {
         bgColor   = 'rgba(245,158,11,0.18)';
         textColor = '#b45309';
+      } else if (t && t.esBaja && !esFinSem) {
+        bgColor   = '#b71c1c';
+        textColor = 'white';
+      } else if (t && t.esVacaciones && !esFinSem) {
+        bgColor   = '#2e7d32';
+        textColor = 'white';
       } else if (t && !esFinSem) {
         bgColor   = TURNO_COLORS[t.turno];
         textColor = 'white';
@@ -1453,19 +1472,51 @@ function findTurnoWorkerInData(nombre, data) {
         }
       }
     }
+    // Bajas y vacaciones de envasado
+    for (const w of safeArr(env.bajas)) {
+      if (!w || !w.cells) continue;
+      for (const t of TURNOS) {
+        if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+          return { turno: t, puesto: '🏥 Baja', esBaja: true };
+      }
+    }
+    for (const w of safeArr(env.vacaciones)) {
+      if (!w || !w.cells) continue;
+      for (const t of TURNOS) {
+        if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+          return { turno: t, puesto: '🌴 Vacaciones', esVacaciones: true };
+      }
+    }
   }
 
   const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
   for (const key of POST_KEYS) {
     const d = data[key];
-    if (!d || !d.workers) continue;
-    for (const [pid, arr] of Object.entries(d.workers)) {
-      for (const w of safeArr(arr)) {
-        if (!w || !w.cells) continue;
-        for (const t of TURNOS) {
-          if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-            return { turno: t, puesto: PLABELS[pid] || pid };
+    if (!d) continue;
+    if (d.workers) {
+      for (const [pid, arr] of Object.entries(d.workers)) {
+        for (const w of safeArr(arr)) {
+          if (!w || !w.cells) continue;
+          for (const t of TURNOS) {
+            if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+              return { turno: t, puesto: PLABELS[pid] || pid };
+          }
         }
+      }
+    }
+    // Bajas y vacaciones de post depts
+    for (const w of safeArr(d.bajas)) {
+      if (!w || !w.cells) continue;
+      for (const t of TURNOS) {
+        if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+          return { turno: t, puesto: '🏥 Baja', esBaja: true };
+      }
+    }
+    for (const w of safeArr(d.vacaciones)) {
+      if (!w || !w.cells) continue;
+      for (const t of TURNOS) {
+        if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
+          return { turno: t, puesto: '🌴 Vacaciones', esVacaciones: true };
       }
     }
   }
