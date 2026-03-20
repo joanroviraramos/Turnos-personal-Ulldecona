@@ -1286,18 +1286,23 @@ function showTurnos() {
       </div>`;
     }).join('');
 
-    const cardStyle = sinPublicar ? 'style="background:#f5f5f5"' : esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
+    // Color de tarjetas destacadas según estado
+    const cardStyleDestacada = sinPublicar
+      ? 'style="background:#e8e8e8"'
+      : esBaja ? 'style="background:#b71c1c"'
+      : esVacaciones ? 'style="background:#2e7d32"' : '';
+    const spColor = sinPublicar ? 'color:#555' : '';
     if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
-      html += `<div class="${cardClass}" ${cardStyle}>
-        <span class="sem-label ${tipo}">${labelTxt}</span>
-        <div class="tc-turno">${turnoNombre}</div>
-        <div class="tc-puesto">${esBaja || esVacaciones ? '' : puestoNombre}</div>
-        <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+      html += `<div class="${cardClass}" ${cardStyleDestacada}>
+        <span class="sem-label ${tipo}" style="${spColor}">${labelTxt}</span>
+        <div class="tc-turno" style="${spColor}">${turnoNombre}</div>
+        <div class="tc-puesto" style="${spColor}">${sinPublicar ? puestoNombre : esBaja || esVacaciones ? '' : puestoNombre}</div>
+        <div class="tc-fechas" style="${spColor}">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
         ${extrasHTML}
       </div>`;
     } else {
-      const histBg = esBaja ? '#ffebee' : esVacaciones ? '#e8f5e9' : '';
-      const histBorder = esBaja ? '#b71c1c' : esVacaciones ? '#2e7d32' : borderColor;
+      const histBg = sinPublicar ? '#f5f5f5' : esBaja ? '#ffebee' : esVacaciones ? '#e8f5e9' : '';
+      const histBorder = sinPublicar ? '#ccc' : esBaja ? '#b71c1c' : esVacaciones ? '#2e7d32' : borderColor;
       html += `<div class="${cardClass}" style="border-left-color:${histBorder};${histBg?'background:'+histBg:''}" >
         <span class="sem-label ${tipo}">${labelTxt}</span>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
