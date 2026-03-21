@@ -543,6 +543,33 @@ footer {
 
       <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
     </div>
+
+    <!-- ── PANEL EPIs ── -->
+    <div id="epi-panel-section" style="display:none; width:100%; max-width:900px; margin:0 auto; padding: 0 24px 40px;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+        <button onclick="window.location.href='index.html'" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; padding:8px 16px; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;">‹ Portal</button>
+        <div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:.06em;">Seguridad</div>
+          <div style="font-family:'Bebas Neue',sans-serif; font-size:28px; color:white; letter-spacing:.04em;">Aprobación de EPIs</div>
+        </div>
+        <div style="margin-left:auto; font-size:12px; color:rgba(255,255,255,0.7)" id="epi-panel-dept"></div>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+        <select id="epi-filtro-estado" onchange="renderEpis()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); color:white;">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="aprobado">Aprobado</option>
+          <option value="rechazado">Rechazado</option>
+        </select>
+        <span id="epi-count" style="font-size:12px; color:rgba(255,255,255,0.8); background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:12px;"></span>
+      </div>
+
+      <!-- Lista solicitudes -->
+      <div id="epi-lista" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+
   </main>
 
   <footer>
@@ -573,7 +600,7 @@ const LS_KEY = 'ubesol_portal_session';
 // ── INIT ─────────────────────────────────────────────────────────────────
 (function() {
   const sess = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-  if (sess) showPortal(sess);
+  if (sess) showEpiPanel(sess);
 })();
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────
@@ -598,10 +625,11 @@ function doLogin() {
 
   err.classList.remove('show');
   localStorage.setItem(LS_KEY, JSON.stringify(responsable));
-  showPortal(responsable);
+  showEpiPanel(responsable);
 }
 
 function doLogout() {
+  if (_epiUnsubscribe) { _epiUnsubscribe(); _epiUnsubscribe = null; }
   localStorage.removeItem(LS_KEY);
   document.getElementById('portal-section').classList.remove('active');
   document.getElementById('login-section').style.display = '';
@@ -665,6 +693,152 @@ document.getElementById('inp-pass').addEventListener('keydown', e => {
 document.getElementById('inp-user').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('inp-pass').focus();
 });
+
+// ── PANEL EPIs ────────────────────────────────────────────────────────────
+let _epiResponsable = null;
+let _epiUnsubscribe  = null; // listener en tiempo real de Firebase
+
+function showEpiPanel(responsable) {
+  _epiResponsable = responsable;
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('portal-section').classList.remove('active');
+  document.getElementById('epi-panel-section').style.display = '';
+  document.getElementById('epi-panel-dept').textContent = responsable.nombre + ' — ' + responsable.departamento;
+
+  // Escuchar en tiempo real igual que la app del trabajador
+  if (_epiUnsubscribe) _epiUnsubscribe();
+  _epiUnsubscribe = db.collection('epis').doc('solicitudes').onSnapshot(function(docSnap) {
+    const all = docSnap.exists ? docSnap.data() : {};
+    renderEpis(all);
+  }, function(err) {
+    document.getElementById('epi-lista').innerHTML = '<div style="color:#ef4444;padding:20px;">Error Firebase: ' + err.message + '</div>';
+  });
+}
+
+function renderEpis(all) {
+  const lista = document.getElementById('epi-lista');
+  const isAdmin = _epiResponsable.user === 'admin';
+  const miDept  = _epiResponsable.departamento;
+
+  // Construir lista plana con referencia dni+idx para poder actualizar
+  let solicitudes = [];
+  Object.entries(all).forEach(([dni, epis]) => {
+    // Filtrar por departamento si no es admin — buscamos el trabajador en la lista de la app
+    if (!isAdmin) {
+      const trabajador = TODOS_TRABAJADORES.find(t => t.dni === dni);
+      if (!trabajador) return;
+      const deptTrab = (trabajador.departamento || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      const deptResp = miDept.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if (!deptTrab.includes(deptResp) && !deptResp.includes(deptTrab)) return;
+    }
+    (epis || []).forEach((e, idx) => {
+      // Buscar nombre del trabajador
+      const trabajador = TODOS_TRABAJADORES.find(t => t.dni === dni);
+      solicitudes.push({ dni, idx, nombreTrabajador: trabajador ? trabajador.nombre : dni, ...e });
+    });
+  });
+
+  // Filtrar por estado
+  const filtroEstado = document.getElementById('epi-filtro-estado').value;
+  if (filtroEstado) solicitudes = solicitudes.filter(s => s.estado === filtroEstado);
+
+  // Ordenar: pendientes primero, luego por fecha desc
+  solicitudes.sort((a, b) => {
+    const orden = { pendiente: 0, aprobado: 1, rechazado: 2 };
+    const diff = (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3);
+    if (diff !== 0) return diff;
+    return (b.fecha || 0) - (a.fecha || 0);
+  });
+
+  const total = solicitudes.length;
+  const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
+  document.getElementById('epi-count').textContent =
+    total + ' solicitud' + (total !== 1 ? 'es' : '') +
+    (pendientes > 0 ? ' · ' + pendientes + ' pendiente' + (pendientes !== 1 ? 's' : '') : '');
+
+  if (!total) {
+    lista.innerHTML = '<div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:40px;text-align:center;color:rgba(255,255,255,0.6);font-size:14px;">No hay solicitudes' + (filtroEstado ? ' con estado "' + filtroEstado + '"' : '') + '</div>';
+    return;
+  }
+
+  lista.innerHTML = solicitudes.map(s => {
+    const estadoColor = s.estado === 'pendiente' ? '#f59e0b' : s.estado === 'aprobado' ? '#22c55e' : '#ef4444';
+    const estadoLabel = s.estado === 'pendiente' ? '⏳ Pendiente' : s.estado === 'aprobado' ? '✅ Aprobado' : '❌ Rechazado';
+    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+    return `
+      <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.3);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:14px;font-weight:700;color:white;">${esc2(s.tipo || 'EPI')}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">${esc2(s.nombreTrabajador)} · DNI: ${s.dni}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">${fecha}${s.talla ? ' · Talla: ' + esc2(s.talla) : ''}${s.pedidoId ? ' · Pedido: ' + esc2(s.pedidoId) : ''}</div>
+          ${s.nota ? `<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;font-style:italic;">"${esc2(s.nota)}"</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;color:${estadoColor};background:rgba(255,255,255,0.1);padding:4px 12px;border-radius:20px;border:1px solid ${estadoColor};">${estadoLabel}</span>
+          ${s.estado === 'pendiente' ? `
+            <button onclick="cambiarEstadoEpi('${s.dni}',${s.idx},'aprobado')" style="background:#22c55e;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓ Aprobar</button>
+            <button onclick="cambiarEstadoEpi('${s.dni}',${s.idx},'rechazado')" style="background:#ef4444;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✗ Rechazar</button>
+          ` : `
+            <button onclick="cambiarEstadoEpi('${s.dni}',${s.idx},'pendiente')" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">↺ Reabrir</button>
+          `}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function cambiarEstadoEpi(dni, idx, nuevoEstado) {
+  try {
+    // Leer documento actual de Firebase
+    const docRef = db.collection('epis').doc('solicitudes');
+    const docSnap = await docRef.get();
+    const all = docSnap.exists ? docSnap.data() : {};
+
+    if (!all[dni] || all[dni][idx] === undefined) return;
+
+    // Actualizar solo el campo estado de esa solicitud
+    all[dni][idx].estado = nuevoEstado;
+
+    // Guardar en Firebase — el onSnapshot notificará a la app automáticamente
+    await docRef.set(all);
+  } catch(e) {
+    alert('Error al guardar: ' + e.message);
+  }
+}
+
+function esc2(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Lista completa de trabajadores para resolver nombres por DNI
+const TODOS_TRABAJADORES = [
+  {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
+  {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
+  {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
+  {nombre:"ANA LOPEZ MARTINEZ",dni:"45678901D",departamento:"Envasado"},
+  {nombre:"PEDRO GONZALEZ RUIZ",dni:"56789012E",departamento:"Envasado"},
+  {nombre:"LUCIA HERNANDEZ JIMENEZ",dni:"67890123F",departamento:"Envasado"},
+  {nombre:"MIGUEL PEREZ MORENO",dni:"78901234G",departamento:"Envasado"},
+  {nombre:"SOFIA MARTIN DIAZ",dni:"89012345H",departamento:"Envasado"},
+  {nombre:"ANTONIO GARCIA ROMERO",dni:"90123456I",departamento:"Envasado"},
+  {nombre:"ELENA FERNANDEZ TORRES",dni:"01234567J",departamento:"Envasado"},
+  {nombre:"DAVID SANCHEZ NAVARRO",dni:"11223344K",departamento:"Envasado"},
+  {nombre:"LAURA JIMENEZ GUERRERO",dni:"22334455L",departamento:"Envasado"},
+  {nombre:"FRANCISCO RUIZ CANO",dni:"33445566M",departamento:"Envasado"},
+  {nombre:"CARMEN MORENO FUENTES",dni:"44556677N",departamento:"Envasado"},
+  {nombre:"RAUL DIAZ MOLINA",dni:"55667788O",departamento:"Envasado"},
+  {nombre:"ISABEL TORRES REYES",dni:"66778899P",departamento:"Envasado"},
+  {nombre:"JAVIER ROMERO CASTILLO",dni:"77889900Q",departamento:"Envasado"},
+  {nombre:"PATRICIA NAVARRO BLANCO",dni:"88990011R",departamento:"Envasado"},
+  {nombre:"SERGIO GUERRERO VARGAS",dni:"99001122S",departamento:"Envasado"},
+  {nombre:"MONICA CANO HERRERA",dni:"00112233T",departamento:"Envasado"},
+  {nombre:"TERESA VARGAS SANTOS",dni:"67867867Z",departamento:"Elaboración"},
+  {nombre:"MANUEL HERRERA MEDINA",dni:"78978978A",departamento:"Elaboración"},
+  {nombre:"ANDREA ORTEGA FLORES",dni:"89089089B",departamento:"Elaboración"},
+  {nombre:"JUAN DELGADO VEGA",dni:"90190190C",departamento:"Elaboración"},
+  {nombre:"CONSUELO MARIN RUBIO",dni:"89089089L",departamento:"Almacén"},
+  {nombre:"IGNACIO GIMENEZ ALONSO",dni:"90190190M",departamento:"Almacén"},
+  {nombre:"PILAR ALONSO CAMPOS",dni:"01201201N",departamento:"Almacén"},
+  {nombre:"RAFAEL CAMPOS PARDO",dni:"12312344O",departamento:"Almacén"},
+];
+
 </script>
 </body>
 </html>
