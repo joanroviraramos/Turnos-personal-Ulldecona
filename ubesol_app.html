@@ -1244,7 +1244,7 @@ function showTurnos() {
       </div>`;
     }).join('');
 
-    const cardStyle = sinPublicar ? 'style="background:#f5f5f5"' : esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
+    const cardStyle = sinPublicar ? 'style="background:#f5f5f5;color:#999"' : esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
     if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
       html += `<div class="${cardClass}" ${cardStyle}>
         <span class="sem-label ${tipo}">${labelTxt}</span>
@@ -1538,6 +1538,8 @@ function findTurnoWorkerInData(nombre, data) {
     cal_nave1:'Nave 1-MK1',cal_nave3:'Nave 3-Nave 4',cal_tec:'Técnico',
     calfq_tec:'Técnico Lab.',calmicro_tec:'Técnico Micro.',
     calmat_tec:'Técnico Mat.',mc_tec:'Técnico Procesos',
+    tec_lab:'Técnico Lab.',tec_micro:'Técnico Micro.',tec_mat:'Técnico Mat.',
+    tec_laboratorio:'Técnico Lab.',tec_microbiologia:'Técnico Micro.',tec_materiales:'Técnico Mat.',
     // Soplado
     sopl_sup:'Supervisor/A',sopl_s12:'Sopladora 1 y 2',sopl_s3:'Sopladora 3',
     sopl_s46:'Sopladora 4 y 6',sopl_s5t:'Sopladora 5 y Trk.',
