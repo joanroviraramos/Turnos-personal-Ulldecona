@@ -42,6 +42,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .btn-rechazar:hover{background:#7f0000;}
 .btn-reabrir{background:white;color:#555;border:1px solid #ccc;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
 .btn-reabrir:hover{background:#f5f5f5;}
+.btn-eliminar{background:white;color:#b71c1c;border:1px solid #ef9a9a;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-left:4px;}
+.btn-eliminar:hover{background:#ffebee;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1b5e20;color:white;font-size:13px;font-weight:500;padding:10px 20px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;}
 .toast.show{opacity:1;}
 .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f4f0;}
@@ -111,7 +113,7 @@ const db=firebase.firestore();
 <div class="toast" id="toast"></div>
 
 <script>
-let _responsable=null, _unsubscribe=null, _tabActual='todas', _allData={};
+let _responsable=null, _unsubscribe=null, _tabActual='todas', _allData={}, _trabajadores=[];
 
 const RESPONSABLES=[
   {user:'admin',       pass:'ubesol2026', nombre:'Administrador',             departamento:'Administración', dept:'admin'},
@@ -128,37 +130,6 @@ const RESPONSABLES=[
 ];
 
 const LS_KEY='ubesol_portal_session';
-
-const TRABAJADORES=[
-  {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
-  {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
-  {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
-  {nombre:"ANA LOPEZ MARTINEZ",dni:"45678901D",departamento:"Envasado"},
-  {nombre:"PEDRO GONZALEZ RUIZ",dni:"56789012E",departamento:"Envasado"},
-  {nombre:"LUCIA HERNANDEZ JIMENEZ",dni:"67890123F",departamento:"Envasado"},
-  {nombre:"MIGUEL PEREZ MORENO",dni:"78901234G",departamento:"Envasado"},
-  {nombre:"SOFIA MARTIN DIAZ",dni:"89012345H",departamento:"Envasado"},
-  {nombre:"ANTONIO GARCIA ROMERO",dni:"90123456I",departamento:"Envasado"},
-  {nombre:"ELENA FERNANDEZ TORRES",dni:"01234567J",departamento:"Envasado"},
-  {nombre:"DAVID SANCHEZ NAVARRO",dni:"11223344K",departamento:"Envasado"},
-  {nombre:"LAURA JIMENEZ GUERRERO",dni:"22334455L",departamento:"Envasado"},
-  {nombre:"FRANCISCO RUIZ CANO",dni:"33445566M",departamento:"Envasado"},
-  {nombre:"CARMEN MORENO FUENTES",dni:"44556677N",departamento:"Envasado"},
-  {nombre:"RAUL DIAZ MOLINA",dni:"55667788O",departamento:"Envasado"},
-  {nombre:"ISABEL TORRES REYES",dni:"66778899P",departamento:"Envasado"},
-  {nombre:"JAVIER ROMERO CASTILLO",dni:"77889900Q",departamento:"Envasado"},
-  {nombre:"PATRICIA NAVARRO BLANCO",dni:"88990011R",departamento:"Envasado"},
-  {nombre:"SERGIO GUERRERO VARGAS",dni:"99001122S",departamento:"Envasado"},
-  {nombre:"MONICA CANO HERRERA",dni:"00112233T",departamento:"Envasado"},
-  {nombre:"TERESA VARGAS SANTOS",dni:"67867867Z",departamento:"Elaboración"},
-  {nombre:"MANUEL HERRERA MEDINA",dni:"78978978A",departamento:"Elaboración"},
-  {nombre:"ANDREA ORTEGA FLORES",dni:"89089089B",departamento:"Elaboración"},
-  {nombre:"JUAN DELGADO VEGA",dni:"90190190C",departamento:"Elaboración"},
-  {nombre:"CONSUELO MARIN RUBIO",dni:"89089089L",departamento:"Almacén"},
-  {nombre:"IGNACIO GIMENEZ ALONSO",dni:"90190190M",departamento:"Almacén"},
-  {nombre:"PILAR ALONSO CAMPOS",dni:"01201201N",departamento:"Almacén"},
-  {nombre:"RAFAEL CAMPOS PARDO",dni:"12312344O",departamento:"Almacén"},
-];
 
 (function(){
   const sess=JSON.parse(localStorage.getItem(LS_KEY)||'null');
@@ -182,12 +153,19 @@ function mostrarPanel(r){
   document.getElementById('login-section').style.display='none';
   document.getElementById('panel-section').style.display='';
   document.getElementById('panel-dept-label').textContent=r.departamento;
-  if(_unsubscribe)_unsubscribe();
-  _unsubscribe=db.collection('epis').doc('solicitudes').onSnapshot(function(snap){
-    _allData=snap.exists?snap.data():{};
-    actualizarContadores();
-    renderTabla();
-  },function(e){toast('⚠️ Error: '+e.message);});
+
+  // Cargar trabajadores desde Firebase primero
+  db.collection('trabajadores').get().then(snap=>{
+    _trabajadores=[];
+    snap.forEach(doc=>_trabajadores.push(doc.data()));
+    // Luego escuchar EPIs en tiempo real
+    if(_unsubscribe)_unsubscribe();
+    _unsubscribe=db.collection('epis').doc('solicitudes').onSnapshot(function(snap){
+      _allData=snap.exists?snap.data():{};
+      actualizarContadores();
+      renderTabla();
+    },function(e){toast('⚠️ Error: '+e.message);});
+  }).catch(e=>toast('⚠️ Error cargando trabajadores: '+e.message));
 }
 
 function getSolicitudes(){
@@ -196,12 +174,12 @@ function getSolicitudes(){
   let lista=[];
   Object.entries(_allData).forEach(([dni,epis])=>{
     if(!isAdmin){
-      const t=TRABAJADORES.find(t=>t.dni===dni);
+      const t=_trabajadores.find(t=>t.dni===dni);
       if(!t)return;
       const deptT=(t.departamento||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       if(!deptT.includes(miDept)&&!miDept.includes(deptT))return;
     }
-    const nombre=(TRABAJADORES.find(t=>t.dni===dni)||{}).nombre||dni;
+    const nombre=(_trabajadores.find(t=>t.dni===dni)||{}).nombre||dni;
     (epis||[]).forEach((e,idx)=>lista.push({dni,idx,nombre,...e}));
   });
   return lista;
@@ -236,13 +214,16 @@ function renderTabla(){
     const acc=s.estado==='pendiente'
       ?`<button class="btn-aprobar" onclick="cambiarEstado('${s.dni}',${s.idx},'aprobado')">✓ Aprobar</button><button class="btn-rechazar" onclick="cambiarEstado('${s.dni}',${s.idx},'rechazado')">✗ Rechazar</button>`
       :`<button class="btn-reabrir" onclick="cambiarEstado('${s.dni}',${s.idx},'pendiente')">↺ Reabrir</button>`;
+    const btnEliminar = _responsable.user==='admin'
+      ? `<button class="btn-eliminar" onclick="eliminarSolicitud('${s.dni}',${s.idx})" title="Eliminar solicitud">🗑</button>`
+      : '';
     return`<tr>
       <td><strong>${esc(s.nombre)}</strong><br><span style="color:#999;font-size:11px">${s.dni}</span></td>
       <td>${esc(s.tipo||'—')}${s.talla?'<br><span style="color:#999;font-size:11px">Talla: '+esc(s.talla)+'</span>':''}</td>
       <td style="color:#666;max-width:180px">${esc(s.nota||'—')}</td>
       <td style="white-space:nowrap">${fecha}</td>
       <td><span class="tag ${tagCls}">${tagLabel}</span></td>
-      <td style="white-space:nowrap">${acc}</td>
+      <td style="white-space:nowrap">${acc}${btnEliminar}</td>
     </tr>`;
   }).join('');
 }
@@ -257,6 +238,20 @@ async function cambiarEstado(dni,idx,nuevoEstado){
     await docRef.set(all);
     const msg=nuevoEstado==='aprobado'?'✅ Solicitud aprobada':nuevoEstado==='rechazado'?'❌ Solicitud rechazada':'↺ Solicitud reabierta';
     toast(msg);
+  }catch(e){toast('⚠️ Error: '+e.message);}
+}
+
+async function eliminarSolicitud(dni,idx){
+  if(!confirm('¿Eliminar esta solicitud? Desaparecerá también de la app del trabajador.'))return;
+  try{
+    const docRef=db.collection('epis').doc('solicitudes');
+    const snap=await docRef.get();
+    const all=snap.exists?snap.data():{};
+    if(!all[dni])return;
+    all[dni].splice(idx,1);
+    if(all[dni].length===0)delete all[dni];
+    await docRef.set(all);
+    toast('🗑 Solicitud eliminada');
   }catch(e){toast('⚠️ Error: '+e.message);}
 }
 

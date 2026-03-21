@@ -850,10 +850,10 @@ const WORKERS_EMBEDDED = [
   {nombre:"LARA GARCIA ALONSO",dni:"00011133L",departamento:"Soplado"},
 ];
 
-let allWorkers = WORKERS_EMBEDDED; // se reemplaza con Firebase al cargar
+let allWorkers = WORKERS_EMBEDDED;
 let cuadrante = null;
 let currentUser = null;
-let workersLoaded = false;
+let workersLoaded = true;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
@@ -912,67 +912,10 @@ function startInactivityWatcher() {
   });
 }
 
-async function loadWorkers() {
-  try {
-    const snap = await db.collection('trabajadores').get();
-    if (!snap.empty) {
-      allWorkers = [];
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.nombre && d.dni) allWorkers.push({nombre: d.nombre, dni: d.dni, departamento: d.departamento||''});
-      });
-      // Guardar en localStorage como caché offline
-      localStorage.setItem('ubesol_workers_cache', JSON.stringify(allWorkers));
-    } else if (!allWorkers.length) {
-      // Intentar caché offline
-      const cache = localStorage.getItem('ubesol_workers_cache');
-      if (cache) allWorkers = JSON.parse(cache);
-    }
-  } catch(e) {
-    // Sin conexión — usar caché si existe
-    const cache = localStorage.getItem('ubesol_workers_cache');
-    if (cache) allWorkers = JSON.parse(cache);
-    else allWorkers = WORKERS_EMBEDDED; // último recurso: datos embebidos
-  }
-  workersLoaded = true;
-}
-
-// ─── CONFIG DINÁMICA ─────────────────────────────────────────────────────────
-let _appConfig = null;
-
-function loadAppConfig() {
-  db.collection('config').doc('estructura').onSnapshot(function(doc) {
-    if (doc.exists) _appConfig = doc.data();
-  });
-}
-
-// Obtener label de un puesto/rol dinámico
-function getPuestoLabel(id) {
-  if (!_appConfig) return id;
-  // Buscar en envasado especiales
-  const env = _appConfig.envasado;
-  if (env) {
-    for (const arr of [env.especiales_top||[], env.especiales_bot||[]]) {
-      const f = arr.find(p => p.id === id);
-      if (f) return f.label;
-    }
-  }
-  // Buscar en post depts
-  const deptIds = ['elaboracion','almacen','mantenimiento','calidad','soplado','mejora'];
-  for (const dId of deptIds) {
-    const d = _appConfig[dId];
-    if (d && d.puestos) {
-      const f = d.puestos.find(p => p.id === id);
-      if (f) return f.label;
-    }
-  }
-  return id;
-}
+async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
 
 function loadCuadrante() {
   // Cargar todos los cuadrantes desde Firebase en tiempo real
-  loadAppConfig();
-  loadWorkers(); // cargar trabajadores de Firebase en background
   try {
     db.collection('cuadrantes').onSnapshot(function(snap) {
       const keysBorrar = [];
@@ -1286,23 +1229,18 @@ function showTurnos() {
       </div>`;
     }).join('');
 
-    // Color de tarjetas destacadas según estado
-    const cardStyleDestacada = sinPublicar
-      ? 'style="background:#e8e8e8"'
-      : esBaja ? 'style="background:#b71c1c"'
-      : esVacaciones ? 'style="background:#2e7d32"' : '';
-    const spColor = sinPublicar ? 'color:#555' : '';
+    const cardStyle = sinPublicar ? 'style="background:#f5f5f5"' : esBaja ? 'style="background:#b71c1c"' : esVacaciones ? 'style="background:#2e7d32"' : '';
     if (cardClass === 'turno-card' || cardClass === 'turno-card-actual') {
-      html += `<div class="${cardClass}" ${cardStyleDestacada}>
-        <span class="sem-label ${tipo}" style="${spColor}">${labelTxt}</span>
-        <div class="tc-turno" style="${spColor}">${turnoNombre}</div>
-        <div class="tc-puesto" style="${spColor}">${sinPublicar ? puestoNombre : esBaja || esVacaciones ? '' : puestoNombre}</div>
-        <div class="tc-fechas" style="${spColor}">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
+      html += `<div class="${cardClass}" ${cardStyle}>
+        <span class="sem-label ${tipo}">${labelTxt}</span>
+        <div class="tc-turno">${turnoNombre}</div>
+        <div class="tc-puesto">${esBaja || esVacaciones ? '' : puestoNombre}</div>
+        <div class="tc-fechas">${fmtDate(monday)} — ${fmtDate(sunday)}</div>
         ${extrasHTML}
       </div>`;
     } else {
-      const histBg = sinPublicar ? '#f5f5f5' : esBaja ? '#ffebee' : esVacaciones ? '#e8f5e9' : '';
-      const histBorder = sinPublicar ? '#ccc' : esBaja ? '#b71c1c' : esVacaciones ? '#2e7d32' : borderColor;
+      const histBg = esBaja ? '#ffebee' : esVacaciones ? '#e8f5e9' : '';
+      const histBorder = esBaja ? '#b71c1c' : esVacaciones ? '#2e7d32' : borderColor;
       html += `<div class="${cardClass}" style="border-left-color:${histBorder};${histBg?'background:'+histBg:''}" >
         <span class="sem-label ${tipo}">${labelTxt}</span>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
@@ -1599,24 +1537,17 @@ function findTurnoWorkerInData(nombre, data) {
           if (!w || !w.cells) continue;
           for (const t of TURNOS) {
             if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-              return { turno: t, puesto: PLABELS[id] || getPuestoLabel(id) || id.toUpperCase() };
+              return { turno: t, puesto: PLABELS[id] || id.toUpperCase() };
           }
         }
       }
     }
     for (const line of safeArr(env.lines)) {
-      // Roles dinámicos: maq, ops, y cualquier rol adicional
-      const roles = line.roles ? line.roles.map(r => r.id) : ['maq','ops'];
-      const allWorkers = [];
-      for (const roleId of roles) {
-        const roleLabel = (line.roles && line.roles.find(r=>r.id===roleId)?.label) || (roleId==='maq'?'Op. Máquina':'Operario/a');
-        safeArr(line[roleId]).forEach(w => allWorkers.push({w, label: roleLabel + ' ' + line.label}));
-      }
-      for (const {w, label} of allWorkers) {
+      for (const w of [...safeArr(line.maq), ...safeArr(line.ops)]) {
         if (!w || !w.cells) continue;
         for (const t of TURNOS) {
           if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-            return { turno: t, puesto: label };
+            return { turno: t, puesto: line.label };
         }
       }
     }
@@ -1647,7 +1578,7 @@ function findTurnoWorkerInData(nombre, data) {
           if (!w || !w.cells) continue;
           for (const t of TURNOS) {
             if ((w.cells[t]||'').toUpperCase().trim() === nameUpper)
-              return { turno: t, puesto: PLABELS[pid] || getPuestoLabel(pid) || pid };
+              return { turno: t, puesto: PLABELS[pid] || pid };
           }
         }
       }
@@ -1772,24 +1703,29 @@ function renderPedido() {
   const c = document.getElementById('nuevo-pedido-content');
   if (!c) return;
   c.innerHTML = pedidoLineas.map((l, i) => `
-    <div class="pedido-linea" style="grid-template-columns:1fr${l.tipo==='Otros'?' 1fr':' 90px'} 36px">
-      <select onchange="pedidoLineas[${i}].tipo=this.value;if(this.value!=='Otros')pedidoLineas[${i}].tipoCustom='';renderPedido()">
-        <option value="">EPI...</option>
-        ${EPI_TIPOS.map(t => `<option value="${t}" ${l.tipo===t?'selected':''}>${t}</option>`).join('')}
-      </select>
-      ${l.tipo==='Otros'
-        ? `<input type="text" placeholder="Escribe el EPI..." value="${l.tipoCustom||''}"
-             oninput="pedidoLineas[${i}].tipoCustom=this.value">`
-        : `<input type="text" placeholder="Talla / Nº" value="${l.talla||''}"
-             oninput="pedidoLineas[${i}].talla=this.value">`
-      }
-      <button class="pedido-del" onclick="deletePedidoLinea(${i})" ${pedidoLineas.length===1?'style="opacity:.3;pointer-events:none"':''}>✕</button>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;">
+      <div style="display:grid;grid-template-columns:1fr${l.tipo==='Otros'?' 1fr':' 90px'} 36px;gap:8px;align-items:center;">
+        <select style="font-family:'DM Sans',sans-serif;font-size:13px;border:none;background:transparent;outline:none;color:var(--text);width:100%;" onchange="pedidoLineas[${i}].tipo=this.value;if(this.value!=='Otros')pedidoLineas[${i}].tipoCustom='';renderPedido()">
+          <option value="">EPI...</option>
+          ${EPI_TIPOS.map(t => `<option value="${t}" ${l.tipo===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        ${l.tipo==='Otros'
+          ? `<input type="text" placeholder="Escribe el EPI..." value="${l.tipoCustom||''}" style="font-family:'DM Sans',sans-serif;font-size:13px;border:none;background:transparent;outline:none;color:var(--text);width:100%;"
+               oninput="pedidoLineas[${i}].tipoCustom=this.value">`
+          : `<input type="text" placeholder="Talla / Nº" value="${l.talla||''}" style="font-family:'DM Sans',sans-serif;font-size:13px;border:none;background:transparent;outline:none;color:var(--text);width:100%;"
+               oninput="pedidoLineas[${i}].talla=this.value">`
+        }
+        <button class="pedido-del" onclick="deletePedidoLinea(${i})" ${pedidoLineas.length===1?'style="opacity:.3;pointer-events:none"':''}>✕</button>
+      </div>
+      <input type="text" placeholder="Comentario (opcional)..." value="${l.nota||''}"
+        style="font-family:'DM Sans',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:7px;padding:7px 10px;background:var(--bg);outline:none;color:var(--text);width:100%;"
+        oninput="pedidoLineas[${i}].nota=this.value">
     </div>
   `).join('');
 }
 
 function addPedidoLinea() {
-  pedidoLineas.push({ tipo: '', talla: '' });
+  pedidoLineas.push({ tipo: '', talla: '', nota: '' });
   renderPedido();
 }
 
@@ -1807,7 +1743,7 @@ function enviarPedido() {
   const epis = getEpis();
   validas.forEach(l => {
     const tipoFinal = l.tipo === 'Otros' ? (l.tipoCustom || 'Otros') : l.tipo;
-    epis.unshift({ tipo: tipoFinal, talla: l.talla||'', nota: '', estado: 'pendiente', fecha, pedidoId });
+    epis.unshift({ tipo: tipoFinal, talla: l.talla||'', nota: l.nota||'', estado: 'pendiente', fecha, pedidoId });
   });
   saveEpis(epis);
   showToast('✓ Pedido enviado — ' + validas.length + ' EPI' + (validas.length>1?'s':''));
@@ -1923,15 +1859,16 @@ function findExtraWorker(nombreUpper, d) {
       }
     }
   }
-  // Envasado líneas (con roles dinámicos)
+  // Envasado líneas
   if (d.envasado && d.envasado.lines) {
     for (const line of safeArr(d.envasado.lines)) {
-      const roles = line.roles ? line.roles : [{id:'maq',label:'Op. Máquina'},{id:'ops',label:'Operario/a'}];
-      for (const role of roles) {
-        for (const w of safeArr(line[role.id])) {
-          const r = check(w, role.label + ' ' + line.label, 'Envasado');
-          if (r) return r;
-        }
+      for (const w of safeArr(line.maq)) {
+        const r = check(w, 'Op. Máquina ' + line.label, 'Envasado');
+        if (r) return r;
+      }
+      for (const w of safeArr(line.ops)) {
+        const r = check(w, 'Operario/a ' + line.label, 'Envasado');
+        if (r) return r;
       }
     }
   }
