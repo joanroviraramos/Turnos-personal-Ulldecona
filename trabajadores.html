@@ -305,9 +305,9 @@ async function guardar() {
     if (t.dni && !/^\d{8}[A-Za-z]$/.test(t.dni.trim())) errores.push(`Fila ${i+1}: DNI inválido (${t.dni})`);
     if (t.dni && dnisVistos.has(t.dni.trim().toUpperCase())) errores.push(`DNI duplicado: ${t.dni}`);
     if (t.dni) dnisVistos.add(t.dni.trim().toUpperCase());
-    // Encargado no puede guardar trabajadores de otro dept
-    if (!isAdmin && normDept(t.departamento) !== miDeptNorm) {
-      errores.push(`${t.nombre || 'Fila '+( i+1)}: departamento "${t.departamento}" no permitido. Solo puedes gestionar "${miDept}"`);
+    // Encargado no puede guardar trabajadores nuevos de otro dept
+    if (!isAdmin && t._nuevo && normDept(t.departamento) !== miDeptNorm) {
+      errores.push(`${t.nombre || 'Fila '+(i+1)}: departamento "${t.departamento}" no permitido. Solo puedes gestionar "${miDept}"`);
     }
   });
 
@@ -335,7 +335,7 @@ async function guardar() {
       const data = {
         nombre: (t.nombre||'').trim().toUpperCase(),
         dni: dni,
-        departamento: t.departamento || 'Envasado'
+        departamento: (!isAdmin && t._nuevo) ? (DEPTS.find(d => normDept(d) === normDept(miDept)) || miDept) : (t.departamento || 'Envasado')
       };
       batch.set(db.collection('trabajadores').doc(docId), data);
       t.id = docId; // actualizar id local
