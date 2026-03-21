@@ -569,11 +569,54 @@ const RESPONSABLES = [
 ];
 
 const LS_KEY = 'ubesol_portal_session';
+const LS_PORTAL_ACTIVITY = 'ubesol_portal_last_activity';
+const PORTAL_TIMEOUT = 10 * 60 * 1000; // 10 minutos
+
+function updatePortalActivity() {
+  localStorage.setItem(LS_PORTAL_ACTIVITY, Date.now().toString());
+}
+
+function checkPortalTimeout() {
+  const sess = localStorage.getItem(LS_KEY);
+  if (!sess) return;
+  const last = parseInt(localStorage.getItem(LS_PORTAL_ACTIVITY) || '0');
+  if (Date.now() - last > PORTAL_TIMEOUT) {
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_PORTAL_ACTIVITY);
+    document.getElementById('portal-section').classList.remove('active');
+    document.getElementById('login-section').style.display = '';
+    document.getElementById('inp-user').value = '';
+    document.getElementById('inp-pass').value = '';
+    alert('Sesión cerrada por inactividad. Por favor vuelve a identificarte.');
+  }
+}
+
+function startPortalInactivityWatcher() {
+  ['click','keydown','mousemove','touchstart'].forEach(ev => {
+    document.addEventListener(ev, function() {
+      if (localStorage.getItem(LS_KEY)) updatePortalActivity();
+    }, {passive: true});
+  });
+  setInterval(checkPortalTimeout, 60 * 1000);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') checkPortalTimeout();
+  });
+}
 
 // ── INIT ─────────────────────────────────────────────────────────────────
 (function() {
   const sess = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-  if (sess) showPortal(sess);
+  if (sess) {
+    const last = parseInt(localStorage.getItem(LS_PORTAL_ACTIVITY) || '0');
+    if (Date.now() - last > PORTAL_TIMEOUT) {
+      localStorage.removeItem(LS_KEY);
+      localStorage.removeItem(LS_PORTAL_ACTIVITY);
+    } else {
+      updatePortalActivity();
+      showPortal(sess);
+    }
+  }
+  startPortalInactivityWatcher();
 })();
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────
@@ -598,6 +641,7 @@ function doLogin() {
 
   err.classList.remove('show');
   localStorage.setItem(LS_KEY, JSON.stringify(responsable));
+  updatePortalActivity();
   showPortal(responsable);
 }
 
