@@ -481,9 +481,7 @@ td.cell-p { background: var(--p-bg) !important; }
 .ac-wrap { position: relative; flex: 1; display: flex; align-items: center; min-width: 0; }
 .ac-wrap input { width: 100%; }
 .ac-list {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
+  display: none; position: fixed;
   min-width: 260px;
   background: #fff;
   border: 1px solid var(--border);
@@ -492,10 +490,8 @@ td.cell-p { background: var(--p-bg) !important; }
   z-index: 9999;
   max-height: 220px;
   overflow-y: auto;
-  display: none;
 }
 .ac-list.open { display: block; }
-.ac-list.open-up { top: auto; bottom: calc(100% + 2px); box-shadow: 0 -4px 20px rgba(0,0,0,.15); }
 .ac-item {
   padding: 7px 12px;
   font-size: 12px;
@@ -887,16 +883,21 @@ function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
       });
     }
     list.classList.add('open');
-    // Detectar si hay espacio abajo para el dropdown
+    // Usar position:fixed para escapar de cualquier contenedor con overflow
     requestAnimationFrame(function() {
       const rect = inp.getBoundingClientRect();
-      const listHeight = list.offsetHeight || 220;
+      const listHeight = Math.min(220, list.scrollHeight || 220);
       const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      if (spaceBelow < listHeight + 10 && spaceAbove > spaceBelow) {
-        list.classList.add('open-up');
+      list.style.position = 'fixed';
+      list.style.left = rect.left + 'px';
+      list.style.width = rect.width + 'px';
+      list.style.minWidth = '260px';
+      if (spaceBelow < listHeight + 10 && rect.top > spaceBelow) {
+        list.style.top = 'auto';
+        list.style.bottom = (window.innerHeight - rect.top + 2) + 'px';
       } else {
-        list.classList.remove('open-up');
+        list.style.top = (rect.bottom + 2) + 'px';
+        list.style.bottom = 'auto';
       }
     });
   }

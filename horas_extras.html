@@ -113,13 +113,12 @@ input.nombre-input:focus { outline:none; border-color:#e65100; }
 }
 .ac-inp:focus { outline: none; border-color: #e65100; }
 .ac-list {
-  display: none; position: absolute; top: 100%; left: 0; right: 0;
+  display: none; position: fixed;
   background: white; border: 1px solid var(--border);
   border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  z-index: 500; max-height: 200px; overflow-y: auto;
+  z-index: 9999; max-height: 200px; overflow-y: auto;
 }
 .ac-list.open { display: block; }
-.ac-list.open-up { top: auto; bottom: 100%; box-shadow: 0 -4px 16px rgba(0,0,0,0.12); }
 .ac-item {
   padding: 6px 10px; cursor: pointer; display: flex;
   align-items: center; justify-content: space-between; gap: 8px;
@@ -946,16 +945,21 @@ function makeAcInput(currentVal, deptId, onSelect) {
       });
     }
     list.classList.add('open');
-    // Detectar si hay espacio abajo para el dropdown
+    // Usar position:fixed para escapar de cualquier contenedor con overflow
     requestAnimationFrame(function() {
       const rect = inp.getBoundingClientRect();
-      const listHeight = list.offsetHeight || 200;
+      const listHeight = Math.min(200, list.scrollHeight || 200);
       const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      if (spaceBelow < listHeight + 10 && spaceAbove > spaceBelow) {
-        list.classList.add('open-up');
+      list.style.position = 'fixed';
+      list.style.left = rect.left + 'px';
+      list.style.width = rect.width + 'px';
+      list.style.minWidth = '220px';
+      if (spaceBelow < listHeight + 10 && rect.top > spaceBelow) {
+        list.style.top = 'auto';
+        list.style.bottom = (window.innerHeight - rect.top + 2) + 'px';
       } else {
-        list.classList.remove('open-up');
+        list.style.top = (rect.bottom + 2) + 'px';
+        list.style.bottom = 'auto';
       }
     });
   }
