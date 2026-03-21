@@ -428,6 +428,20 @@ footer {
 }
 .portal-card { position: relative; }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
+  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
+  projectId: "maverick-turnos-81d4a",
+  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
+  messagingSenderId: "170123467344",
+  appId: "1:170123467344:web:142eee4473940ebd924f55"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
 </head>
 <body>
 
@@ -579,6 +593,10 @@ footer {
 </div>
 
 <script>
+// ── VARIABLES GLOBALES ────────────────────────────────────────────────────
+let _epiResponsable = null;
+let _epiUnsubscribe  = null;
+
 // ── RESPONSABLES ─────────────────────────────────────────────────────────
 // Añadir aquí los responsables: { user, pass, nombre, departamento }
 const RESPONSABLES = [
@@ -695,8 +713,6 @@ document.getElementById('inp-user').addEventListener('keydown', e => {
 });
 
 // ── PANEL EPIs ────────────────────────────────────────────────────────────
-let _epiResponsable = null;
-let _epiUnsubscribe  = null; // listener en tiempo real de Firebase
 
 function showEpiPanel(responsable) {
   _epiResponsable = responsable;
