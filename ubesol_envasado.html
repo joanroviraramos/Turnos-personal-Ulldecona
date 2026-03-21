@@ -3,655 +3,2930 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GrupoUbesol — Portal de Gestión</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Planificación de Turnos — Grupo Ubesol</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
 :root {
-  --green:       #7cc93a;
-  --green-dark:  #4a7c2f;
-  --green-deep:  #2d5a1a;
-  --green-light: #a8e063;
-  --green-pale:  #d4f0a8;
-  --white:       #ffffff;
-  --glass:       rgba(255,255,255,0.12);
-  --glass-border:rgba(255,255,255,0.25);
-  --text-dark:   #1a2a0a;
+  --bg: #f0f0f0;
+  --white: #ffffff;
+  --border: #b0b0b0;
+  --border-l: #d0d0d0;
+  --text: #1a1a1a;
+  --muted: #555;
+  --faint: #999;
+
+  /* Line background colors (alternating green / yellow like Excel) */
+  --line-green: #e8f5e4;
+  --line-yellow: #fffde7;
+  --line-green-hdr: #c8e6c1;
+  --line-yellow-hdr: #fff9c4;
+
+  /* Turno colors */
+  --m-bg: #e3f2fd; --m-bd: #90caf9; --m-tx: #0d47a1; --m-hdr: #bbdefb;
+  --t-bg: #fff8e1; --t-bd: #ffe082; --t-tx: #e65100; --t-hdr: #ffecb3;
+  --n-bg: #ede7f6; --n-bd: #b39ddb; --n-tx: #311b92; --n-hdr: #d1c4e9;
+  --p-bg: #fce4ec; --p-bd: #f48fb1; --p-tx: #880e4f; --p-hdr: #f8bbd0;
+
+  --sup-bg: #e0f7fa;
+  --special-bg: #f3e5f5;
+  --bajas-bg: #ffebee;
+  --vac-bg: #e8f5e9;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
-  min-height: 100vh;
-  background: #8fd43a;
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* ── FONDO BURBUJAS ── */
-.bubbles-bg {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, #9de04a 0%, #7cc93a 40%, #5aaa1a 100%);
-  z-index: 0;
-  overflow: hidden;
-}
-
-.bubble {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%,
-    rgba(255,255,255,0.35) 0%,
-    rgba(255,255,255,0.08) 40%,
-    rgba(100,180,30,0.15) 70%,
-    rgba(60,140,10,0.3) 100%);
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow:
-    inset -8px -8px 20px rgba(60,120,10,0.3),
-    inset 4px 4px 12px rgba(255,255,255,0.2),
-    0 8px 32px rgba(40,100,5,0.2);
-  animation: float linear infinite;
-}
-
-.bubble::after {
-  content: '';
-  position: absolute;
-  top: 18%; left: 22%;
-  width: 28%; height: 20%;
-  background: radial-gradient(ellipse, rgba(255,255,255,0.55) 0%, transparent 70%);
-  border-radius: 50%;
-  transform: rotate(-30deg);
-}
-
-@keyframes float {
-  0%   { transform: translateY(0) rotate(0deg); }
-  33%  { transform: translateY(-18px) rotate(2deg); }
-  66%  { transform: translateY(8px) rotate(-1deg); }
-  100% { transform: translateY(0) rotate(0deg); }
-}
-
-/* Burbujas individuales */
-.b1  { width:320px; height:320px; top:-80px;  left:-60px;  animation-duration:9s;  animation-delay:0s;   opacity:.85; }
-.b2  { width:480px; height:480px; top:10%;    left:18%;    animation-duration:12s; animation-delay:-3s;  opacity:.9; }
-.b3  { width:200px; height:200px; top:5%;     left:50%;    animation-duration:8s;  animation-delay:-1s;  opacity:.7; }
-.b4  { width:560px; height:560px; top:20%;    right:-80px; animation-duration:14s; animation-delay:-5s;  opacity:.85; }
-.b5  { width:160px; height:160px; top:45%;    left:5%;     animation-duration:7s;  animation-delay:-2s;  opacity:.65; }
-.b6  { width:380px; height:380px; bottom:-60px; left:30%;  animation-duration:11s; animation-delay:-4s;  opacity:.8; }
-.b7  { width:140px; height:140px; bottom:15%; right:10%;   animation-duration:6s;  animation-delay:-1.5s;opacity:.6; }
-.b8  { width:80px;  height:80px;  top:38%;    left:42%;    animation-duration:5s;  animation-delay:-0.5s;opacity:.5; }
-.b9  { width:260px; height:260px; bottom:5%;  right:25%;   animation-duration:10s; animation-delay:-6s;  opacity:.75; }
-.b10 { width:100px; height:100px; top:70%;    left:15%;    animation-duration:7s;  animation-delay:-3.5s;opacity:.55; }
-
-/* ── LAYOUT ── */
-.page {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  padding: 0;
 }
 
 /* ── HEADER ── */
-header {
-  padding: 32px 48px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-}
-
-.logo-grupo {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 42px;
-  color: rgba(255,255,255,0.7);
-  letter-spacing: 0.04em;
-}
-
-.logo-ubesol {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 42px;
-  color: white;
-  letter-spacing: 0.04em;
-}
-
-.header-tag {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-  border: 1px solid rgba(255,255,255,0.3);
-  padding: 5px 14px;
-  border-radius: 20px;
-  backdrop-filter: blur(8px);
-}
-
-/* ── MAIN ── */
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 24px 60px;
-}
-
-/* ── LOGIN CARD ── */
-.login-card {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 28px;
-  padding: 48px 44px;
-  width: 100%;
-  max-width: 440px;
-  box-shadow:
-    0 24px 64px rgba(40,100,5,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.4);
-}
-
-.card-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.65);
-  margin-bottom: 8px;
-}
-
-.card-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
-  color: white;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  margin-bottom: 32px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.form-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.75);
-}
-
-.form-input {
-  background: rgba(255,255,255,0.18);
-  border: 1.5px solid rgba(255,255,255,0.3);
-  border-radius: 12px;
-  padding: 13px 16px;
-  font-size: 15px;
-  font-family: 'DM Sans', sans-serif;
-  color: white;
-  outline: none;
-  transition: all .2s;
-  backdrop-filter: blur(8px);
-}
-
-.form-input::placeholder { color: rgba(255,255,255,0.4); }
-
-.form-input:focus {
-  border-color: rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.25);
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
-}
-
-.login-error {
-  background: rgba(220,50,50,0.2);
-  border: 1px solid rgba(255,100,100,0.4);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #ffcccc;
-  display: none;
-  margin-bottom: 16px;
-}
-.login-error.show { display: block; }
-
-.btn-login {
-  width: 100%;
-  background: white;
-  color: var(--green-deep);
-  border: none;
-  border-radius: 12px;
-  padding: 15px;
-  font-size: 15px;
-  font-weight: 700;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  transition: all .2s;
-  letter-spacing: 0.02em;
-  margin-top: 8px;
-  box-shadow: 0 4px 20px rgba(40,100,5,0.2);
-}
-
-.btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(40,100,5,0.3); }
-.btn-login:active { transform: translateY(0); }
-
-/* ── PORTAL (tras login) ── */
-.portal { display: none; width: 100%; max-width: 700px; }
-.portal.active { display: block; }
-
-.portal-header {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.portal-welcome {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.7);
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-}
-
-.portal-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 48px;
-  color: white;
-  letter-spacing: 0.04em;
-  line-height: 1;
-}
-
-.portal-dept {
-  font-size: 13px;
-  color: rgba(255,255,255,0.6);
-  margin-top: 4px;
-}
-
-.portal-grid {
+.doc-header {
+  background: var(--white);
+  border-bottom: 2px solid var(--border);
+  padding: 16px 24px 12px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
   gap: 20px;
 }
 
-.portal-card {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 24px;
-  padding: 32px 28px;
-  cursor: pointer;
-  text-decoration: none;
+.logo-area {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  transition: all .25s;
-  box-shadow:
-    0 12px 40px rgba(40,100,5,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.4);
-  position: relative;
-  overflow: hidden;
+  justify-content: center;
 }
 
-.portal-card::before {
-  content: '';
-  position: absolute;
-  top: -40px; right: -40px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-  transition: transform .3s;
-}
-
-.portal-card:hover { transform: translateY(-4px); box-shadow: 0 20px 56px rgba(40,100,5,0.3), inset 0 1px 0 rgba(255,255,255,0.5); }
-.portal-card:hover::before { transform: scale(1.4); }
-.portal-card:active { transform: translateY(-1px); }
-
-.card-icon {
-  font-size: 36px;
+.logo-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   line-height: 1;
 }
 
-.card-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-}
-
-.card-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  color: white;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
-}
-
-.card-desc {
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
-  line-height: 1.5;
-}
-
-.card-arrow {
-  align-self: flex-end;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  color: white;
-  margin-top: auto;
-  transition: all .2s;
-}
-
-.portal-card:hover .card-arrow {
-  background: white;
-  color: var(--green-deep);
-}
-
-.btn-logout {
-  display: block;
-  margin: 32px auto 0;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 10px;
-  padding: 10px 24px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.7);
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  transition: all .2s;
-  backdrop-filter: blur(8px);
-}
-
-.btn-logout:hover { background: rgba(255,255,255,0.2); color: white; }
-
-/* ── FOOTER ── */
-footer {
-  padding: 24px 48px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-.footer-copy {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.05em;
-}
-
-.footer-version {
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  color: rgba(255,255,255,0.3);
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width: 600px) {
-  header { padding: 24px 20px 0; }
-  .logo-grupo, .logo-ubesol { font-size: 30px; }
-  .header-tag { display: none; }
-  .login-card { padding: 32px 24px; }
-  .portal-grid { grid-template-columns: 1fr; }
-  footer { padding: 20px 24px; }
-}
-
-/* Badge pendientes en card EPI */
-.card-badge {
-  position: absolute;
-  top: 14px; right: 14px;
-  background: #c62828;
-  color: white;
-  font-size: 11px;
+.logo-grupo {
+  font-size: 26px;
   font-weight: 700;
-  min-width: 22px;
-  height: 22px;
-  border-radius: 11px;
+  letter-spacing: -.01em;
+  color: #6a8a3a;
+}
+
+.logo-ubesol {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -.01em;
+  color: #6a8a3a;
+}
+
+.logo-icons {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+}
+
+.logo-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 6px;
-  box-shadow: 0 2px 6px rgba(198,40,40,.4);
 }
-.portal-card { position: relative; }
+
+.logo-sub {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-top: 1px;
+}
+
+.doc-title {
+  text-align: center;
+}
+
+.doc-title h1 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.doc-title h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.doc-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-size: 11px;
+}
+
+.meta-row { display: flex; align-items: center; gap: 6px; }
+.meta-row label { font-weight: 600; color: var(--muted); white-space: nowrap; }
+.meta-row input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border-l);
+  border-radius: 3px;
+  padding: 2px 6px;
+  background: var(--white);
+  color: var(--text);
+  width: 100px;
+  outline: none;
+}
+.meta-row input:focus { border-color: #666; }
+
+/* ── DEPT TABS ── */
+.dept-tabs {
+  background: #e8e8e8;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 2px;
+  padding: 8px 24px 0;
+}
+
+.tab {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  cursor: pointer;
+  background: #d8d8d8;
+  color: var(--muted);
+  transition: all .15s;
+}
+
+.tab:hover { background: #ebebeb; color: var(--text); }
+.tab.active { background: var(--white); color: var(--text); border-bottom: 1px solid var(--white); margin-bottom: -1px; }
+.tab.disabled { opacity: .4; cursor: default; }
+
+/* ── MAIN TABLE AREA ── */
+.table-area {
+  padding: 20px 24px;
+  overflow: visible;
+}
+.table-scroll-x {
+  overflow-x: auto;
+}
+
+/* ── THE TABLE ── */
+table {
+  border-collapse: collapse;
+  min-width: 900px;
+  width: 100%;
+  background: var(--white);
+  border: 2px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+/* Column widths */
+col.c-linea  { width: 52px; }
+col.c-puesto { width: 160px; }
+col.c-m      { width: 1fr; }
+col.c-t      { width: 1fr; }
+col.c-n      { width: 1fr; }
+col.c-p      { width: 1fr; }
+
+/* ── TURNO HEADER ── */
+thead tr.turno-hdr th {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.th-linea { background: #f5f5f5; }
+.th-puesto { background: #f5f5f5; }
+.th-m  { background: var(--m-hdr); color: var(--m-tx); }
+.th-t  { background: var(--t-hdr); color: var(--t-tx); }
+.th-n  { background: var(--n-hdr); color: var(--n-tx); }
+.th-p  { background: var(--p-hdr); color: var(--p-tx); }
+
+/* ── DATA ROWS ── */
+tbody td {
+  border: 1px solid var(--border-l);
+  padding: 0;
+  vertical-align: middle;
+}
+
+/* Line label cell */
+td.linea-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  vertical-align: middle;
+  border: 1px solid var(--border);
+  padding: 4px;
+}
+
+/* Puesto label cell */
+td.puesto-label {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  border: 1px solid var(--border-l);
+  white-space: nowrap;
+}
+
+/* Name input cell */
+td.name-cell {
+  padding: 2px 4px;
+}
+
+.name-inp {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 4px 8px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  cursor: text;
+}
+
+.name-inp::placeholder {
+  color: #ccc;
+  font-style: italic;
+}
+
+.name-inp:focus {
+  background: rgba(255,255,255,.9);
+  box-shadow: inset 0 0 0 1px #aaa;
+  border-radius: 2px;
+}
+
+/* Row backgrounds by line type */
+tr.line-maq { background: var(--line-green-hdr); }
+tr.line-op  { background: var(--line-green); }
+tr.line-maq.yellow { background: var(--line-yellow-hdr); }
+tr.line-op.yellow  { background: var(--line-yellow); }
+
+/* Special section rows */
+tr.section-divider td {
+  background: #e8e8e8;
+  border-top: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+tr.special-row { background: var(--special-bg); }
+tr.special-row td.puesto-label { font-weight: 700; color: #4a0080; }
+tr.sup-row { background: var(--sup-bg); }
+tr.sup-row td.puesto-label { font-weight: 700; color: #006064; }
+tr.bajas-row { background: var(--bajas-bg); }
+tr.bajas-row td.puesto-label { font-weight: 700; color: #b71c1c; }
+tr.vac-row { background: var(--vac-bg); }
+tr.vac-row td.puesto-label { font-weight: 700; color: #1b5e20; }
+
+/* Line header row (merged linea cell) */
+.line-group td.linea-label {
+  border-right: 2px solid var(--border);
+  border-left: 2px solid var(--border);
+}
+
+/* Turno cell coloring */
+td.cell-m { background: var(--m-bg) !important; }
+td.cell-t { background: var(--t-bg) !important; }
+td.cell-n { background: var(--n-bg) !important; }
+td.cell-p { background: var(--p-bg) !important; }
+
+/* ── ROW CONTROLS ── */
+.row-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+}
+
+.del-row {
+  width: 14px; height: 14px;
+  border-radius: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ccc;
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1;
+  flex-shrink: 0;
+  transition: all .12s;
+  margin-left: auto;
+}
+.del-row:hover { color: #c00; background: #fde0e0; }
+
+/* ── ROW CONTROL BUTTONS (+ and −) ── */
+.ctrl-btn {
+  width: 18px; height: 18px;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+.ctrl-add {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+.ctrl-add:hover { background: #c8e6c9; border-color: #66bb6a; }
+.ctrl-del {
+  background: #fce4ec;
+  color: #c62828;
+  border-color: #f48fb1;
+}
+.ctrl-del:hover { background: #f8bbd0; border-color: #e57373; }
+
+/* ── ADD LINE AREA ── */
+.add-line-area {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.add-line-btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px dashed var(--border);
+  background: var(--white);
+  color: var(--muted);
+  transition: all .15s;
+  letter-spacing: .03em;
+}
+.add-line-btn:hover { background: #f0f0f0; color: var(--text); }
+
+/* ── BOTTOM ACTIONS ── */
+.bottom-bar {
+  background: var(--white);
+  border-top: 1px solid var(--border-l);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  position: sticky;
+  bottom: 0;
+}
+
+.legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.leg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.leg-chip {
+  width: 28px;
+  height: 15px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  border: 1px solid;
+}
+
+.btn-group { display: flex; gap: 8px; }
+
+.btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  letter-spacing: .03em;
+  transition: all .15s;
+}
+
+.btn-sec { background: var(--white); color: var(--muted); }
+.btn-sec:hover { background: #f0f0f0; color: var(--text); }
+.btn-pri { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.btn-pri:hover { background: #333; }
+.btn-pub { background: #1b5e20; color: #fff; border-color: #1b5e20; }
+.btn-pub:hover { background: #2e7d32; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 70px;
+  right: 24px;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transform: translateY(40px);
+  opacity: 0;
+  transition: all .25s;
+  z-index: 999;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── AUTOCOMPLETE ── */
+.ac-wrap { position: relative; flex: 1; display: flex; align-items: center; min-width: 0; }
+.ac-wrap input { width: 100%; }
+.ac-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 260px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  z-index: 9999;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+}
+.ac-list.open { display: block; }
+.ac-item {
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-l);
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: #f0ede6; }
+.ac-item.used { opacity: .35; pointer-events: none; background: #fafafa; }
+.ac-item .ac-name { font-weight: 500; color: var(--text); }
+.ac-item .ac-dni { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--faint); }
+.ac-empty { padding: 8px 12px; font-size: 12px; color: var(--faint); font-style: italic; }
+
+/* Permitir que el dropdown salga fuera de la celda */
+.name-cell { overflow: visible !important; }
+td.name-cell { overflow: visible !important; }
+
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
+  authDomain: "maverick-turnos-81d4a-81d4a.firebaseapp.com",
+  projectId: "maverick-turnos-81d4a",
+  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
+  messagingSenderId: "170123467344",
+  appId: "1:170123467344:web:c783702e586c2c071a12a1"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+</script>
 </head>
 <body>
 
-<div class="bubbles-bg">
-  <div class="bubble b1"></div>
-  <div class="bubble b2"></div>
-  <div class="bubble b3"></div>
-  <div class="bubble b4"></div>
-  <div class="bubble b5"></div>
-  <div class="bubble b6"></div>
-  <div class="bubble b7"></div>
-  <div class="bubble b8"></div>
-  <div class="bubble b9"></div>
-  <div class="bubble b10"></div>
-</div>
-
-<div class="page">
-  <header>
-    <div class="logo">
+<!-- DOCUMENT HEADER -->
+<div class="doc-header">
+  <div class="logo-area">
+    <div class="logo-text">
       <span class="logo-grupo">GRUPO</span><span class="logo-ubesol">UBESOL</span>
     </div>
-    <span class="header-tag">Portal de Gestión</span>
-  </header>
-
-  <main>
-    <!-- LOGIN -->
-    <div class="login-card" id="login-section">
-      <div class="card-eyebrow">Acceso restringido</div>
-      <div class="card-title">Identifícate para continuar</div>
-
-      <div class="form-group">
-        <label class="form-label">Usuario</label>
-        <input class="form-input" type="text" id="inp-user" placeholder="Tu usuario" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Contraseña</label>
-        <input class="form-input" type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div class="login-error" id="login-err">Usuario o contraseña incorrectos</div>
-      <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <div style="margin-top:3px">
+      <a href="index.html" style="font-size:10px;color:#888;text-decoration:none">&#8249; Portal</a>
+      <span style="font-size:10px;color:#bbb;margin:0 4px">/</span>
+      <span id="dept-breadcrumb" style="font-size:10px;color:#6a8a3a;font-weight:600"></span>
     </div>
+  </div>
 
-    <!-- PORTAL -->
-    <div class="portal" id="portal-section">
-      <div class="portal-header">
-        <div class="portal-welcome">Bienvenido/a,</div>
-        <div class="portal-name" id="portal-name">—</div>
-        <div class="portal-dept" id="portal-dept">—</div>
-      </div>
+  <div class="doc-title">
+    <h1>Planificación de Turnos Semanal</h1>
+    <h2 id="dept-title">Envasado</h2>
+  </div>
 
-      <div class="portal-grid">
-        <a class="portal-card" id="card-cuadrante" href="ubesol_envasado.html">
-          <div class="card-icon">📋</div>
-          <div>
-            <div class="card-label">Planificación</div>
-            <div class="card-name">Cuadrante de Turnos</div>
-          </div>
-          <div class="card-desc">Gestiona y publica los turnos semanales de tu departamento.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-epi" href="panel_epi.html">
-          <div class="card-icon">🦺</div>
-          <div>
-            <div class="card-label">Seguridad</div>
-            <div class="card-name">Aprobación de EPIs</div>
-          </div>
-          <div class="card-desc">Revisa y aprueba las solicitudes de equipos de protección individual.</div>
-          <div class="card-arrow">›</div>
-          <div class="card-badge" id="epi-badge" style="display:none">0</div>
-        </a>
-
-        <a class="portal-card" id="card-extras" href="horas_extras.html">
-          <div class="card-icon">⏱</div>
-          <div>
-            <div class="card-label">Planificación</div>
-            <div class="card-name">Horas Extras</div>
-          </div>
-          <div class="card-desc">Gestiona y publica los turnos de horas extras por día especial.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-dashboard-extras" href="dashboard_extras.html">
-          <div class="card-icon">📊</div>
-          <div>
-            <div class="card-label">Seguimiento</div>
-            <div class="card-name">Dashboard Extras</div>
-          </div>
-          <div class="card-desc">Consulta las horas extras acumuladas por trabajador y departamento.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-config" href="config_estructura.html" style="display:none">
-          <div class="card-icon">⚙️</div>
-          <div>
-            <div class="card-label">Administración</div>
-            <div class="card-name">Configuración</div>
-          </div>
-          <div class="card-desc">Gestiona líneas, puestos y departamentos del cuadrante.</div>
-          <div class="card-arrow">›</div>
-        </a>
-      </div>
-
-      <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+  <div class="doc-meta">
+    <div class="meta-row"><label>AÑO:</label>
+      <select id="meta-ano" onchange="autoSave(); updateWeekFromSelector()" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:500;border:1px solid var(--border-l);border-radius:3px;padding:2px 6px;background:white;color:var(--text);cursor:pointer;width:80px">
+        <option>2025</option>
+        <option selected>2026</option>
+        <option>2027</option>
+      </select>
     </div>
-  </main>
-
-  <footer>
-    <span class="footer-copy">© 2026 GrupoUbesol — Todos los derechos reservados</span>
-    <span class="footer-version">v1.0.0</span>
-  </footer>
+    <div class="meta-row">
+      <label>SEMANA:</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="changeWeek(-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">‹</button>
+        <input type="number" id="meta-sem" value="12" min="1" max="53"
+          onchange="(function(){ var k=weekKey(); autoSaveToKey(k); loadWeekFromStorage(); })()"
+          oninput="updateWeekFromSelector()"
+          style="width:48px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;border:1px solid var(--border-l);border-radius:3px;padding:2px 4px">
+        <button onclick="changeWeek(1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">›</button>
+      </div>
+    </div>
+    <div class="meta-row" style="grid-column:1/-1;justify-content:center">
+      <span id="meta-dates" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:0.04em"></span>
+    </div>
+  </div>
 </div>
 
+<!-- DEPARTMENT TABS -->
+<div class="dept-tabs">
+  <button class="tab active" id="tab-Envasado" onclick="switchTab('Envasado')">Envasado</button>
+  <button class="tab" id="tab-Elaboración" onclick="switchTab('Elaboración')">Elaboración</button>
+  <button class="tab" id="tab-Almacén" onclick="switchTab('Almacén')">Almacén</button>
+  <button class="tab" id="tab-Mantenimiento" onclick="switchTab('Mantenimiento')">Mantenimiento</button>
+  <button class="tab" id="tab-Calidad Líneas" onclick="switchTab('Calidad Líneas')">Calidad Líneas</button>
+  <button class="tab" id="tab-Calidad FQ" onclick="switchTab('Calidad FQ')">Calidad Fís-Quím</button>
+  <button class="tab" id="tab-Calidad Micro" onclick="switchTab('Calidad Micro')">Calidad Microbiología</button>
+  <button class="tab" id="tab-Calidad Mat" onclick="switchTab('Calidad Mat')">Calidad Materiales</button>
+  <button class="tab" id="tab-Mejora Continua" onclick="switchTab('Mejora Continua')">Mejora Continua</button>
+  <button class="tab" id="tab-Soplado" onclick="switchTab('Soplado')">Soplado</button>
+</div>
+
+<!-- TABLE AREA -->
+<div class="table-area">
+  <div class="table-scroll-x">
+    <div id="table-root"></div>
+  </div>
+  <div class="add-line-area" id="add-line-area">
+    <button class="add-line-btn" onclick="addLine()">+ Añadir línea</button>
+    <button class="add-line-btn" onclick="addLine('L2')">+ Añadir línea L2.x</button>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="legend">
+    <div class="leg">
+      <div class="leg-chip" style="background:var(--m-bg);color:var(--m-tx);border-color:var(--m-bd)">M</div>
+      Turno Mañana
+    </div>
+    <div class="leg">
+      <div class="leg-chip" style="background:var(--t-bg);color:var(--t-tx);border-color:var(--t-bd)">T</div>
+      Turno Tarde
+    </div>
+    <div class="leg">
+      <div class="leg-chip" style="background:var(--n-bg);color:var(--n-tx);border-color:var(--n-bd)">N</div>
+      Turno Noche
+    </div>
+    <div class="leg">
+      <div class="leg-chip" style="background:var(--p-bg);color:var(--p-tx);border-color:var(--p-bd)">P</div>
+      Partido / Especial
+    </div>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-sec" onclick="window.print()">Imprimir / PDF</button>
+    <button class="btn btn-sec" onclick="guardarManual()" title="Guardar datos en el navegador" style="color:#1b5e20;font-weight:600">💾 Guardar</button>
+    <button class="btn btn-sec" onclick="clearStorage()" title="Borrar datos guardados en este navegador" style="color:#c00">Borrar datos</button>
+    <button class="btn btn-sec" onclick="generarProximasSemanas()" title="Genera las próximas 10 semanas rotando los turnos M→N→T" style="color:#5b4c00;font-weight:600">🔄 Generar 10 semanas</button>
+    <button class="btn btn-pub" onclick="publicar()">Publicar cuadrante ✓</button>
+  </div>
+</div>
+
+<!-- Hidden file input for loading JSON -->
+<input type="file" id="json-file-input" accept=".json" style="display:none" onchange="loadJSON(this)">
+
+<div class="toast" id="toast"></div>
+
 <script>
-// ── RESPONSABLES ─────────────────────────────────────────────────────────
-// Añadir aquí los responsables: { user, pass, nombre, departamento }
-const RESPONSABLES = [
-  { user: 'admin',        pass: 'ubesol2026',  nombre: 'Administrador',              departamento: 'Administración',  dept: 'admin' },
-  { user: 'envasado',     pass: 'env2026',     nombre: 'Responsable Envasado',       departamento: 'Envasado',        dept: 'envasado' },
-  { user: 'elaboracion',  pass: 'elab2026',    nombre: 'Responsable Elaboración',    departamento: 'Elaboración',     dept: 'elaboracion' },
-  { user: 'almacen',      pass: 'alm2026',     nombre: 'Responsable Almacén',        departamento: 'Almacén',         dept: 'almacen' },
-  { user: 'mto',          pass: 'mto2026',     nombre: 'Responsable Mantenimiento',  departamento: 'Mantenimiento',   dept: 'mantenimiento' },
-  { user: 'callineas',    pass: 'cal2026',     nombre: 'Responsable Calidad Líneas', departamento: 'Calidad Líneas',  dept: 'calidadlineas' },
-  { user: 'calfq',        pass: 'calfq2026',   nombre: 'Responsable Calidad FQ',     departamento: 'Calidad FQ',      dept: 'calidadfq' },
-  { user: 'calmicro',     pass: 'micro2026',   nombre: 'Responsable Calidad Micro',  departamento: 'Calidad Micro',   dept: 'calidadmicro' },
-  { user: 'calmat',       pass: 'calmat2026',  nombre: 'Responsable Calidad Mat.',   departamento: 'Calidad Mat.',    dept: 'calidadmat' },
-  { user: 'mejora',       pass: 'mc2026',      nombre: 'Responsable Mejora Cont.',   departamento: 'Mejora Continua', dept: 'mejoracontinua' },
-  { user: 'soplado',      pass: 'sopl2026',    nombre: 'Responsable Soplado',        departamento: 'Soplado',         dept: 'soplado' },
+// ═══════════════════════════════════════════════════════════════════════
+//  DATA MODEL — Envasado
+//  Each line has:
+//    - id, label (L1, L2, L2.1...), color ('green'|'yellow')
+//    - maq: 1 Operador/a Máquina row (always 1)
+//    - ops: N Operaria/o rows (variable, min 1)
+//    - type: 'standard' | 'L2sub' (L2.1, L2.2 ... grouped under L2 block)
+//
+//  Special rows (no line): Supervisor, Tracking Nave1, Suministro, etc.
+//  Bottom rows: Tolvas Nave3, Traslado Nave3, Tracking Nave3/4,
+//               Componentes Nave4, Bajas, Vacaciones
+// ═══════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════
+//  WORKERS DATA — embebidos directamente (no requiere servidor)
+//  Para actualizar: sustituir WORKERS_DATA con los datos reales
+// ═══════════════════════════════════════════════════════════════════════
+const WORKERS_DATA = [
+  {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
+  {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
+  {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
+  {nombre:"ANA LOPEZ MARTINEZ",dni:"45678901D",departamento:"Envasado"},
+  {nombre:"PEDRO GONZALEZ RUIZ",dni:"56789012E",departamento:"Envasado"},
+  {nombre:"LUCIA HERNANDEZ JIMENEZ",dni:"67890123F",departamento:"Envasado"},
+  {nombre:"MIGUEL PEREZ MORENO",dni:"78901234G",departamento:"Envasado"},
+  {nombre:"SOFIA MARTIN DIAZ",dni:"89012345H",departamento:"Envasado"},
+  {nombre:"ANTONIO GARCIA ROMERO",dni:"90123456I",departamento:"Envasado"},
+  {nombre:"ELENA FERNANDEZ TORRES",dni:"01234567J",departamento:"Envasado"},
+  {nombre:"DAVID SANCHEZ NAVARRO",dni:"11223344K",departamento:"Envasado"},
+  {nombre:"LAURA JIMENEZ GUERRERO",dni:"22334455L",departamento:"Envasado"},
+  {nombre:"FRANCISCO RUIZ CANO",dni:"33445566M",departamento:"Envasado"},
+  {nombre:"CARMEN MORENO FUENTES",dni:"44556677N",departamento:"Envasado"},
+  {nombre:"RAUL DIAZ MOLINA",dni:"55667788O",departamento:"Envasado"},
+  {nombre:"ISABEL TORRES REYES",dni:"66778899P",departamento:"Envasado"},
+  {nombre:"JAVIER ROMERO CASTILLO",dni:"77889900Q",departamento:"Envasado"},
+  {nombre:"PATRICIA NAVARRO BLANCO",dni:"88990011R",departamento:"Envasado"},
+  {nombre:"SERGIO GUERRERO VARGAS",dni:"99001122S",departamento:"Envasado"},
+  {nombre:"MONICA CANO HERRERA",dni:"00112233T",departamento:"Envasado"},
+  {nombre:"ALBERTO FUENTES MEDINA",dni:"12312312U",departamento:"Envasado"},
+  {nombre:"CRISTINA MOLINA ORTEGA",dni:"23423423V",departamento:"Envasado"},
+  {nombre:"ROBERTO REYES DELGADO",dni:"34534534W",departamento:"Envasado"},
+  {nombre:"SILVIA CASTILLO IBAÑEZ",dni:"45645645X",departamento:"Envasado"},
+  {nombre:"FERNANDO BLANCO MORA",dni:"56756756Y",departamento:"Envasado"},
+  {nombre:"TERESA VARGAS SANTOS",dni:"67867867Z",departamento:"Elaboración"},
+  {nombre:"MANUEL HERRERA MEDINA",dni:"78978978A",departamento:"Elaboración"},
+  {nombre:"ANDREA ORTEGA FLORES",dni:"89089089B",departamento:"Elaboración"},
+  {nombre:"JUAN DELGADO VEGA",dni:"90190190C",departamento:"Elaboración"},
+  {nombre:"BEATRIZ IBAÑEZ BRAVO",dni:"01201201D",departamento:"Elaboración"},
+  {nombre:"PABLO MORA NIETO",dni:"12312312E",departamento:"Elaboración"},
+  {nombre:"ROSA SANTOS MARIN",dni:"23423423F",departamento:"Elaboración"},
+  {nombre:"OSCAR LORENZO GIMENEZ",dni:"34534534G",departamento:"Elaboración"},
+  {nombre:"NURIA FLORES PASCUAL",dni:"45645645H",departamento:"Elaboración"},
+  {nombre:"VICENTE VEGA CABRERA",dni:"56756756I",departamento:"Elaboración"},
+  {nombre:"AMPARO BRAVO SERRANO",dni:"67867867J",departamento:"Elaboración"},
+  {nombre:"EMILIO NIETO MENDEZ",dni:"78978978K",departamento:"Elaboración"},
+  {nombre:"CONSUELO MARIN RUBIO",dni:"89089089L",departamento:"Almacén"},
+  {nombre:"IGNACIO GIMENEZ ALONSO",dni:"90190190M",departamento:"Almacén"},
+  {nombre:"DOLORES PASCUAL PEÑA",dni:"01201201N",departamento:"Almacén"},
+  {nombre:"VICTOR CABRERA RAMOS",dni:"12312344O",departamento:"Almacén"},
+  {nombre:"ALICIA SERRANO GARCIA",dni:"23423455P",departamento:"Almacén"},
+  {nombre:"RAFAEL MENDEZ LOPEZ",dni:"34534566Q",departamento:"Almacén"},
+  {nombre:"PILAR RUBIO MARTINEZ",dni:"45645677R",departamento:"Almacén"},
+  {nombre:"ENRIQUE ALONSO SANCHEZ",dni:"56756788S",departamento:"Almacén"},
+  {nombre:"INMACULADA PEÑA RUIZ",dni:"67867899T",departamento:"Almacén"},
+  {nombre:"JORGE RAMOS HERNANDEZ",dni:"78978900U",departamento:"Almacén"},
+  {nombre:"ROCIO GARCIA PEREZ",dni:"89089011V",departamento:"Almacén"},
+  {nombre:"JAIME LOPEZ MARTIN",dni:"90190122W",departamento:"Almacén"},
+  {nombre:"MAITE MARTINEZ FERNANDEZ",dni:"01201233X",departamento:"Almacén"},
+  {nombre:"ANDRES SANCHEZ GARCIA",dni:"11122233Y",departamento:"Mantenimiento"},
+  {nombre:"YOLANDA RUIZ LOPEZ",dni:"22233344Z",departamento:"Mantenimiento"},
+  {nombre:"TOMAS HERNANDEZ MARTINEZ",dni:"33344455A",departamento:"Mantenimiento"},
+  {nombre:"VIRGINIA JIMENEZ SANCHEZ",dni:"44455566B",departamento:"Mantenimiento"},
+  {nombre:"MARIO MORENO RUIZ",dni:"55566677C",departamento:"Mantenimiento"},
+  {nombre:"ANGELES DIAZ HERNANDEZ",dni:"66677788D",departamento:"Mantenimiento"},
+  {nombre:"NICOLAS TORRES JIMENEZ",dni:"77788899E",departamento:"Mantenimiento"},
+  {nombre:"SUSANA ROMERO MORENO",dni:"88899900F",departamento:"Mantenimiento"},
+  {nombre:"JULIAN NAVARRO DIAZ",dni:"99900011G",departamento:"Mantenimiento"},
+  {nombre:"NATALIA GUERRERO TORRES",dni:"00011122H",departamento:"Mantenimiento"},
+  {nombre:"MARCOS CANO ROMERO",dni:"11122233I",departamento:"Calidad Líneas"},
+  {nombre:"CAROLINA FUENTES NAVARRO",dni:"22233344J",departamento:"Calidad Líneas"},
+  {nombre:"LUCAS MOLINA GUERRERO",dni:"33344455K",departamento:"Calidad Líneas"},
+  {nombre:"PAULA REYES CANO",dni:"44455566L",departamento:"Calidad Líneas"},
+  {nombre:"HUGO CASTILLO FUENTES",dni:"55566677M",departamento:"Calidad Líneas"},
+  {nombre:"SARA BLANCO MOLINA",dni:"66677788N",departamento:"Calidad Líneas"},
+  {nombre:"SAMUEL VARGAS REYES",dni:"77788899O",departamento:"Calidad Fís-Quím"},
+  {nombre:"LORENA HERRERA CASTILLO",dni:"88899900P",departamento:"Calidad Fís-Quím"},
+  {nombre:"RUBEN MEDINA BLANCO",dni:"99900011Q",departamento:"Calidad Fís-Quím"},
+  {nombre:"CLAUDIA ORTEGA VARGAS",dni:"00011122R",departamento:"Calidad Fís-Quím"},
+  {nombre:"AARON DELGADO HERRERA",dni:"11122244S",departamento:"Calidad Microbiología"},
+  {nombre:"MIRIAM IBAÑEZ MEDINA",dni:"22233355T",departamento:"Calidad Microbiología"},
+  {nombre:"IVAN MORA ORTEGA",dni:"33344466U",departamento:"Calidad Microbiología"},
+  {nombre:"DIANA SANTOS DELGADO",dni:"44455577V",departamento:"Calidad Microbiología"},
+  {nombre:"ALEX LORENZO IBAÑEZ",dni:"55566688W",departamento:"Calidad Materiales"},
+  {nombre:"EVA FLORES MORA",dni:"66677799X",departamento:"Calidad Materiales"},
+  {nombre:"DANIEL VEGA SANTOS",dni:"77788800Y",departamento:"Calidad Materiales"},
+  {nombre:"NEREA BRAVO LORENZO",dni:"88899911Z",departamento:"Calidad Materiales"},
+  {nombre:"RODRIGO NIETO FLORES",dni:"99900022A",departamento:"Mejora Continua"},
+  {nombre:"IRENE MARIN VEGA",dni:"00011133B",departamento:"Mejora Continua"},
+  {nombre:"GONZALO GIMENEZ BRAVO",dni:"11122244C",departamento:"Mejora Continua"},
+  {nombre:"REBECA PASCUAL NIETO",dni:"22233355D",departamento:"Mejora Continua"},
+  {nombre:"ALBERTO CABRERA MARIN",dni:"33344466E",departamento:"Soplado"},
+  {nombre:"NOELIA SERRANO GIMENEZ",dni:"44455577F",departamento:"Soplado"},
+  {nombre:"BORJA MENDEZ PASCUAL",dni:"55566688G",departamento:"Soplado"},
+  {nombre:"VERONICA RUBIO CABRERA",dni:"66677799H",departamento:"Soplado"},
+  {nombre:"OSCAR ALONSO SERRANO",dni:"77788800I",departamento:"Soplado"},
+  {nombre:"MARTA PEÑA MENDEZ",dni:"88899911J",departamento:"Soplado"},
+  {nombre:"ALEJANDRO RAMOS RUBIO",dni:"99900022K",departamento:"Soplado"},
+  {nombre:"LARA GARCIA ALONSO",dni:"00011133L",departamento:"Soplado"},
 ];
 
-const LS_KEY = 'ubesol_portal_session';
+let allWorkers = WORKERS_DATA;
+let usedNames  = new Set();
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-(function() {
-  const sess = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-  if (sess) showPortal(sess);
-})();
+// Declaraciones globales de todos los arrays de bajas/vacaciones
+// (se inicializan en los init* pero necesitan existir antes para rebuildUsedNames)
+bajas = [], vacaciones = [];
+elabBajas = [], elabVacaciones = [];
+almBajas = [], almVacaciones = [];
+mtoBajas = [], mtoVacaciones = [];
+calBajas = [], calVacaciones = [];
+calfqBajas = [], calfqVacaciones = [];
+calmicroBajas = [], calmicroVacaciones = [];
+calmatBajas = [], calmatVacaciones = [];
+mcBajas = [], mcVacaciones = [];
+soplBajas = [], soplVacaciones = [];
+elabWorkers = {}, almWorkers = {}, mtoWorkers = {};
+calWorkers = {}, calfqWorkers = {}, calmicroWorkers = {};
+calmatWorkers = {}, mcWorkers = {}, soplWorkers = {};
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────
-function doLogin() {
-  const user = document.getElementById('inp-user').value.trim().toLowerCase();
-  const pass = document.getElementById('inp-pass').value;
-  const err  = document.getElementById('login-err');
-
-  if (!user || !pass) {
-    err.textContent = 'Introduce usuario y contraseña';
-    err.classList.add('show');
-    return;
-  }
-
-  const responsable = RESPONSABLES.find(r => r.user === user && r.pass === pass);
-
-  if (!responsable) {
-    err.classList.add('show');
-    document.getElementById('inp-pass').value = '';
-    return;
-  }
-
-  err.classList.remove('show');
-  localStorage.setItem(LS_KEY, JSON.stringify(responsable));
-  showPortal(responsable);
+function getWorkersForDept(dept) {
+  // Normalizar: todas las variantes de Calidad van juntas
+  const normDeptLocal = (d) => (d||'').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  const dNorm = normDeptLocal(dept);
+  const isCalidadTab = dNorm.startsWith('calidad');
+  return allWorkers.filter(w => {
+    const wNorm = normDeptLocal(w.departamento);
+    if (isCalidadTab) return wNorm.startsWith('calidad');
+    return wNorm === dNorm;
+  });
 }
 
-function doLogout() {
-  localStorage.removeItem(LS_KEY);
-  document.getElementById('portal-section').classList.remove('active');
-  document.getElementById('login-section').style.display = '';
-  document.getElementById('inp-user').value = '';
-  document.getElementById('inp-pass').value = '';
-}
+function rebuildUsedNames() {
+  usedNames = new Set();
+  const add = (v) => { if(v && v.trim()) usedNames.add(v.trim().toUpperCase()); };
+  const safeArr = (a) => Array.isArray(a) ? a : [];
 
-function contarEpisPendientes(responsable) {
-  try {
-    const WORKERS_DEPT = {
-      'Envasado':['12345678A','23456789B','34567890C','45678901D','56789012E','67890123F','78901234G','89012345H','90123456I','01234567J','11223344K','22334455L','33445566M','44556677N','55667788O','66778899P','77889900Q','88990011R','99001122S','00112233T'],
-      'Elaboración':['67867867Z','78978978A','89089089B','90190190C'],
-      'Almacén':['89089089L','90190190M','01201201N','12312344O'],
-      'Mantenimiento':['11122233Y','22233344Z'],
-      'Calidad Líneas':['11122233I','22233344J'],
-      'Calidad FQ':['77788899O','88899900P'],
-      'Calidad Micro':['11122244S','22233355T'],
-      'Calidad Mat.':['55566688W','66677799X'],
-      'Mejora Continua':['99900022A','00011133B'],
-      'Soplado':['33344466E','44455577F'],
-    };
-    const all = JSON.parse(localStorage.getItem('ubesol_app_epis') || '{}');
-    const miDept = responsable.departamento;
-    const dnis = responsable.user === 'admin'
-      ? Object.keys(all)
-      : (WORKERS_DEPT[miDept] || []);
-    let count = 0;
-    dnis.forEach(dni => {
-      (all[dni] || []).forEach(e => { if (e.estado === 'pendiente') count++; });
+  // Envasado — lines tienen maq[] y ops[], cada worker tiene cells:{M,T,N,P}
+  safeArr(lines).forEach(l => {
+    [...safeArr(l.maq), ...safeArr(l.ops)].forEach(w => {
+      if(w && w.cells) Object.values(w.cells).forEach(add);
     });
-    const badge = document.getElementById('epi-badge');
-    if (badge) {
-      if (count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
-      else { badge.style.display = 'none'; }
+  });
+
+  // Servicios transversales Envasado
+  if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
+    safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); }));
+
+  // Todos los depts tipo post
+  [elabWorkers, almWorkers, mtoWorkers, calWorkers, calfqWorkers,
+   calmicroWorkers, calmatWorkers, mcWorkers, soplWorkers].forEach(obj => {
+    if (!obj) return;
+    Object.values(obj).forEach(arr => safeArr(arr).forEach(w => {
+      if(w && w.cells) Object.values(w.cells).forEach(add);
+    }));
+  });
+
+  // Bajas / vacaciones de todos los depts
+  [bajas, vacaciones, elabBajas, elabVacaciones, almBajas, almVacaciones,
+   mtoBajas, mtoVacaciones, calBajas, calVacaciones, calfqBajas, calfqVacaciones,
+   calmicroBajas, calmicroVacaciones, calmatBajas, calmatVacaciones,
+   mcBajas, mcVacaciones, soplBajas, soplVacaciones].forEach(arr => {
+    safeArr(arr).forEach(w => { if(w && w.cells) Object.values(w.cells).forEach(add); });
+  });
+}
+
+async function loadWorkers() {
+  try {
+    const snap = await db.collection('trabajadores').get();
+    if (!snap.empty) {
+      allWorkers = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.nombre && d.dni) allWorkers.push({nombre:d.nombre, dni:d.dni, departamento:d.departamento||''});
+      });
+      localStorage.setItem('ubesol_workers_cache', JSON.stringify(allWorkers));
+    } else {
+      const cache = localStorage.getItem('ubesol_workers_cache');
+      if (cache) allWorkers = JSON.parse(cache);
+    }
+  } catch(e) {
+    const cache = localStorage.getItem('ubesol_workers_cache');
+    if (cache) allWorkers = JSON.parse(cache);
+  }
+}
+
+// ── AUTOCOMPLETE ENGINE ────────────────────────────────────────────────
+function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-wrap';
+
+  const inp = document.createElement('input');
+  inp.className = 'name-inp';
+  inp.type = 'text';
+  inp.value = currentVal || '';
+  inp.placeholder = 'Nombre…';
+  inp.autocomplete = 'off';
+
+  const list = document.createElement('div');
+  list.className = 'ac-list';
+
+  function showList(query) {
+    rebuildUsedNames();
+    const own = inp.value.trim().toUpperCase();
+    if (own) usedNames.delete(own);
+
+    const q = query.trim().toUpperCase();
+    const workers = getWorkersForDept(dept);
+
+    const available = workers.filter(w => {
+      const nameUpper = w.nombre.toUpperCase();
+      const matchesQuery = !q || nameUpper.includes(q);
+      // Si blockDuplicates: ocultar ya asignados. Si no: mostrar todos
+      const notUsed = !blockDuplicates || !usedNames.has(nameUpper);
+      return matchesQuery && notUsed;
+    });
+
+    list.innerHTML = '';
+    if (!available.length) {
+      list.innerHTML = `<div class="ac-empty">${q ? 'Sin resultados' : 'Todos los trabajadores ya están asignados'}</div>`;
+    } else {
+      available.slice(0, 30).forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'ac-item';
+        item.innerHTML = `<span class="ac-name">${w.nombre}</span><span class="ac-dni">${w.dni}</span>`;
+        item.onmousedown = (e) => {
+          e.preventDefault();
+          selectedFromList = true;
+          inp.value = w.nombre;
+          onSelect(w.nombre);
+          autoSave();
+          list.classList.remove('open');
+        };
+        list.appendChild(item);
+      });
+    }
+    list.classList.add('open');
+  }
+
+  let selectedFromList = false;
+
+  inp.addEventListener('focus', () => showList(inp.value));
+  inp.addEventListener('click', () => showList(inp.value));
+  inp.addEventListener('input', () => { selectedFromList = false; onSelect(inp.value); showList(inp.value); });
+  inp.addEventListener('blur', () => {
+    setTimeout(() => {
+      list.classList.remove('open');
+      if (!selectedFromList && blockDuplicates) {
+        const v = inp.value.trim().toUpperCase();
+        if (v) {
+          rebuildUsedNames();
+          usedNames.delete(v);
+          if (usedNames.has(v)) {
+            inp.value = '';
+            onSelect('');
+            inp.style.boxShadow = 'inset 0 0 0 2px #e53e3e';
+            setTimeout(() => inp.style.boxShadow = '', 1500);
+          }
+        }
+      }
+      autoSave();
+      selectedFromList = false;
+    }, 200);
+  });
+
+  wrap.appendChild(inp);
+  wrap.appendChild(list);
+  return { wrap, inp };
+}
+
+const TURNOS = ['M','T','N','P'];
+
+// ─── CONFIG DINÁMICA DESDE FIREBASE ──────────────────────────────────────────
+let lines = []; // DEBE declararse antes de loadConfig/applyConfig
+let _cfg = null;
+let isAdminMode = false; // se actualiza al leer el param dept // se carga de Firebase o usa defaults
+
+async function loadConfig() {
+  try {
+    const doc = await db.collection('config').doc('estructura').get();
+    if (doc.exists) {
+      _cfg = doc.data();
+      const nLineas = (_cfg.envasado && _cfg.envasado.lineas) ? _cfg.envasado.lineas.length : 0;
+      console.log('[CONFIG] OK - Líneas en Firebase:', nLineas, '| IDs:', (_cfg.envasado&&_cfg.envasado.lineas||[]).map(l=>l.id).join(','));
+    } else {
+      console.log('[CONFIG] No existe doc en Firebase — usando defaults hardcoded');
+    }
+  } catch(e) {
+    console.error('[CONFIG] Error Firebase:', e.message);
+  }
+  applyConfig();
+}
+
+function applyConfig() {
+  if (!_cfg) { console.log('[CONFIG] applyConfig: _cfg null, sin cambios'); return; }
+
+  // ── Envasado especiales ──
+  if (_cfg.envasado) {
+    if (_cfg.envasado.especiales_top) {
+      SPECIAL_TOP.length = 0;
+      _cfg.envasado.especiales_top.forEach(p => SPECIAL_TOP.push(p));
+    }
+    if (_cfg.envasado.especiales_bot) {
+      SPECIAL_BOT.length = 0;
+      _cfg.envasado.especiales_bot.forEach(p => SPECIAL_BOT.push(p));
+    }
+    if (_cfg.envasado.lineas) {
+      lines = _cfg.envasado.lineas.map(l => mkLine(l.id, l.label, l.color, l.isL2sub||false, l.roles));
+      console.log('[CONFIG] applyConfig: lines asignadas ->', lines.map(l=>l.id).join(','));
+    }
+  }
+}
+
+function applyConfigPostDepts() {
+  if (!_cfg) return;
+
+  // Depts simples
+  const simple = [
+    { cfgKey:'elaboracion',   arr: ELAB_PUESTOS  },
+    { cfgKey:'almacen',       arr: ALMC_PUESTOS  },
+    { cfgKey:'mantenimiento', arr: MTO_PUESTOS   },
+    { cfgKey:'soplado',       arr: SOPL_PUESTOS  },
+    { cfgKey:'mejora',        arr: MC_PUESTOS    },
+  ];
+  simple.forEach(({cfgKey, arr}) => {
+    const d = _cfg[cfgKey];
+    if (!d || !d.puestos) return;
+    arr.length = 0;
+    d.puestos.forEach(p => arr.push(p));
+  });
+
+  // Calidad — 4 sub-arrays separados
+  if (_cfg.calidad) {
+    // Calidad Líneas (CAL_PUESTOS)
+    if (_cfg.calidad.puestos_lineas) {
+      CAL_PUESTOS.length = 0;
+      _cfg.calidad.puestos_lineas.forEach(p => CAL_PUESTOS.push(p));
+    } else if (_cfg.calidad.puestos) {
+      // Retrocompat: si solo hay puestos generales, solo van a CAL_PUESTOS
+      CAL_PUESTOS.length = 0;
+      _cfg.calidad.puestos.forEach(p => CAL_PUESTOS.push(p));
+    }
+    // Calidad FQ
+    if (_cfg.calidad.puestos_fq) {
+      CALFQ_PUESTOS.length = 0;
+      _cfg.calidad.puestos_fq.forEach(p => CALFQ_PUESTOS.push(p));
+    }
+    // Calidad Micro
+    if (_cfg.calidad.puestos_micro) {
+      CALMICRO_PUESTOS.length = 0;
+      _cfg.calidad.puestos_micro.forEach(p => CALMICRO_PUESTOS.push(p));
+    }
+    // Calidad Materiales
+    if (_cfg.calidad.puestos_mat) {
+      CALMAT_PUESTOS.length = 0;
+      _cfg.calidad.puestos_mat.forEach(p => CALMAT_PUESTOS.push(p));
+    }
+  }
+}
+
+// Servicios transversales: cada puesto es un array expandible de workers
+const SPECIAL_TOP = [
+  { id:'sup',  label:'SUPERVISOR/A DE TURNO', type:'sup'     },
+  { id:'tr1',  label:'TRACKING NAVE 1',       type:'special' },
+  { id:'sum',  label:'SUMINISTRO',            type:'special' },
+];
+
+const SPECIAL_BOT = [
+  { id:'tol3',  label:'TOLVAS NAVE 3',      type:'special' },
+  { id:'tras3', label:'TRASLADO NAVE 3',    type:'special' },
+  { id:'trk3',  label:'TRACKING NAVE 3',   type:'special' },
+  { id:'tol4',  label:'TOLVAS NAVE 4',      type:'special' },
+  { id:'comp4', label:'COMPONENTES NAVE 4', type:'special' },
+  { id:'trk4',  label:'TRACKING NAVE 4',   type:'special' },
+];
+
+// workers keyed by puesto id — each is an expandable array
+let specialWorkers = {};
+
+function initSpecialWorkers() {
+  specialWorkers = {};
+  [...SPECIAL_TOP, ...SPECIAL_BOT].forEach(p => {
+    specialWorkers[p.id] = [mkWorker(p.id+'_0')];
+  });
+}
+
+// Bajas y vacaciones son arrays expandibles
+
+// default line structure — all lines start with 1 maq + 1 op
+function defaultLines() {
+  return [
+    mkLine('L1',   'L1',    'green',  false),
+    mkLine('L2',   'L2',    'yellow', false),
+    mkLine('L3',   'L3',    'green',  false),
+    mkLine('L4',   'L4',    'yellow', false),
+    mkLine('L7',   'L7',    'green',  false),
+    mkLine('L5.1', 'L5.1',  'yellow', false),
+    mkLine('L2.1', 'L2.1',  'green',  true),
+    mkLine('L2.2', 'L2.2',  'yellow', true),
+    mkLine('L2.3', 'L2.3',  'green',  true),
+    mkLine('L2.5', 'L2.5',  'yellow', true),
+    mkLine('L2.6', 'L2.6',  'green',  true),
+    mkLine('L2.7', 'L2.7',  'yellow', true),
+    mkLine('L2.8', 'L2.8',  'green',  true),
+    mkLine('L2.9', 'L2.9',  'yellow', true),
+    mkLine('L2.10','L2.10', 'green',  true),
+  ];
+}
+
+function mkLine(id, label, color, isL2sub=false, roles=null) {
+  const defaultRoles = [{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}];
+  const lineRoles = roles || defaultRoles;
+  const obj = { id, label, color, isL2sub, roles: lineRoles };
+  // Crear arrays de workers por rol (compatible con maq/ops existente)
+  lineRoles.forEach(r => {
+    obj[r.id] = [mkWorker(r.id+'_'+id+'_0')];
+  });
+  // Alias para compatibilidad
+  if (!obj.maq && obj[lineRoles[0]?.id]) obj.maq = obj[lineRoles[0].id];
+  if (!obj.ops && lineRoles[1] && obj[lineRoles[1].id]) obj.ops = obj[lineRoles[1].id];
+  return obj;
+}
+
+function mkWorker(id) {
+  return { id, name:'', cells:{M:'',T:'',N:'',P:''} };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════════════
+function render() {
+  const root = document.getElementById('table-root');
+  root.innerHTML = '';
+
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `<colgroup>
+    <col class="c-linea"><col class="c-puesto">
+    <col class="c-m"><col class="c-t"><col class="c-n"><col class="c-p">
+  </colgroup>`;
+
+  // THEAD
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr class="turno-hdr">
+    <th class="th-linea">LÍNEA</th>
+    <th class="th-puesto">PUESTO</th>
+    <th class="th-m">TURNO MAÑANA</th>
+    <th class="th-t">TURNO TARDE</th>
+    <th class="th-n">TURNO NOCHE</th>
+    <th class="th-p">TURNO PARTIDO / ESPECIAL</th>
+  </tr>`;
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  // ── SUPERVISOR / SPECIAL TOP ROWS ──
+  SPECIAL_TOP.forEach(puesto => {
+    const arr = specialWorkers[puesto.id];
+    arr.forEach((w, wi) => tbody.appendChild(buildExpandableRow(w, wi, puesto, arr)));
+  });
+
+  // Divider
+  tbody.appendChild(buildDivider('Líneas de Producción'));
+
+  // ── LINES ──
+  // Separate L2sub lines to group them visually
+  const mainLines = lines.filter(l => !l.isL2sub);
+  const l2subs    = lines.filter(l => l.isL2sub);
+
+  mainLines.forEach(line => renderLineRows(tbody, line));
+
+  if(l2subs.length > 0) {
+    tbody.appendChild(buildDivider('Líneas L2 — Subgrupo'));
+    l2subs.forEach(line => renderLineRows(tbody, line));
+  }
+
+  // ── BOTTOM SPECIALS ──
+  tbody.appendChild(buildDivider('Servicios Transversales'));
+  SPECIAL_BOT.forEach(puesto => {
+    const arr = specialWorkers[puesto.id];
+    arr.forEach((w, wi) => tbody.appendChild(buildExpandableRow(w, wi, puesto, arr)));
+  });
+
+  // ── BAJAS ──
+  tbody.appendChild(buildDivider('Bajas'));
+  bajas.forEach((w, wi) => {
+    tbody.appendChild(buildExpandableRow(w, wi, {id:'bajas', label:'BAJA', type:'bajas'}, bajas));
+  });
+
+  // ── VACACIONES ──
+  tbody.appendChild(buildDivider('Vacaciones'));
+  vacaciones.forEach((w, wi) => {
+    tbody.appendChild(buildExpandableRow(w, wi, {id:'vacaciones', label:'VACACIONES', type:'vac'}, vacaciones));
+  });
+
+  tbl.appendChild(tbody);
+  root.appendChild(tbl);
+}
+
+function renderLineRows(tbody, line) {
+  const color = line.color;
+  const roles = line.roles && line.roles.length ? line.roles : [{id:'maq',label:'OPERADOR/A MÁQUINA'},{id:'ops',label:'OPERARIO/A'}];
+
+  // Asegurar que existen arrays de workers para cada rol
+  roles.forEach(r => {
+    if (!line[r.id]) line[r.id] = [mkWorker(r.id+'_'+line.id+'_0')];
+  });
+
+  // Calcular total de filas para el rowspan del label de línea
+  const totalRows = roles.reduce((sum, r) => sum + (line[r.id]||[]).length, 0);
+  let firstRow = true;
+
+  roles.forEach((role, roleIdx) => {
+    const arr = line[role.id] || [];
+    const rowClass = roleIdx === 0
+      ? `line-maq${color==='yellow'?' yellow':''}`
+      : `line-op${color==='yellow'?' yellow':''}`;
+
+    arr.forEach((w, wi) => {
+      const tr = document.createElement('tr');
+      tr.className = rowClass;
+
+      // Label de línea — solo en la primera fila total
+      if (firstRow) {
+        firstRow = false;
+        const tdLinea = document.createElement('td');
+        tdLinea.className = 'linea-label';
+        tdLinea.rowSpan = totalRows;
+        tdLinea.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          <span>${line.label}</span>
+          ${isAdminMode ? `<button onclick="removeLine('${line.id}')" title="Eliminar línea"
+            style="font-size:9px;color:#ccc;background:none;border:none;cursor:pointer;padding:0;transition:color .12s"
+            onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#ccc'">✕</button>` : ''}
+        </div>`;
+        tr.appendChild(tdLinea);
+      }
+
+      // Puesto label + controles
+      const tdPuesto = document.createElement('td');
+      tdPuesto.className = 'puesto-label';
+      tdPuesto.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+        <span>${role.label}</span>
+        <div style="display:flex;gap:2px;flex-shrink:0">
+          ${arr.length > 1 && wi === arr.length-1
+            ? `<button class="ctrl-btn ctrl-del" onclick="removeRoleWorker('${line.id}','${role.id}')" title="Quitar">−</button>`
+            : ''}
+          ${wi === arr.length-1
+            ? `<button class="ctrl-btn ctrl-add" onclick="addRoleWorker('${line.id}','${role.id}')" title="Añadir">+</button>`
+            : ''}
+        </div>
+      </div>`;
+      tr.appendChild(tdPuesto);
+
+      TURNOS.forEach(t => tr.appendChild(buildNameCell(w, t)));
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// Funciones genéricas para añadir/quitar workers por rol
+function addRoleWorker(lineId, roleId) {
+  const line = lines.find(l => l.id === lineId);
+  if (!line) return;
+  if (!line[roleId]) line[roleId] = [];
+  line[roleId].push(mkWorker(roleId+'_'+lineId+'_'+line[roleId].length));
+  render();
+}
+function removeRoleWorker(lineId, roleId) {
+  const line = lines.find(l => l.id === lineId);
+  if (!line || !line[roleId] || line[roleId].length <= 1) return;
+  line[roleId].pop();
+  render();
+}
+
+function buildNameCell(worker, turno) {
+  const td = document.createElement('td');
+  td.className = `name-cell cell-${turno.toLowerCase()}`;
+  const div = document.createElement('div');
+  div.className = 'row-controls';
+  const { wrap } = makeAcInput(
+    worker.cells[turno] || '',
+    currentTab,
+    (val) => { worker.cells[turno] = val; },
+    true   // bloquear duplicados igual que el resto de departamentos
+  );
+  div.appendChild(wrap);
+  td.appendChild(div);
+  return td;
+}
+
+
+function buildDivider(text) {
+  const tr = document.createElement('tr');
+  tr.className = 'section-divider';
+  const td = document.createElement('td');
+  td.colSpan = 6;
+  td.textContent = text;
+  tr.appendChild(td);
+  return tr;
+}
+
+function buildExpandableRow(worker, wi, puesto, arr) {
+  const isPuestoObj = typeof puesto === 'object' && puesto.label;
+  const label    = isPuestoObj ? puesto.label : (puesto === 'bajas' ? 'BAJA' : 'VACACIONES');
+  const rowType  = isPuestoObj ? puesto.type  : puesto;
+  const puestoId = isPuestoObj ? puesto.id    : puesto;
+
+  const tr = document.createElement('tr');
+  tr.className = rowType === 'sup'   ? 'sup-row'
+               : rowType === 'bajas' ? 'bajas-row'
+               : rowType === 'vac'   ? 'vac-row'
+               : 'special-row';
+
+  // Empty linea cell
+  const tdL = document.createElement('td');
+  tdL.className = 'linea-label';
+  tdL.style.cssText = 'background:transparent;border-color:var(--border-l)';
+  tr.appendChild(tdL);
+
+  // Label + controls on last row
+  const tdP = document.createElement('td');
+  tdP.className = 'puesto-label';
+  const isLast = wi === arr.length - 1;
+  tdP.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+    <span>${label}</span>
+    ${isLast ? `<div style="display:flex;gap:2px;flex-shrink:0">
+      ${arr.length > 1
+        ? `<button class="ctrl-btn ctrl-del" onclick="removeSpecial('${puestoId}')" title="Quitar fila">−</button>`
+        : ''}
+      <button class="ctrl-btn ctrl-add" onclick="addSpecial('${puestoId}')" title="Añadir persona">+</button>
+    </div>` : ''}
+  </div>`;
+  tr.appendChild(tdP);
+
+  // Usar autocomplete igual que en los turnos
+  TURNOS.forEach(t => {
+    const td = document.createElement('td');
+    td.className = `name-cell cell-${t.toLowerCase()}`;
+    const div = document.createElement('div');
+    div.className = 'row-controls';
+    const { wrap } = makeAcInput(
+      worker.cells[t] || '',
+      currentTab,
+      (val) => { worker.cells[t] = val; }
+    );
+    div.appendChild(wrap);
+    td.appendChild(div);
+    tr.appendChild(td);
+  });
+
+  return tr;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  GUARDAR MANUAL
+// ═══════════════════════════════════════════════════════════════════════
+function tieneTrabajadores(d) {
+  // Comprueba si un payload tiene al menos un nombre real
+  if (!d) return false;
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const tieneNombre = w => w && w.cells && Object.values(w.cells).some(v => v && String(v).trim().length > 0);
+  if (d.envasado) {
+    const e = d.envasado;
+    if (safeArr(e.lines).some(l => {
+      const roles2 = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+      return roles2.some(r => safeArr(l[r.id]).some(tieneNombre));
+    })) return true;
+    if (e.specialWorkers && Object.values(e.specialWorkers).some(arr => safeArr(arr).some(tieneNombre))) return true;
+  }
+  for (const dept of ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado']) {
+    if (d[dept] && d[dept].workers) {
+      if (Object.values(d[dept].workers).some(arr => safeArr(arr).some(tieneNombre))) return true;
+    }
+  }
+  return false;
+}
+
+function guardarManual() {
+  // 1. Guardar semana activa en localStorage
+  autoSaveToKey(weekKey());
+
+  // 2. Leer localStorage y quedarse SOLO con semanas que tengan trabajadores reales
+  const semanasLocales = {};
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      try {
+        const d = JSON.parse(raw);
+        if (!d || !d._version || !d.ano || !d.semana) continue;
+        if (!tieneTrabajadores(d)) continue; // ignorar semanas vacías
+        const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+          .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+          .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+        const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+        semanasLocales[deptKey + '_' + semKey] = d;
+      } catch(e) {}
+    }
+  } catch(e) {
+    console.error('guardarManual error:', e);
+  }
+
+  // 2. Sincronizar Firebase: borrar TODO lo que no está en local, subir lo que sí
+  const count = Object.keys(semanasLocales).length;
+
+  db.collection('cuadrantes').get().then(function(snap) {
+    // Borrar uno a uno (más fiable que batch para colecciones pequeñas)
+    const promesas = [];
+    snap.forEach(function(doc) {
+      if (!semanasLocales[doc.id]) {
+        promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
+      }
+    });
+    // Subir/actualizar los documentos locales
+    Object.entries(semanasLocales).forEach(function([docId, payload]) {
+      promesas.push(db.collection('cuadrantes').doc(docId).set(payload));
+    });
+    return Promise.all(promesas);
+  }).then(function() {
+    toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' sincronizada' + (count !== 1 ? 's' : '') + ' con Firebase ✓');
+  }).catch(function(e) {
+    console.warn('Firebase sync error:', e);
+    toast('⚠️ Error al sincronizar: ' + e.message);
+  });
+
+  toast(count === 0
+    ? '💾 Limpiando Firebase...'
+    : '💾 Sincronizando ' + count + ' semana' + (count !== 1 ? 's' : '') + '...');
+}
+// Aliases de compatibilidad — delegan en addRoleWorker/removeRoleWorker
+function addMaq(lineId)    { addRoleWorker(lineId, 'maq'); }
+function removeMaq(lineId) { removeRoleWorker(lineId, 'maq'); }
+function addOp(lineId)     { addRoleWorker(lineId, 'ops'); }
+function removeOp(lineId)  { removeRoleWorker(lineId, 'ops'); }
+
+function removeLine(lineId) {
+  if(lines.length <= 1) { toast('Mínimo 1 línea'); return; }
+  lines = lines.filter(l => l.id !== lineId);
+  render();
+}
+
+function addLine(type) {
+  const isL2 = type === 'L2';
+  const prefix = isL2 ? 'L2.' : 'L';
+  const existing = lines.filter(l => l.isL2sub === isL2);
+  const nums = existing.map(l => parseFloat(l.label.replace(/[^\d.]/g,''))).filter(n=>!isNaN(n));
+  const next = nums.length ? Math.max(...nums) + 1 : (isL2 ? 2.11 : 8);
+  const id = prefix + next;
+  const colors = ['green','yellow'];
+  const color = colors[lines.length % 2];
+  lines.push(mkLine(id, id, color, isL2));
+  render();
+  toast('Línea ' + id + ' añadida');
+}
+
+function addSpecial(id) {
+  const arr = getSpecialArr(id);
+  arr.push(mkWorker(id+'_'+Date.now()));
+  render();
+}
+
+function removeSpecial(id) {
+  const arr = getSpecialArr(id);
+  if(arr.length <= 1) { toast('Mínimo 1 fila'); return; }
+  arr.pop();
+  render();
+}
+
+function getSpecialArr(id) {
+  if(id === 'bajas')      return bajas;
+  if(id === 'vacaciones') return vacaciones;
+  return specialWorkers[id];
+}
+
+function addBaja()    { addSpecial('bajas'); }
+function removeBaja() { removeSpecial('bajas'); }
+function addVac()     { addSpecial('vacaciones'); }
+function removeVac()  { removeSpecial('vacaciones'); }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  DATES — calcula lunes a domingo a partir de semana + año ISO
+// ═══════════════════════════════════════════════════════════════════════
+function getWeekDates(year, week) {
+  // ISO week: week 1 = week containing first Thursday of year
+  const jan4 = new Date(year, 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const monday = new Date(startOfW1);
+  monday.setDate(startOfW1.getDate() + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
+}
+
+function fmtDate(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function fmtISO(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function updateWeekFromSelector() {
+  const year = parseInt(document.getElementById('meta-ano').value) || 2026;
+  const week = parseInt(document.getElementById('meta-sem').value) || 1;
+  const { monday, sunday } = getWeekDates(year, week);
+  document.getElementById('meta-dates').textContent =
+    'Del ' + fmtDate(monday) + ' al ' + fmtDate(sunday);
+}
+
+function changeWeek(delta) {
+  // Guardar la semana ACTUAL con su clave correcta ANTES de tocar el selector
+  const oldKey = weekKey();
+  autoSaveToKey(oldKey);
+
+  const sem = document.getElementById('meta-sem');
+  let w = parseInt(sem.value) + delta;
+  const year = parseInt(document.getElementById('meta-ano').value) || 2026;
+  if (w < 1) {
+    w = 52;
+    document.getElementById('meta-ano').value = year - 1;
+  } else if (w > 52) {
+    w = 1;
+    document.getElementById('meta-ano').value = year + 1;
+  }
+  sem.value = w;
+  updateWeekFromSelector();
+  loadWeekFromStorage();
+}
+
+// legacy compat — keep for any old references
+function updateWeek() { updateWeekFromSelector(); }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  EXPORT / PUBLISH
+// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+//  EXPORT — guarda todos los departamentos en un único fichero JSON
+// ═══════════════════════════════════════════════════════════════════════
+function exportJSON() {
+  const payload = {
+    _version: 1,
+    semana:        document.getElementById('meta-sem').value,
+    ano:           document.getElementById('meta-ano').value,
+    fecha_inicio:  document.getElementById('meta-ini').value,
+    fecha_fin:     document.getElementById('meta-fin').value,
+    responsable:   (document.getElementById('responsable') || {value:''}).value,
+    // ── Envasado ──
+    envasado: {
+      specialWorkers,
+      lines,
+      bajas,
+      vacaciones,
+    },
+    // ── Elaboración ──
+    elaboracion: {
+      workers: elabWorkers,
+      bajas: elabBajas,
+      vacaciones: elabVacaciones,
+    },
+    // ── Almacén ──
+    almacen: {
+      workers: almWorkers,
+      bajas: almBajas,
+      vacaciones: almVacaciones,
+    },
+    // ── Mantenimiento ──
+    mantenimiento: {
+      workers: mtoWorkers,
+      bajas: mtoBajas,
+      vacaciones: mtoVacaciones,
+    },
+    // ── Calidad Líneas ──
+    calidadLineas: {
+      workers: calWorkers,
+      bajas: calBajas,
+      vacaciones: calVacaciones,
+    },
+    // ── Calidad FQ ──
+    calidadFQ: {
+      workers: calfqWorkers,
+      bajas: calfqBajas,
+      vacaciones: calfqVacaciones,
+    },
+    // ── Calidad Micro ──
+    calidadMicro: {
+      workers: calmicroWorkers,
+      bajas: calmicroBajas,
+      vacaciones: calmicroVacaciones,
+    },
+    // ── Calidad Materiales ──
+    calidadMat: {
+      workers: calmatWorkers,
+      bajas: calmatBajas,
+      vacaciones: calmatVacaciones,
+    },
+    // ── Mejora Continua ──
+    mejoraContinua: {
+      workers: mcWorkers,
+      bajas: mcBajas,
+      vacaciones: mcVacaciones,
+    },
+    // ── Soplado ──
+    soplado: {
+      workers: soplWorkers,
+      bajas: soplBajas,
+      vacaciones: soplVacaciones,
+    },
+  };
+
+  const b = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = `ubesol_${weekKey()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('✓ Fichero descargado: ubesol_' + weekKey() + '.json');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  IMPORT — carga un fichero JSON exportado anteriormente
+// ═══════════════════════════════════════════════════════════════════════
+function triggerLoad() {
+  const input = document.getElementById('json-file-input');
+  input.value = ''; // reset so same file can be reloaded
+  input.click();
+}
+
+function loadJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d._version) { toast('Fichero no válido'); return; }
+
+      // ── Meta ──
+      if (d.semana)       document.getElementById('meta-sem').value  = d.semana;
+      if (d.ano)          document.getElementById('meta-ano').value  = d.ano;
+      if (d.fecha_inicio) document.getElementById('meta-ini').value  = d.fecha_inicio;
+      if (d.fecha_fin)    document.getElementById('meta-fin').value  = d.fecha_fin;
+      if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
+
+      // ── Envasado ──
+      if (d.envasado) {
+        if (d.envasado.specialWorkers) Object.assign(specialWorkers, d.envasado.specialWorkers);
+        if (d.envasado.lines) {
+          // No sobreescribir lines con localStorage — solo restaurar workers
+          const savedMapH = {};
+          d.envasado.lines.forEach(l => { savedMapH[l.id] = l; });
+          lines.forEach(l => {
+            const saved = savedMapH[l.id];
+            if (!saved) return;
+            const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+            roles.forEach(r => { if (saved[r.id]) l[r.id] = saved[r.id]; });
+            if (!l.maq && saved.maq) l.maq = saved.maq;
+            if (!l.ops && saved.ops) l.ops = saved.ops;
+          });
+        }
+        if (d.envasado.bajas)          bajas      = d.envasado.bajas;
+        if (d.envasado.vacaciones)     vacaciones = d.envasado.vacaciones;
+      }
+      // ── Elaboración ──
+      if (d.elaboracion) {
+        if (d.elaboracion.workers)    Object.assign(elabWorkers, d.elaboracion.workers);
+        if (d.elaboracion.bajas)      elabBajas      = d.elaboracion.bajas;
+        if (d.elaboracion.vacaciones) elabVacaciones = d.elaboracion.vacaciones;
+      }
+      // ── Almacén ──
+      if (d.almacen) {
+        if (d.almacen.workers)    Object.assign(almWorkers, d.almacen.workers);
+        if (d.almacen.bajas)      almBajas      = d.almacen.bajas;
+        if (d.almacen.vacaciones) almVacaciones = d.almacen.vacaciones;
+      }
+      // ── Mantenimiento ──
+      if (d.mantenimiento) {
+        if (d.mantenimiento.workers)    Object.assign(mtoWorkers, d.mantenimiento.workers);
+        if (d.mantenimiento.bajas)      mtoBajas      = d.mantenimiento.bajas;
+        if (d.mantenimiento.vacaciones) mtoVacaciones = d.mantenimiento.vacaciones;
+      }
+      // ── Calidad Líneas ──
+      if (d.calidadLineas) {
+        if (d.calidadLineas.workers)    Object.assign(calWorkers, d.calidadLineas.workers);
+        if (d.calidadLineas.bajas)      calBajas      = d.calidadLineas.bajas;
+        if (d.calidadLineas.vacaciones) calVacaciones = d.calidadLineas.vacaciones;
+      }
+      // ── Calidad FQ ──
+      if (d.calidadFQ) {
+        if (d.calidadFQ.workers)    Object.assign(calfqWorkers, d.calidadFQ.workers);
+        if (d.calidadFQ.bajas)      calfqBajas      = d.calidadFQ.bajas;
+        if (d.calidadFQ.vacaciones) calfqVacaciones = d.calidadFQ.vacaciones;
+      }
+      // ── Calidad Micro ──
+      if (d.calidadMicro) {
+        if (d.calidadMicro.workers)    Object.assign(calmicroWorkers, d.calidadMicro.workers);
+        if (d.calidadMicro.bajas)      calmicroBajas      = d.calidadMicro.bajas;
+        if (d.calidadMicro.vacaciones) calmicroVacaciones = d.calidadMicro.vacaciones;
+      }
+      // ── Calidad Materiales ──
+      if (d.calidadMat) {
+        if (d.calidadMat.workers)    Object.assign(calmatWorkers, d.calidadMat.workers);
+        if (d.calidadMat.bajas)      calmatBajas      = d.calidadMat.bajas;
+        if (d.calidadMat.vacaciones) calmatVacaciones = d.calidadMat.vacaciones;
+      }
+      // ── Mejora Continua ──
+      if (d.mejoraContinua) {
+        if (d.mejoraContinua.workers)    Object.assign(mcWorkers, d.mejoraContinua.workers);
+        if (d.mejoraContinua.bajas)      mcBajas      = d.mejoraContinua.bajas;
+        if (d.mejoraContinua.vacaciones) mcVacaciones = d.mejoraContinua.vacaciones;
+      }
+      // ── Soplado ──
+      if (d.soplado) {
+        if (d.soplado.workers)    Object.assign(soplWorkers, d.soplado.workers);
+        if (d.soplado.bajas)      soplBajas      = d.soplado.bajas;
+        if (d.soplado.vacaciones) soplVacaciones = d.soplado.vacaciones;
+      }
+
+      renderCurrent();
+      toast('✓ Cuadrante cargado — semana ' + (d.semana||'?') + ' / ' + (d.ano||''));
+
+    } catch(err) {
+      toast('Error al leer el fichero: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function publicar() {
+  // ── Buscar duplicados ─────────────────────────────────────────────
+  const count = {};
+  const add = (v, dept) => {
+    if (!v || !v.trim()) return;
+    const k = v.trim().toUpperCase();
+    if (!count[k]) count[k] = { nombre: v.trim(), depts: [] };
+    count[k].depts.push(dept);
+  };
+  const safeArr = (a) => Array.isArray(a) ? a : [];
+
+  // Envasado lines — tienen maq[] y ops[], no groups[]
+  safeArr(lines).forEach(l => {
+    [...safeArr(l.maq), ...safeArr(l.ops)].forEach(w => {
+      if (w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / ' + l.label));
+    });
+  });
+  // Especiales Envasado
+  if (specialWorkers) Object.values(specialWorkers).forEach(arr =>
+    safeArr(arr).forEach(w => { if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], 'Envasado / Especiales')); }));
+  // Post depts
+  const postDepts = [
+    [elabWorkers,    'Elaboración'],
+    [almWorkers,     'Almacén'],
+    [mtoWorkers,     'Mantenimiento'],
+    [calWorkers,     'Calidad Líneas'],
+    [calfqWorkers,   'Calidad Fís-Quím'],
+    [calmicroWorkers,'Calidad Microbiología'],
+    [calmatWorkers,  'Calidad Materiales'],
+    [mcWorkers,      'Mejora Continua'],
+    [soplWorkers,    'Soplado'],
+  ];
+  postDepts.forEach(([obj, label]) => {
+    if (!obj) return;
+    Object.values(obj).forEach(arr => safeArr(arr).forEach(w => {
+      if(w && w.cells) TURNOS.forEach(t => add(w.cells[t], label));
+    }));
+  });
+
+  // Encontrar nombres que aparecen más de una vez
+  const duplicados = Object.values(count).filter(d => d.depts.length > 1);
+
+  if (duplicados.length > 0) {
+    // Mostrar modal de aviso
+    const msg = duplicados.map(d =>
+      `• ${d.nombre} — aparece ${d.depts.length} veces (${d.depts.join(', ')})`
+    ).join('\n');
+
+    const continuar = confirm(
+      '⚠️ ATENCIÓN — Se han encontrado ' + duplicados.length + ' trabajador(es) duplicado(s):\n\n' +
+      msg + '\n\n' +
+      '¿Desea publicar el cuadrante igualmente?'
+    );
+    if (!continuar) return;
+  }
+
+  autoSave();
+
+  const payload = buildPayload();
+
+  try {
+    const json = JSON.stringify(payload, null, 2);
+
+    // Guardar en histórico local
+    const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
+    localStorage.setItem(historicoKey, json);
+
+    // Guardar en Firebase para sincronización entre dispositivos
+    try {
+      const deptKey = (payload.dept || currentTab || 'Envasado').toLowerCase()
+        .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+        .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+      const semKey = payload.ano + '_s' + String(payload.semana).padStart(2,'0');
+      db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(payload)
+        .then(function(){ console.log('Publicado en Firebase: ' + deptKey + '_' + semKey); })
+        .catch(function(e){ console.warn('Firebase error:', e); });
+    } catch(e) { console.warn('Firebase sync error:', e); }
+
+    toast(duplicados.length > 0
+      ? `⚠️ Cuadrante semana ${payload.semana} publicado con ${duplicados.length} duplicado(s)`
+      : `✓ Cuadrante semana ${payload.semana} publicado correctamente`);
+
+  } catch(e) {
+    toast('⚠️ Error al publicar: ' + e.message);
+  }
+}
+
+function showPublishModal(url, semana, numDups) {
+  // Eliminar modal anterior si existe
+  const old = document.getElementById('publish-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'publish-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:12px;padding:28px;max-width:680px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2)';
+
+  const titulo = numDups > 0
+    ? `⚠️ Cuadrante semana ${semana} publicado con ${numDups} duplicado(s)`
+    : `✓ Cuadrante semana ${semana} publicado correctamente`;
+
+  modal.innerHTML = `
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;color:#1a1a1a">${titulo}</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:10px">Copia esta URL y configúrala en las pantallas TV. Solo hay que hacerlo una vez por TV:</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="tv-url-input" type="text" readonly value="${url}"
+        style="flex:1;font-size:11px;padding:8px 10px;border:1px solid #d0cdc5;border-radius:6px;background:#f8f7f4;color:#333;font-family:monospace">
+      <button id="copy-url-btn"
+        style="padding:8px 16px;background:#6a8a3a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap">
+        Copiar URL
+      </button>
+    </div>
+    <p style="font-size:12px;color:#999;margin-bottom:16px">La TV mostrará automáticamente los turnos de la semana ${semana} al abrir esta URL.</p>
+    <div style="text-align:right">
+      <button id="close-modal-btn"
+        style="padding:8px 20px;background:#f0ede6;color:#333;border:1px solid #d0cdc5;border-radius:6px;cursor:pointer;font-size:13px">
+        Cerrar
+      </button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  document.getElementById('copy-url-btn').onclick = () => {
+    const input = document.getElementById('tv-url-input');
+    input.select();
+    navigator.clipboard.writeText(url).then(() => {
+      document.getElementById('copy-url-btn').textContent = '✓ Copiada';
+      document.getElementById('copy-url-btn').style.background = '#2e6b1a';
+      setTimeout(() => {
+        document.getElementById('copy-url-btn').textContent = 'Copiar URL';
+        document.getElementById('copy-url-btn').style.background = '#6a8a3a';
+      }, 2000);
+    }).catch(() => {
+      // Fallback para navegadores sin clipboard API
+      document.execCommand('copy');
+      document.getElementById('copy-url-btn').textContent = '✓ Copiada';
+    });
+  };
+
+  document.getElementById('close-modal-btn').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PDF PARA TV — genera una ventana imprimible con una página por dpto
+// ═══════════════════════════════════════════════════════════════════════
+function generarPdfTV() {
+  const payload = buildPayload();
+  const sem = payload.semana;
+  const ano = payload.ano;
+  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
+  const fechas = fmtDate(monday) + ' al ' + fmtDate(sunday);
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const T = ['M','T','N','P'];
+  const TC = {M:'#bbdefb',T:'#fff9c4',N:'#e8eaf6',P:'#fce4ec'};
+  const TX = {M:'#0d47a1',T:'#e65100',N:'#283593',P:'#880e4f'};
+
+  const SLABELS = {sup:'Supervisor/A Turno',tr1:'Tracking Nave 1',sum:'Suministro',
+    tol3:'Tolvas Nave 3',tras3:'Traslado Nave 3',trk3:'Tracking Nave 3',
+    tol4:'Tolvas Nave 4',comp4:'Componentes Nave 4',trk4:'Tracking Nave 4'};
+  const PLABELS = {
+    elab_sup:'Supervisor/A',elab_elab:'Elaborador/A',elab_pes:'Pesadas',
+    elab_hig:'Higiene',elab_desc:'Descarga Cisternas',
+    mto_coord:'Coordinador',mto_back:'Backoffice',mto_sup:'Supervisor/A',mto_tec:'Técnico Mto.',
+    alm_sup:'Supervisor/A',alm_desc:'Descarga/Ubicar',alm_sopl:'Soplado/Ubicar',
+    alm_ab3:'Abast.Nave3',alm_ab1:'Abast.Nave1',alm_res:'Residuos/Destruc.',
+    alm_ubi:'Ubicar',alm_mmpp:'MMPP',alm_sala:'Sala Blanca',alm_cargas:'Cargas',
+    alm_silo:'Silo',alm_destr:'Destrucciones',
+    cal_nave1:'Nave 1-MK1',cal_nave3:'Nave 3-Nave 4',cal_tec:'Técnico',
+    calfq_tec:'Técnico Lab.',calmicro_tec:'Técnico Micro.',
+    calmat_tec:'Técnico Mat.',mc_tec:'Técnico Procesos',
+    sopl_sup:'Supervisor/A',sopl_s12:'Sopladora 1 y 2',sopl_s3:'Sopladora 3',
+    sopl_s46:'Sopladora 4 y 6',sopl_s5t:'Sopladora 5 y Trk.',
+    sopl_pal:'Paletizadores',sopl_ref:'Refuerzo Turno',
+  };
+
+  function buildTable(rows) {
+    let h = '<table><thead><tr><th class="cp">PUESTO</th>';
+    h += '<th style="background:'+TC.M+';color:'+TX.M+'">MAÑANA</th>';
+    h += '<th style="background:'+TC.T+';color:'+TX.T+'">TARDE</th>';
+    h += '<th style="background:'+TC.N+';color:'+TX.N+'">NOCHE</th>';
+    h += '<th style="background:'+TC.P+';color:'+TX.P+'">PARTIDO</th>';
+    h += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      h += '<tr><td class="cp">'+r.puesto+'</td>';
+      T.forEach(t => { h += '<td style="background:'+TC[t]+'30">'+(r[t]||'')+'</td>'; });
+      h += '</tr>';
+    });
+    return h + '</tbody></table>';
+  }
+
+  function page(name, rows) {
+    if (!rows.length) return '';
+    return '<div class="pg"><div class="ph"><span class="logo">GRUPOUBESOL</span>'
+      +'<span class="dept">'+name.toUpperCase()+'</span>'
+      +'<span class="sem">Semana '+sem+' &nbsp;·&nbsp; '+fechas+'</span></div>'
+      +buildTable(rows)+'</div>';
+  }
+
+  let pages = '';
+
+  // Envasado
+  const env = payload.envasado;
+  if (env) {
+    const rows = [];
+    if (env.specialWorkers) {
+      Object.entries(env.specialWorkers).forEach(([id,arr]) => {
+        safeArr(arr).forEach(w => {
+          if (w && w.cells && T.some(t => w.cells[t]))
+            rows.push({puesto:SLABELS[id]||id, ...w.cells});
+        });
+      });
+    }
+    safeArr(env.lines).forEach(line => {
+      const printRoles = line.roles && line.roles.length ? line.roles : [{id:'maq',label:'O.Máquina'},{id:'ops',label:'Operario/a'}];
+      printRoles.forEach(r => {
+        safeArr(line[r.id]).forEach(w => {
+          if (w && w.cells) rows.push({puesto: line.label+' — '+r.label, ...w.cells});
+        });
+      });
+    });
+    pages += page('Envasado', rows);
+  }
+
+  // Post depts
+  [
+    ['elaboracion','Elaboración'],['almacen','Almacén'],['mantenimiento','Mantenimiento'],
+    ['calidadLineas','Calidad Líneas'],['calidadFQ','Calidad Fís-Quím'],
+    ['calidadMicro','Calidad Microbiología'],['calidadMat','Calidad Materiales'],
+    ['mejoraContinua','Mejora Continua'],['soplado','Soplado']
+  ].forEach(([key,name]) => {
+    const d = payload[key];
+    if (!d || !d.workers) return;
+    const rows = [];
+    Object.entries(d.workers).forEach(([pid,arr]) => {
+      safeArr(arr).forEach(w => {
+        if (w && w.cells && T.some(t => w.cells[t]))
+          rows.push({puesto:PLABELS[pid]||pid, ...w.cells});
+      });
+    });
+    pages += page(name, rows);
+  });
+
+  if (!pages) { toast('No hay datos para generar el PDF. Rellena el cuadrante primero.'); return; }
+
+  const win = window.open('','_blank');
+  win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">'
+    +'<title>Cuadrante S'+sem+' — GrupoUbesol</title><style>'
+    +'* {box-sizing:border-box;margin:0;padding:0}'
+    +'body {font-family:Segoe UI,Arial,sans-serif;background:#fff}'
+    +'.pg {width:100%;padding:28px 36px;page-break-after:always}'
+    +'.ph {display:flex;align-items:center;justify-content:space-between;'
+    +'border-bottom:3px solid #6a8a3a;padding-bottom:10px;margin-bottom:18px}'
+    +'.logo {font-size:20px;font-weight:800;color:#6a8a3a}'
+    +'.dept {font-size:30px;font-weight:800;color:#1a1a1a;letter-spacing:0.05em}'
+    +'.sem {font-size:12px;color:#666;text-align:right}'
+    +'table {width:100%;border-collapse:collapse}'
+    +'th {padding:9px 12px;font-size:12px;font-weight:700;letter-spacing:0.07em;'
+    +'text-transform:uppercase;text-align:center;border:1px solid #d0cdc5}'
+    +'td {padding:8px 12px;font-size:14px;font-weight:500;border:1px solid #e0ddd6;text-align:center}'
+    +'.cp {text-align:left;font-size:11px;font-weight:700;letter-spacing:0.05em;'
+    +'text-transform:uppercase;color:#555;background:#f8f7f4;width:200px}'
+    +'@media print {.pg{padding:14px 18px}.dept{font-size:22px}th{padding:6px 8px;font-size:10px}td{padding:5px 8px;font-size:12px}}'
+    +'</style></head><body>'+pages
+    +'<script>window.onload=()=>window.print();<\/script>
+</body></html>');
+  win.document.close();
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  GENERAR PRÓXIMAS 10 SEMANAS — rotación M → N → T → M
+// ═══════════════════════════════════════════════════════════════════════
+function generarProximasSemanas() {
+  const ROTACION = { M: 'N', N: 'T', T: 'M', P: 'P' };
+
+  const semBase = parseInt(document.getElementById('meta-sem').value) || 1;
+  const anoBase = parseInt(document.getElementById('meta-ano').value) || 2026;
+
+  if (!confirm(
+    `¿Generar las próximas 10 semanas a partir de la semana ${semBase}?\n\n` +
+    `Los nombres se mantendrán en los mismos puestos rotando el turno:\n` +
+    `Mañana → Noche → Tarde → Mañana...\n\n` +
+    `⚠️ Las semanas existentes serán sobreescritas.`
+  )) return;
+
+  // Guardar semana actual primero
+  autoSave();
+
+  // Leer el payload de la semana base
+  const basePayload = buildPayload();
+
+  let generadas = 0;
+
+  // rotarTurno aplica N pasos a un turno (M→N→T→M...)
+  function rotarTurno(turno, pasos) {
+    let t = turno;
+    for (let p = 0; p < pasos; p++) t = ROTACION[t] || t;
+    return t;
+  }
+
+  const safeArr = a => Array.isArray(a) ? a : [];
+
+  // Función que rota los workers de un payload 1 solo paso
+  function rotarPayload1Paso(payload) {
+    // Envasado
+    if (payload.envasado) {
+      if (payload.envasado.specialWorkers) {
+        Object.values(payload.envasado.specialWorkers).forEach(arr => {
+          safeArr(arr).forEach(w => {
+            if (!w || !w.cells) return;
+            const newCells = { M:'', T:'', N:'', P:'' };
+            Object.entries(w.cells).forEach(([t, nombre]) => {
+              if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+            });
+            w.cells = newCells;
+          });
+        });
+      }
+      safeArr(payload.envasado.lines).forEach(line => {
+        const rotRoles = line.roles && line.roles.length ? line.roles : [{id:'maq'},{id:'ops'}];
+        rotRoles.forEach(r => {
+          safeArr(line[r.id]).forEach(w => {
+            if (!w || !w.cells) return;
+            const newCells = { M:'', T:'', N:'', P:'' };
+            Object.entries(w.cells).forEach(([t, nombre]) => {
+              if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+            });
+            w.cells = newCells;
+          });
+        });
+      });
+      ['bajas','vacaciones'].forEach(k => {
+        safeArr(payload.envasado[k]).forEach(w => {
+          if (!w || !w.cells) return;
+          const newCells = { M:'', T:'', N:'', P:'' };
+          Object.entries(w.cells).forEach(([t, nombre]) => {
+            if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+          });
+          w.cells = newCells;
+        });
+      });
+    }
+    // Resto de departamentos
+    const POST_KEYS = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ',
+      'calidadMicro','calidadMat','mejoraContinua','soplado'];
+    POST_KEYS.forEach(depKey => {
+      const dep = payload[depKey];
+      if (!dep) return;
+      if (dep.workers) {
+        Object.values(dep.workers).forEach(arr => {
+          safeArr(arr).forEach(w => {
+            if (!w || !w.cells) return;
+            const newCells = { M:'', T:'', N:'', P:'' };
+            Object.entries(w.cells).forEach(([t, nombre]) => {
+              if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+            });
+            w.cells = newCells;
+          });
+        });
+      }
+      ['bajas','vacaciones'].forEach(k => {
+        safeArr(dep[k]).forEach(w => {
+          if (!w || !w.cells) return;
+          const newCells = { M:'', T:'', N:'', P:'' };
+          Object.entries(w.cells).forEach(([t, nombre]) => {
+            if (nombre) newCells[rotarTurno(t, 1)] = nombre;
+          });
+          w.cells = newCells;
+        });
+      });
+    });
+  }
+
+  // Generamos semana a semana aplicando 1 rotación respecto a la anterior
+  let prevPayload = basePayload;
+
+  for (let i = 1; i <= 10; i++) {
+    let sem = semBase + i;
+    let ano = anoBase;
+    if (sem > 52) { sem = sem - 52; ano++; }
+
+    const key = 'ubesol_' + ano + '_s' + String(sem).padStart(2,'0');
+
+    const newPayload = JSON.parse(JSON.stringify(prevPayload));
+    newPayload.semana = String(sem);
+    newPayload.ano    = String(ano);
+
+    const { monday, sunday } = getWeekDates(ano, sem);
+    newPayload.fecha_inicio = fmtISO(monday);
+    newPayload.fecha_fin    = fmtISO(sunday);
+
+    rotarPayload1Paso(newPayload);
+
+    localStorage.setItem(key, JSON.stringify(newPayload));
+    // Publicar esta semana al histórico inmediatamente
+    const hk = 'ubesol_historico_' + ano + '_s' + String(sem).padStart(2,'0');
+    localStorage.setItem(hk, JSON.stringify(newPayload));
+    prevPayload = newPayload;
+    generadas++;
+  }
+
+  // Publicar también la semana base
+  autoSaveToKey('ubesol_' + anoBase + '_s' + String(semBase).padStart(2,'0'));
+  const hkBase = 'ubesol_historico_' + anoBase + '_s' + String(semBase).padStart(2,'0');
+  localStorage.setItem(hkBase, localStorage.getItem('ubesol_' + anoBase + '_s' + String(semBase).padStart(2,'0')));
+
+  toast(`✓ ${generadas} semanas generadas y publicadas a partir de la semana ${semBase}`);
+
+  // Ir a la semana siguiente para que el usuario pueda revisarla
+  if (generadas > 0) {
+    let semSig = semBase + 1;
+    let anoSig = anoBase;
+    if (semSig > 52) { semSig = 1; anoSig++; }
+    document.getElementById('meta-sem').value = semSig;
+    document.getElementById('meta-ano').value = anoSig;
+    loadWeekFromStorage(weekKey());
+  }
+}
+
+function clearStorage() {
+  // Calcular semana actual para bloquear semanas pasadas
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const localNow = new Date(y, m, d);
+  const dow = localNow.getDay();
+  const thu = new Date(y, m, d - ((dow + 6) % 7) + 3);
+  const anoActual = thu.getFullYear();
+  const jan4 = new Date(anoActual, 0, 4);
+  const startW1 = new Date(jan4.getFullYear(), 0, jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const semActual = Math.round((thu - startW1) / 604800000) + 1;
+  const claveActual = anoActual * 100 + semActual;
+
+  // Recoger todas las semanas guardadas
+  const semanas = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (!d || !d._version) continue;
+      const clave = parseInt(d.ano) * 100 + parseInt(d.semana);
+      if (clave < claveActual) continue; // no mostrar semanas pasadas
+      const { monday, sunday } = getWeekDates(parseInt(d.ano), parseInt(d.semana));
+      semanas.push({ key: k, semana: d.semana, ano: d.ano,
+        label: 'S' + String(d.semana).padStart(2,'0') + ' / ' + d.ano + '  ·  ' + fmtDate(monday) + ' – ' + fmtDate(sunday) });
+    } catch(e) {}
+  }
+
+  if (!semanas.length) { toast('No hay semanas guardadas.'); return; }
+
+  semanas.sort((a, b) => (a.ano + String(a.semana).padStart(2,'0')) < (b.ano + String(b.semana).padStart(2,'0')) ? -1 : 1);
+
+  const old = document.getElementById('clear-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'clear-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:#fff;border-radius:12px;padding:28px;max-width:520px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-height:80vh;display:flex;flex-direction:column;gap:16px';
+
+  modal.innerHTML = `
+    <h3 style="font-size:15px;font-weight:700;color:#1a1a1a;margin:0">🗑️ Borrar semanas</h3>
+    <p style="font-size:12px;color:#888;margin:0">Selecciona las semanas que quieres eliminar. Esta acción no se puede deshacer.</p>
+    <div style="display:flex;gap:8px">
+      <button id="cm-all"  style="font-size:11px;font-weight:600;padding:4px 10px;border:1px solid #d0cdc5;border-radius:4px;background:#f5f5f5;cursor:pointer;color:#333">Seleccionar todo</button>
+      <button id="cm-none" style="font-size:11px;font-weight:600;padding:4px 10px;border:1px solid #d0cdc5;border-radius:4px;background:#f5f5f5;cursor:pointer;color:#333">Deseleccionar todo</button>
+    </div>
+    <div id="cm-list" style="overflow-y:auto;flex:1;min-height:60px;border:1px solid #e0ddd6;border-radius:6px;padding:4px 0"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button id="cm-cancel"  style="padding:8px 20px;background:#f0ede6;color:#333;border:1px solid #d0cdc5;border-radius:6px;cursor:pointer;font-size:13px">Cancelar</button>
+      <button id="cm-confirm" style="padding:8px 20px;background:#c62828;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Borrar seleccionadas</button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const list = document.getElementById('cm-list');
+  semanas.forEach(s => {
+    const row = document.createElement('label');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid #f0ede6;font-size:13px;color:#222';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.key = s.key;
+    cb.style.cssText = 'width:15px;height:15px;accent-color:#c62828;cursor:pointer;flex-shrink:0';
+    row.appendChild(cb);
+    row.appendChild(document.createTextNode(s.label));
+    row.onmouseover = () => row.style.background = '#fff5f5';
+    row.onmouseout  = () => row.style.background = '';
+    list.appendChild(row);
+  });
+
+  document.getElementById('cm-all').onclick  = () => list.querySelectorAll('input').forEach(c => c.checked = true);
+  document.getElementById('cm-none').onclick = () => list.querySelectorAll('input').forEach(c => c.checked = false);
+
+  const cerrar = () => overlay.remove();
+  document.getElementById('cm-cancel').onclick = cerrar;
+  overlay.onclick = (e) => { if (e.target === overlay) cerrar(); };
+
+  document.getElementById('cm-confirm').onclick = () => {
+    const sel = [...list.querySelectorAll('input:checked')].map(c => c.dataset.key);
+    if (!sel.length) { toast('No has seleccionado ninguna semana.'); return; }
+
+    // Obtener labels para el mensaje de confirmación
+    const labels = sel.map(k => {
+      const s = semanas.find(s => s.key === k);
+      return s ? 'S' + String(s.semana).padStart(2,'0') + '/' + s.ano : k;
+    });
+    if (!confirm('¿Seguro que quieres borrar estas ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + '?\n\n' + labels.join('\n') + '\n\nEsta acción no se puede deshacer.')) return;
+
+    const estaActiva = sel.includes(weekKey());
+
+    // Bloquear autoSave para que no reescriba lo que vamos a borrar
+    _autoSaveBlocked = true;
+
+    // 1. Borrar del localStorage principal Y del histórico
+    const savedKey = weekKey();
+    sel.forEach(k => {
+      localStorage.removeItem(k);
+      const match = k.match(/ubesol_(\d+)_s(\d+)/);
+      if (match) localStorage.removeItem('ubesol_historico_' + match[1] + '_s' + match[2]);
+    });
+
+    cerrar();
+
+    // 2. Borrar de Firebase las semanas eliminadas usando el semKey
+    const semKeysBorrados = [];
+    sel.forEach(k => {
+      const match = k.match(/ubesol_(\d+)_s(\d+)/);
+      if (match) semKeysBorrados.push(match[1] + '_s' + match[2]);
+    });
+
+    db.collection('cuadrantes').get().then(function(snap) {
+      const promesas = [];
+      snap.forEach(function(doc) {
+        const debeBorar = semKeysBorrados.some(semKey => doc.id.includes(semKey));
+        if (debeBorar) promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
+      });
+      // Si quedan semanas en local, subirlas también
+      if (!estaActiva) {
+        autoSaveToKey(savedKey);
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+          try {
+            const d = JSON.parse(localStorage.getItem(k));
+            if (!d || !d._version || !d.ano || !d.semana) continue;
+            const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+              .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+              .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+            const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+            promesas.push(db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(d));
+          } catch(e) {}
+        }
+      }
+      return Promise.all(promesas);
+    }).then(function() {
+      console.log('Firebase: semanas borradas correctamente');
+      setTimeout(function() {
+        _autoSaveBlocked = false;
+        if (estaActiva) loadWeekFromStorage(weekKey());
+      }, 2000); // esperar 2s para que no haya race conditions
+    }).catch(function(e) {
+      console.warn('Firebase borrar error:', e);
+      setTimeout(function() {
+        _autoSaveBlocked = false;
+        if (estaActiva) loadWeekFromStorage(weekKey());
+      }, 2000);
+    });
+
+    toast('🗑️ ' + sel.length + ' semana' + (sel.length !== 1 ? 's' : '') + ' eliminada' + (sel.length !== 1 ? 's' : '') + ' · sincronizando Firebase...');
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════════
+let currentTab = 'Envasado';
+
+// ── SOPLADO DATA ────────────────────────────────────────────────────────
+const SOPL_PUESTOS = [
+  { id:'sopl_sup',   label:'SUPERVISOR/A DE TURNO',  type:'sup'    },
+  { id:'sopl_s12',   label:'SOPLADORA 1 Y 2',         type:'green'  },
+  { id:'sopl_s3',    label:'SOPLADORA 3',              type:'yellow' },
+  { id:'sopl_s46',   label:'SOPLADORA 4 Y 6',         type:'green'  },
+  { id:'sopl_s5t',   label:'SOPLADORA 5 Y TRACKING',  type:'yellow' },
+  { id:'sopl_pal',   label:'PALETIZADORES',            type:'green'  },
+  { id:'sopl_ref',   label:'REFUERZO TURNO',           type:'yellow' },
+];
+function initSoplado() {
+  soplWorkers = {};
+  const defaultCountsSopl = { sopl_sup:1, sopl_s12:1, sopl_s3:1, sopl_s46:1, sopl_s5t:1, sopl_pal:2, sopl_ref:2 };
+  SOPL_PUESTOS.forEach(p => {
+    const n = p.count || defaultCountsSopl[p.id] || 1;
+    soplWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
+  soplBajas      = [mkWorker('sopl_baja_0')];
+  soplVacaciones = [mkWorker('sopl_vac_0')];
+}
+
+// ── MEJORA CONTINUA DATA ────────────────────────────────────────────────
+const MC_PUESTOS = [
+  { id:'mc_tec', label:'TÉCNICO PROCESOS', type:'yellow' },
+];
+function initMejoraContinua() {
+  mcWorkers = {};
+  MC_PUESTOS.forEach(p => {
+    const n = p.count || 4;
+    mcWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
+  mcBajas      = [mkWorker('mc_baja_0')];
+  mcVacaciones = [mkWorker('mc_vac_0')];
+}
+
+// ── CALIDAD MATERIALES DATA ─────────────────────────────────────────────
+const CALMAT_PUESTOS = [
+  { id:'calmat_tec', label:'TÉCNICO MATERIALES', type:'green' },
+];
+function initCalidadMat() {
+  calmatWorkers = {};
+  CALMAT_PUESTOS.forEach(p => {
+    const n = p.count || 4;
+    calmatWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
+  calmatBajas      = [mkWorker('calmat_baja_0')];
+  calmatVacaciones = [mkWorker('calmat_vac_0')];
+}
+
+// ── CALIDAD FÍSICO-QUÍMICO DATA ─────────────────────────────────────────
+const CALFQ_PUESTOS = [
+  { id:'calfq_tec', label:'TÉCNICO LABORATORIO', type:'green' },
+];
+function initCalidadFQ() {
+  calfqWorkers = {};
+  CALFQ_PUESTOS.forEach(p => { const n = p.count || 4;
+    calfqWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i)); });
+  calfqBajas      = [mkWorker('calfq_baja_0')];
+  calfqVacaciones = [mkWorker('calfq_vac_0')];
+}
+
+// ── CALIDAD MICROBIOLOGÍA DATA ──────────────────────────────────────────
+const CALMICRO_PUESTOS = [
+  { id:'calmicro_tec', label:'TÉCNICO MICROBIOLOGIA', type:'yellow' },
+];
+function initCalidadMicro() {
+  calmicroWorkers = {};
+  CALMICRO_PUESTOS.forEach(p => { const n = p.count || 4;
+    calmicroWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i)); });
+  calmicroBajas      = [mkWorker('calmicro_baja_0')];
+  calmicroVacaciones = [mkWorker('calmicro_vac_0')];
+}
+
+// ── CALIDAD LÍNEAS DATA ─────────────────────────────────────────────────
+const CAL_PUESTOS = [
+  { id:'cal_nave1', label:'NAVE 1-MK1',   type:'green'  },
+  { id:'cal_nave3', label:'NAVE 3-NAVE 4', type:'yellow' },
+  { id:'cal_tec',   label:'TÉCNICO',       type:'green'  },
+];
+
+
+function initCalidad() {
+  calWorkers = {};
+  CAL_PUESTOS.forEach(p => {
+    const n = p.count || 2;
+    calWorkers[p.id] = Array.from({length: n}, (_, i) => mkWorker(p.id+'_'+i));
+  });
+  calBajas      = [mkWorker('cal_baja_0')];
+  calVacaciones = [mkWorker('cal_vac_0')];
+}
+
+// ── ELABORACIÓN DATA ────────────────────────────────────────────────────
+const ELAB_PUESTOS = [
+  { id:'elab_sup',  label:'SUPERVISOR/A TURNO', type:'sup'    },
+  { id:'elab_elab', label:'ELABORADOR/A',        type:'yellow' },
+  { id:'elab_pes',  label:'PESADAS',             type:'green'  },
+  { id:'elab_hig',  label:'HIGIENE',             type:'yellow' },
+  { id:'elab_desc', label:'DESCARGA CISTERNAS',  type:'green'  },
+];
+
+
+function initElaboracion() {
+  elabWorkers = {};
+  // Usar p.count si existe en config (Firebase), sino defaults hardcoded
+  const defaultCounts = { elab_sup:1, elab_elab:10, elab_pes:2, elab_hig:3, elab_desc:2 };
+  ELAB_PUESTOS.forEach(p => {
+    const n = p.count || defaultCounts[p.id] || 1;
+    elabWorkers[p.id] = Array.from({length: n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
+  elabBajas      = [mkWorker('elab_baja_0')];
+  elabVacaciones = [mkWorker('elab_vac_0')];
+}
+
+// ── MANTENIMIENTO DATA ──────────────────────────────────────────────────
+const MTO_PUESTOS = [
+  { id:'mto_coord', label:'COORDINADOR',        type:'green'  },
+  { id:'mto_back',  label:'BACKOFFICE',          type:'yellow' },
+  { id:'mto_sup',   label:'SUPERVISOR/A DE TURNO', type:'sup'  },
+  { id:'mto_tec',   label:'TÉCNICO MTO.',        type:'yellow' },
+];
+
+
+function initMantenimiento() {
+  mtoWorkers = {};
+  const defaultCountsMto = { mto_tec: 6 };
+  MTO_PUESTOS.forEach(p => {
+    const count = p.count || defaultCountsMto[p.id] || 1;
+    mtoWorkers[p.id] = Array.from({length: count}, (_, i) => mkWorker(p.id+'_'+i));
+  });
+  mtoBajas      = [mkWorker('mto_baja_0')];
+  mtoVacaciones = [mkWorker('mto_vac_0')];
+}
+// Post-mode departments: no lines, just expandable puestos
+const ALMC_PUESTOS = [
+  { id:'alm_sup',    label:'SUPERVISOR/A TURNO',      type:'sup'     },
+  { id:'alm_desc',   label:'DESCARGA / UBICAR',        type:'green'   },
+  { id:'alm_sopl',   label:'SOPLADO / UBICAR',         type:'yellow'  },
+  { id:'alm_ab3',    label:'ABAST. NAVE 3 / UBICAR',   type:'green'   },
+  { id:'alm_ab1',    label:'ABAST. NAVE 1 / UBICAR',   type:'yellow'  },
+  { id:'alm_res',    label:'RESIDUOS / DESTRUCCIONES', type:'green'   },
+  { id:'alm_ubi',    label:'UBICAR',                   type:'yellow'  },
+  { id:'alm_mmpp',   label:'MMPP',                     type:'green'   },
+  { id:'alm_sala',   label:'SALA BLANCA',               type:'yellow'  },
+  { id:'alm_cargas', label:'CARGAS',                    type:'green'   },
+  { id:'alm_silo',   label:'SILO',                      type:'yellow'  },
+  { id:'alm_destr',  label:'DESTRUCCIONES',             type:'green'   },
+];
+
+
+function initAlmacen() {
+  almWorkers = {};
+  ALMC_PUESTOS.forEach(p => {
+    const n = p.count || 1;
+    almWorkers[p.id] = Array.from({length:n}, (_,i) => mkWorker(p.id+'_'+i));
+  });
+  almBajas      = [mkWorker('alm_baja_0')];
+  almVacaciones = [mkWorker('alm_vac_0')];
+}
+
+// ── POST-MODE RENDER (Almacén style — no lines column) ──────────────────
+function renderMantenimiento() {
+  renderPostDept('Mantenimiento', MTO_PUESTOS, mtoWorkers,
+    [{id:'mto_bajas', label:'BAJAS', type:'bajas', arr: mtoBajas},
+     {id:'mto_vac',   label:'VACACIONES', type:'vac', arr: mtoVacaciones}]);
+}
+
+// ── GENERIC POST-DEPT RENDER ────────────────────────────────────────────
+// Shared by Almacén, Mantenimiento and any future post-mode dept
+function renderPostDept(deptKey, puestos, workers, bottomGroups) {
+  const root = document.getElementById('table-root');
+  root.innerHTML = '';
+  document.getElementById('add-line-area').style.display = 'none';
+
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `<colgroup><col style="width:200px"><col><col><col><col></colgroup>`;
+
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr class="turno-hdr">
+    <th class="th-puesto" style="text-align:left;padding-left:12px">PUESTO</th>
+    <th class="th-m">TURNO MAÑANA</th>
+    <th class="th-t">TURNO TARDE</th>
+    <th class="th-n">TURNO NOCHE</th>
+    <th class="th-p">TURNO PARTIDO / ESPECIAL</th>
+  </tr>`;
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  puestos.forEach(puesto => {
+    const arr = workers[puesto.id];
+    arr.forEach((w, wi) => tbody.appendChild(buildPostRow(w, wi, puesto, arr)));
+  });
+
+  // Separator
+  const sep = document.createElement('tr');
+  sep.innerHTML = `<td colspan="5" style="height:20px;background:#f0f0f0;border-top:2px solid var(--border);border-bottom:2px solid var(--border)"></td>`;
+  tbody.appendChild(sep);
+
+  // Bottom groups (bajas / vacaciones)
+  bottomGroups.forEach(grp => {
+    grp.arr.forEach((w, wi) =>
+      tbody.appendChild(buildPostRow(w, wi, {id: grp.id, label: grp.label, type: grp.type}, grp.arr)));
+  });
+
+  tbl.appendChild(tbody);
+  root.appendChild(tbl);
+}
+
+function buildPostRow(worker, wi, puesto, arr) {
+  const isLast = wi === arr.length - 1;
+  const type   = puesto.type;
+
+  const tr = document.createElement('tr');
+  // Row background: alternate green/yellow for puestos, special for bajas/vac
+  if      (type === 'sup')   tr.className = 'sup-row';
+  else if (type === 'bajas') tr.className = 'bajas-row';
+  else if (type === 'vac')   tr.className = 'vac-row';
+  else if (type === 'green') tr.className = 'line-op';
+  else                       tr.className = 'line-op yellow';
+
+  // Puesto label — show on first row only, with rowSpan
+  if (wi === 0) {
+    const tdP = document.createElement('td');
+    tdP.className = 'puesto-label';
+    tdP.rowSpan = arr.length;
+    tdP.style.cssText = 'vertical-align:middle;border-right:2px solid var(--border);font-size:12px;font-weight:700';
+    tdP.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <span>${puesto.label}</span>
+      <div style="display:flex;gap:2px;flex-shrink:0">
+        ${arr.length > 1
+          ? `<button class="ctrl-btn ctrl-del" onclick="removePostWorker('${puesto.id}')" title="Quitar fila">−</button>`
+          : ''}
+        <button class="ctrl-btn ctrl-add" onclick="addPostWorker('${puesto.id}')" title="Añadir persona">+</button>
+      </div>
+    </div>`;
+    tr.appendChild(tdP);
+  }
+
+  // 4 turno cells
+  TURNOS.forEach(t => {
+    const td = document.createElement('td');
+    td.className = `name-cell cell-${t.toLowerCase()}`;
+    const { wrap } = makeAcInput(
+      worker.cells[t] || '',
+      currentTab,
+      (val) => { worker.cells[t] = val; }
+    );
+    td.appendChild(wrap);
+    tr.appendChild(td);
+  });
+
+  return tr;
+}
+
+function addPostWorker(puestoId) {
+  const arr = getPostArr(puestoId);
+  arr.push(mkWorker(puestoId+'_'+Date.now()));
+  renderCurrent();
+}
+
+function removePostWorker(puestoId) {
+  const arr = getPostArr(puestoId);
+  if(arr.length <= 1) { toast('Mínimo 1 persona'); return; }
+  arr.pop();
+  renderCurrent();
+}
+
+function getPostArr(id) {
+  // Soplado
+  if(id === 'sopl_bajas') return soplBajas;
+  if(id === 'sopl_vac')   return soplVacaciones;
+  if(soplWorkers[id])     return soplWorkers[id];
+  // Mejora Continua
+  if(id === 'mc_bajas') return mcBajas;
+  if(id === 'mc_vac')   return mcVacaciones;
+  if(mcWorkers[id])     return mcWorkers[id];
+  // Calidad Materiales
+  if(id === 'calmat_bajas') return calmatBajas;
+  if(id === 'calmat_vac')   return calmatVacaciones;
+  if(calmatWorkers[id])     return calmatWorkers[id];
+  // Calidad FQ
+  if(id === 'calfq_bajas') return calfqBajas;
+  if(id === 'calfq_vac')   return calfqVacaciones;
+  if(calfqWorkers[id])     return calfqWorkers[id];
+  // Calidad Micro
+  if(id === 'calmicro_bajas') return calmicroBajas;
+  if(id === 'calmicro_vac')   return calmicroVacaciones;
+  if(calmicroWorkers[id])     return calmicroWorkers[id];
+  // Calidad Líneas
+  if(id === 'cal_bajas') return calBajas;
+  if(id === 'cal_vac')   return calVacaciones;
+  if(calWorkers[id])     return calWorkers[id];
+  // Elaboración
+  if(id === 'elab_bajas') return elabBajas;
+  if(id === 'elab_vac')   return elabVacaciones;
+  if(elabWorkers[id])     return elabWorkers[id];
+  // Almacén
+  if(id === 'alm_bajas')  return almBajas;
+  if(id === 'alm_vac')    return almVacaciones;
+  if(almWorkers[id])      return almWorkers[id];
+  // Mantenimiento
+  if(id === 'mto_bajas')  return mtoBajas;
+  if(id === 'mto_vac')    return mtoVacaciones;
+  if(mtoWorkers[id])      return mtoWorkers[id];
+  return [];
+}
+
+// ── TAB SWITCH ─────────────────────────────────────────────────────────
+function switchTab(dept) {
+  if(dept === currentTab) return;
+  currentTab = dept;
+  document.querySelectorAll('.tab:not(.disabled)').forEach(btn => {
+    btn.classList.toggle('active', btn.id === 'tab-'+dept);
+  });
+  document.getElementById('dept-title').textContent = dept;
+  renderCurrent();
+}
+
+function renderCurrent() {
+  if(currentTab === 'Envasado') {
+    document.getElementById('add-line-area').style.display = '';
+    render();
+  } else if(currentTab === 'Soplado') {
+    renderPostDept('Soplado', SOPL_PUESTOS, soplWorkers,
+      [{id:'sopl_bajas', label:'BAJAS',      type:'bajas', arr: soplBajas},
+       {id:'sopl_vac',   label:'VACACIONES', type:'vac',   arr: soplVacaciones}]);
+  } else if(currentTab === 'Mejora Continua') {
+    renderPostDept('Mejora Continua', MC_PUESTOS, mcWorkers,
+      [{id:'mc_bajas', label:'BAJAS',      type:'bajas', arr: mcBajas},
+       {id:'mc_vac',   label:'VACACIONES', type:'vac',   arr: mcVacaciones}]);
+  } else if(currentTab === 'Calidad Mat') {
+    renderPostDept('Calidad Mat', CALMAT_PUESTOS, calmatWorkers,
+      [{id:'calmat_bajas', label:'BAJAS',      type:'bajas', arr: calmatBajas},
+       {id:'calmat_vac',   label:'VACACIONES', type:'vac',   arr: calmatVacaciones}]);
+  } else if(currentTab === 'Calidad FQ') {
+    renderPostDept('Calidad FQ', CALFQ_PUESTOS, calfqWorkers,
+      [{id:'calfq_bajas', label:'BAJAS',      type:'bajas', arr: calfqBajas},
+       {id:'calfq_vac',   label:'VACACIONES', type:'vac',   arr: calfqVacaciones}]);
+  } else if(currentTab === 'Calidad Micro') {
+    renderPostDept('Calidad Micro', CALMICRO_PUESTOS, calmicroWorkers,
+      [{id:'calmicro_bajas', label:'BAJAS',      type:'bajas', arr: calmicroBajas},
+       {id:'calmicro_vac',   label:'VACACIONES', type:'vac',   arr: calmicroVacaciones}]);
+  } else if(currentTab === 'Calidad Líneas') {
+    renderPostDept('Calidad Líneas', CAL_PUESTOS, calWorkers,
+      [{id:'cal_bajas', label:'BAJAS',      type:'bajas', arr: calBajas},
+       {id:'cal_vac',   label:'VACACIONES', type:'vac',   arr: calVacaciones}]);
+  } else if(currentTab === 'Elaboración') {
+    renderPostDept('Elaboración', ELAB_PUESTOS, elabWorkers,
+      [{id:'elab_bajas', label:'BAJAS',      type:'bajas', arr: elabBajas},
+       {id:'elab_vac',   label:'VACACIONES', type:'vac',   arr: elabVacaciones}]);
+  } else if(currentTab === 'Almacén') {
+    renderPostDept('Almacén', ALMC_PUESTOS, almWorkers,
+      [{id:'alm_bajas', label:'BAJAS',      type:'bajas', arr: almBajas},
+       {id:'alm_vac',   label:'VACACIONES', type:'vac',   arr: almVacaciones}]);
+  } else if(currentTab === 'Mantenimiento') {
+    renderMantenimiento();
+  }
+}
+
+// ── LOCALSTORAGE — guarda por semana ──────────────────────────────────
+function weekKey() {
+  const ano = document.getElementById('meta-ano').value || '2026';
+  const sem = String(document.getElementById('meta-sem').value || '1').padStart(2,'0');
+  return 'ubesol_' + ano + '_s' + sem;
+}
+
+function buildPayload() {
+  const ano = document.getElementById('meta-ano').value || '2026';
+  const sem = document.getElementById('meta-sem').value || '1';
+  const { monday, sunday } = getWeekDates(parseInt(ano), parseInt(sem));
+  const base = {
+    _version: 1, semana: sem, ano: ano, dept: currentTab,
+    fecha_inicio: fmtISO(monday), fecha_fin: fmtISO(sunday),
+    responsable: (document.getElementById('responsable') || {value:''}).value,
+  };
+  const t = currentTab;
+  if (t==='Envasado')        return {...base, envasado:      {specialWorkers, lines, bajas, vacaciones}};
+  if (t==='Elaboración')     return {...base, elaboracion:   {workers:elabWorkers,    bajas:elabBajas,     vacaciones:elabVacaciones}};
+  if (t==='Almacén')         return {...base, almacen:       {workers:almWorkers,     bajas:almBajas,      vacaciones:almVacaciones}};
+  if (t==='Mantenimiento')   return {...base, mantenimiento: {workers:mtoWorkers,     bajas:mtoBajas,      vacaciones:mtoVacaciones}};
+  if (t==='Calidad Líneas')  return {...base, calidadLineas: {workers:calWorkers,     bajas:calBajas,      vacaciones:calVacaciones}};
+  if (t==='Calidad FQ')      return {...base, calidadFQ:     {workers:calfqWorkers,   bajas:calfqBajas,    vacaciones:calfqVacaciones}};
+  if (t==='Calidad Micro')   return {...base, calidadMicro:  {workers:calmicroWorkers,bajas:calmicroBajas, vacaciones:calmicroVacaciones}};
+  if (t==='Calidad Mat')     return {...base, calidadMat:    {workers:calmatWorkers,  bajas:calmatBajas,   vacaciones:calmatVacaciones}};
+  if (t==='Mejora Continua') return {...base, mejoraContinua:{workers:mcWorkers,      bajas:mcBajas,       vacaciones:mcVacaciones}};
+  if (t==='Soplado')         return {...base, soplado:       {workers:soplWorkers,    bajas:soplBajas,     vacaciones:soplVacaciones}};
+  return base;
+}
+function payloadTieneDatos(payload) {
+  // Comprueba si el payload tiene trabajadores reales con nombres
+  if (!payload) return false;
+  const safeArr = a => Array.isArray(a) ? a : [];
+  const tieneNombre = w => w && (w.nombre || w.name || (w.cells && Object.values(w.cells).some(v => v && v.trim())));
+
+  if (payload.envasado) {
+    const e = payload.envasado;
+    if (safeArr(e.lines).some(l => {
+      const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+      return roles.some(r => safeArr(l[r.id]).some(tieneNombre));
+    })) return true;
+    if (e.specialWorkers && Object.values(e.specialWorkers).some(arr => safeArr(arr).some(tieneNombre))) return true;
+  }
+  const depts = ['elaboracion','almacen','mantenimiento','calidadLineas','calidadFQ','calidadMicro','calidadMat','mejoraContinua','soplado'];
+  for (const dept of depts) {
+    if (payload[dept] && payload[dept].workers) {
+      if (Object.values(payload[dept].workers).some(arr => Array.isArray(arr) && arr.some(tieneNombre))) return true;
+    }
+  }
+  return false;
+}
+
+function autoSaveToKey(key) {
+  try {
+    localStorage.setItem(key, JSON.stringify(buildPayload()));
+  } catch(e) {
+    console.error('autoSave error:', e);
+  }
+}
+
+let _autoSaveBlocked = false;
+
+function autoSave() {
+  if (_autoSaveBlocked) return;
+  autoSaveToKey(weekKey());
+  autoPublicarTodasLasSemanas();
+}
+
+// Publica silenciosamente en el histórico todas las semanas que tengan datos
+function autoPublicarTodasLasSemanas() {
+  try {
+    const activas = new Set();
+    const semanasLocales = {};
+    const keysToProcess = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+      keysToProcess.push(k);
+    }
+
+    keysToProcess.forEach(k => {
+      const raw = localStorage.getItem(k);
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw);
+        if (!d || !d._version || !d.ano || !d.semana) return;
+        const hk = 'ubesol_historico_' + d.ano + '_s' + String(d.semana).padStart(2,'0');
+        localStorage.setItem(hk, raw);
+        activas.add(hk);
+        const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+          .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+          .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+        const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+        semanasLocales[deptKey + '_' + semKey] = d;
+      } catch(e) {}
+    });
+
+    // Limpiar histórico local
+    const historicoKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ubesol_historico_')) historicoKeys.push(k);
+    }
+    historicoKeys.forEach(k => {
+      if (!activas.has(k)) localStorage.removeItem(k);
+    });
+
+    // Firebase solo se actualiza desde guardarManual() o publicar() - no desde aquí
+
+  } catch(e) {
+    console.error('autoPublicar error:', e);
+  }
+}
+
+function applyPayload(d) {
+  if (!d || !d._version) return false;
+  // NO sobreescribir el selector — el INIT ya calcula la semana actual
+  if (d.responsable && document.getElementById('responsable')) document.getElementById('responsable').value = d.responsable;
+  updateWeekFromSelector();
+
+  // Merge filtrado — solo copia workers de puestos que existen en la config actual
+  const mergeFiltered = (target, src, validIds) => {
+    if (!src) return;
+    validIds.forEach(id => { if (src[id] !== undefined) target[id] = src[id]; });
+  };
+
+  if (d.envasado) {
+    // Especiales — solo los que existen en SPECIAL_TOP y SPECIAL_BOT actuales
+    const validSpecials = [...SPECIAL_TOP, ...SPECIAL_BOT].map(p => p.id);
+    mergeFiltered(specialWorkers, d.envasado.specialWorkers, validSpecials);
+
+    // Líneas — solo las que existen en config, con roles filtrados
+    if (d.envasado.lines) {
+      const savedMap = {};
+      d.envasado.lines.forEach(l => { savedMap[l.id] = l; });
+      lines.forEach(l => {
+        const saved = savedMap[l.id];
+        if (!saved) return;
+        const roles = l.roles && l.roles.length ? l.roles : [{id:'maq'},{id:'ops'}];
+        // Solo restaurar roles que existen en la config actual
+        roles.forEach(r => { if (saved[r.id]) l[r.id] = saved[r.id]; });
+        if (!l.maq && saved.maq) l.maq = saved.maq;
+        if (!l.ops && saved.ops) l.ops = saved.ops;
+      });
+    }
+    if (d.envasado.bajas) bajas = d.envasado.bajas;
+    if (d.envasado.vacaciones) vacaciones = d.envasado.vacaciones;
+  }
+  // Post-depts — solo workers de puestos que existen en los arrays de config actuales
+  if (d.elaboracion)    { mergeFiltered(elabWorkers,    d.elaboracion.workers,    ELAB_PUESTOS.map(p=>p.id));    if(d.elaboracion.bajas)    elabBajas=d.elaboracion.bajas;       if(d.elaboracion.vacaciones)    elabVacaciones=d.elaboracion.vacaciones; }
+  if (d.almacen)        { mergeFiltered(almWorkers,     d.almacen.workers,        ALMC_PUESTOS.map(p=>p.id));    if(d.almacen.bajas)        almBajas=d.almacen.bajas;            if(d.almacen.vacaciones)        almVacaciones=d.almacen.vacaciones; }
+  if (d.mantenimiento)  { mergeFiltered(mtoWorkers,     d.mantenimiento.workers,  MTO_PUESTOS.map(p=>p.id));     if(d.mantenimiento.bajas)  mtoBajas=d.mantenimiento.bajas;      if(d.mantenimiento.vacaciones)  mtoVacaciones=d.mantenimiento.vacaciones; }
+  if (d.calidadLineas)  { mergeFiltered(calWorkers,     d.calidadLineas.workers,  CAL_PUESTOS.map(p=>p.id));     if(d.calidadLineas.bajas)  calBajas=d.calidadLineas.bajas;      if(d.calidadLineas.vacaciones)  calVacaciones=d.calidadLineas.vacaciones; }
+  if (d.calidadFQ)      { mergeFiltered(calfqWorkers,   d.calidadFQ.workers,      CALFQ_PUESTOS.map(p=>p.id));   if(d.calidadFQ.bajas)      calfqBajas=d.calidadFQ.bajas;        if(d.calidadFQ.vacaciones)      calfqVacaciones=d.calidadFQ.vacaciones; }
+  if (d.calidadMicro)   { mergeFiltered(calmicroWorkers,d.calidadMicro.workers,   CALMICRO_PUESTOS.map(p=>p.id));if(d.calidadMicro.bajas)   calmicroBajas=d.calidadMicro.bajas;  if(d.calidadMicro.vacaciones)   calmicroVacaciones=d.calidadMicro.vacaciones; }
+  if (d.calidadMat)     { mergeFiltered(calmatWorkers,  d.calidadMat.workers,     CALMAT_PUESTOS.map(p=>p.id));  if(d.calidadMat.bajas)     calmatBajas=d.calidadMat.bajas;      if(d.calidadMat.vacaciones)     calmatVacaciones=d.calidadMat.vacaciones; }
+  if (d.mejoraContinua) { mergeFiltered(mcWorkers,      d.mejoraContinua.workers, MC_PUESTOS.map(p=>p.id));      if(d.mejoraContinua.bajas) mcBajas=d.mejoraContinua.bajas;      if(d.mejoraContinua.vacaciones) mcVacaciones=d.mejoraContinua.vacaciones; }
+  if (d.soplado)        { mergeFiltered(soplWorkers,    d.soplado.workers,        SOPL_PUESTOS.map(p=>p.id));    if(d.soplado.bajas)        soplBajas=d.soplado.bajas;           if(d.soplado.vacaciones)        soplVacaciones=d.soplado.vacaciones; }
+  return true;
+}
+
+function loadWeekFromStorage(key) {
+  // Reset all departments to empty before loading
+  applyConfigPostDepts(); // asegurar puestos de post depts actualizados
+  if (!_cfg || !_cfg.envasado || !_cfg.envasado.lineas) {
+    lines = defaultLines();
+  } else {
+    lines = _cfg.envasado.lineas.map(l => mkLine(l.id, l.label, l.color, l.isL2sub||false, l.roles));
+  }
+  initSpecialWorkers();
+  bajas = [mkWorker('baja_0')]; vacaciones = [mkWorker('vac_0')];
+  initSoplado(); initMejoraContinua(); initCalidadMat();
+  initCalidadFQ(); initCalidadMicro(); initCalidad();
+  initElaboracion(); initAlmacen(); initMantenimiento();
+  try {
+    const saved = localStorage.getItem(key || weekKey());
+    if (saved) {
+      const d = JSON.parse(saved);
+      if (applyPayload(d)) {
+        toast('✓ Semana ' + d.semana + '/' + d.ano + ' cargada');
+      }
+    } else {
+      updateWeekFromSelector();
+      toast('Semana nueva — sin datos guardados');
     }
   } catch(e) {}
+  renderCurrent();
 }
 
-function showPortal(responsable) {
-  document.getElementById('login-section').style.display = 'none';
-  document.getElementById('portal-name').textContent = responsable.nombre;
-  document.getElementById('portal-dept').textContent = responsable.departamento;
-  // Actualizar enlace al cuadrante con el dept del responsable
-  const dept = responsable.dept || 'envasado';
-  document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
-  document.getElementById('card-extras').href = 'horas_extras.html?dept=' + dept;
-  document.getElementById('card-dashboard-extras').href = 'dashboard_extras.html?dept=' + dept;
-  // Config solo visible para admin
-  const cardConfig = document.getElementById('card-config');
-  if (cardConfig) cardConfig.style.display = dept === 'admin' ? '' : 'none';
-  contarEpisPendientes(responsable);
-  document.getElementById('portal-section').classList.add('active');
+// Saved weeks list — shows which weeks have data
+function listSavedWeeks() {
+  const weeks = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('ubesol_')) weeks.push(k);
+  }
+  return weeks.sort().reverse();
 }
 
-// Enter para login
-document.getElementById('inp-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
+// Auto-save every 30s + on any input
+setInterval(autoSave, 30000);
+document.addEventListener('input', autoSave);
+document.addEventListener('change', autoSave);
+
+// Al cerrar, cambiar de pestaña o minimizar: guardar y publicar todo
+function publicarTodoAhora() {
+  if (_autoSaveBlocked) return;
+  autoSaveToKey(weekKey());
+  autoPublicarTodasLasSemanas();
+}
+window.addEventListener('beforeunload', publicarTodoAhora);
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') publicarTodoAhora();
 });
-document.getElementById('inp-user').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('inp-pass').focus();
+
+// ── TOAST ──────────────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────
+(function() {
+  // 1. Leer dept de URL y configurar tab
+  const DEPT_MAP = {
+    'envasado':'Envasado','elaboracion':'Elaboración','almacen':'Almacén',
+    'mantenimiento':'Mantenimiento','calidadlineas':'Calidad Líneas',
+    'calidadfq':'Calidad FQ','calidadmicro':'Calidad Micro',
+    'calidadmat':'Calidad Mat','mejoracontinua':'Mejora Continua','soplado':'Soplado',
+  };
+  const params = new URLSearchParams(window.location.search);
+  const raw = (params.get('dept')||'envasado').toLowerCase()
+    .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+    .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+  const isAdmin = raw === 'admin';
+  isAdminMode = isAdmin; // actualizar variable global
+  const deptName = isAdmin ? 'Envasado' : (DEPT_MAP[raw] || 'Envasado');
+  currentTab = deptName;
+
+  // 2. Ocultar tabs según rol — admin ve todas, encargado solo la suya
+  document.querySelectorAll('.tab').forEach(btn => {
+    const id = btn.id.replace('tab-','');
+    if (isAdmin) {
+      // Admin: todas visibles, activar la primera (Envasado)
+      btn.style.display = '';
+      if (id === 'Envasado') btn.classList.add('active');
+    } else {
+      if (id === deptName) { btn.classList.add('active'); btn.style.display=''; }
+      else btn.style.display='none';
+    }
+  });
+
+  // 3. Actualizar breadcrumb y título
+  const bc = document.getElementById('dept-breadcrumb');
+  if (bc) bc.textContent = isAdmin ? 'ADMIN — TODOS LOS DEPTS' : deptName.toUpperCase();
+  document.getElementById('dept-title').textContent = isAdmin ? 'Todos los departamentos' : deptName;
+  document.title = isAdmin ? 'Cuadrante Admin — GrupoUbesol' : 'Cuadrante ' + deptName + ' — GrupoUbesol';
+
+  // 4. Semana actual ISO con fecha local (evita bug zona horaria)
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const localNow = new Date(y, m, d);
+  const dow = localNow.getDay();
+  const thu = new Date(y, m, d - ((dow + 6) % 7) + 3);
+  const ano = thu.getFullYear();
+  const jan4 = new Date(ano, 0, 4);
+  const startW1 = new Date(jan4.getFullYear(), 0, jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const wk = Math.round((thu - startW1) / 604800000) + 1;
+  document.getElementById('meta-sem').value = wk;
+  document.getElementById('meta-ano').value = ano;
+})();
+
+// Cargar config de Firebase y luego inicializar
+loadConfig().then(() => {
+  // Ahora todos los arrays de puestos están declarados — aplicar config de post depts
+  applyConfigPostDepts();
+
+  // Líneas: usar config Firebase si existe, si no defaultLines
+  if (!_cfg || !_cfg.envasado || !_cfg.envasado.lineas) {
+    lines = defaultLines();
+  }
+  initSpecialWorkers();
+  bajas = [mkWorker('baja_0')];
+  vacaciones = [mkWorker('vac_0')];
+  initSoplado();
+  initMejoraContinua();
+  initCalidadMat();
+  initCalidadFQ();
+  initCalidadMicro();
+  initCalidad();
+  initElaboracion();
+  initAlmacen();
+  initMantenimiento();
+
+  // Load workers CSV then restore week data
+  loadWorkers().finally(() => {
+    loadWeekFromStorage();
+  });
 });
 </script>
 </body>
