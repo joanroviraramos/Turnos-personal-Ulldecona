@@ -100,7 +100,10 @@ const db=firebase.firestore();
       <option value="Elaboración">Elaboración</option>
       <option value="Almacén">Almacén</option>
       <option value="Mantenimiento">Mantenimiento</option>
-      <option value="Calidad">Calidad</option>
+      <option value="Calidad Líneas">Calidad Líneas</option>
+      <option value="Calidad FQ">Calidad FQ</option>
+      <option value="Calidad Micro">Calidad Micro</option>
+      <option value="Calidad Mat">Calidad Mat</option>
       <option value="Soplado">Soplado</option>
       <option value="Mejora Continua">Mejora Continua</option>
     </select>
@@ -152,8 +155,7 @@ const db=firebase.firestore();
 
 <script>
 // ─── DEPTS ────────────────────────────────────────────────────────────────────
-const DEPTS = ['Envasado','Elaboración','Almacén','Mantenimiento','Calidad','Soplado','Mejora Continua'];
-const DEPT_MAP_CAL = ['Calidad']; // subdepts que se unifican
+const DEPTS = ['Envasado','Elaboración','Almacén','Mantenimiento','Calidad Líneas','Calidad FQ','Calidad Micro','Calidad Mat','Soplado','Mejora Continua'];
 
 // ─── SESIÓN ───────────────────────────────────────────────────────────────────
 const sess = JSON.parse(localStorage.getItem('ubesol_portal_session') || 'null');
@@ -229,7 +231,7 @@ function renderTabla() {
       <td><input value="${esc(t.nombre)}" placeholder="Nombre completo..." oninput="updateField('${t.id}','nombre',this.value)" style="text-transform:uppercase"></td>
       <td class="td-dni"><input value="${esc(t.dni)}" placeholder="12345678A" maxlength="9" oninput="updateField('${t.id}','dni',this.value.toUpperCase())" style="font-family:monospace;text-transform:uppercase"></td>
       <td>
-        <select onchange="updateField('${t.id}','departamento',this.value)" ${!isAdmin&&!isCalidad()?'disabled':''}>
+        <select onchange="updateField('${t.id}','departamento',this.value)" ${!isAdmin?'disabled':''}>
           ${DEPTS.map(d => `<option value="${d}" ${t.departamento===d?'selected':''}>${d}</option>`).join('')}
         </select>
       </td>
@@ -374,19 +376,17 @@ function normalizarDept(raw) {
     'ALMACEN':               'Almacén',
     'ALMACÉN':               'Almacén',
     'MANTENIMIENTO':         'Mantenimiento',
-    'CALIDAD':               'Calidad',
-    'CALIDAD LINEAS':        'Calidad',
-    'CALIDAD LÍNEAS':        'Calidad',
-    'CALIDAD LINES':         'Calidad',
-    'CALIDAD FIS-QUIM':      'Calidad',
-    'CALIDAD FIS QUIM':      'Calidad',
-    'CALIDAD FISICO QUIMICO':'Calidad',
-    'CALIDAD FQ':            'Calidad',
-    'CALIDAD MICROBIOLOGIA': 'Calidad',
-    'CALIDAD MICRO':         'Calidad',
-    'CALIDAD MATERIALES':    'Calidad',
-    'CALIDAD MAT':           'Calidad',
-    'CALIDAD MATERIALES':    'Calidad',
+    'CALIDAD LINEAS':        'Calidad Líneas',
+    'CALIDAD LÍNEAS':        'Calidad Líneas',
+    'CALIDAD LINES':         'Calidad Líneas',
+    'CALIDAD FIS-QUIM':      'Calidad FQ',
+    'CALIDAD FIS QUIM':      'Calidad FQ',
+    'CALIDAD FISICO QUIMICO':'Calidad FQ',
+    'CALIDAD FQ':            'Calidad FQ',
+    'CALIDAD MICROBIOLOGIA': 'Calidad Micro',
+    'CALIDAD MICRO':         'Calidad Micro',
+    'CALIDAD MATERIALES':    'Calidad Mat',
+    'CALIDAD MAT':           'Calidad Mat',
     'SOPLADO':               'Soplado',
     'MEJORA CONTINUA':       'Mejora Continua',
     'MEJORA':                'Mejora Continua',

@@ -853,7 +853,7 @@ const WORKERS_EMBEDDED = [
 let allWorkers = WORKERS_EMBEDDED;
 let cuadrante = null;
 let currentUser = null;
-let workersLoaded = true;
+let workersLoaded = false;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
@@ -912,7 +912,20 @@ function startInactivityWatcher() {
   });
 }
 
-async function loadWorkers() { /* datos embebidos, no hace falta fetch */ }
+async function loadWorkers() {
+  try {
+    const snap = await db.collection('trabajadores').get();
+    if (!snap.empty) {
+      const fromFirebase = [];
+      snap.forEach(doc => fromFirebase.push(doc.data()));
+      allWorkers = fromFirebase;
+    }
+    if (!allWorkers.length) allWorkers = WORKERS_EMBEDDED;
+  } catch(e) {
+    allWorkers = WORKERS_EMBEDDED;
+  }
+  workersLoaded = true;
+}
 
 function loadCuadrante() {
   // Cargar todos los cuadrantes desde Firebase en tiempo real
