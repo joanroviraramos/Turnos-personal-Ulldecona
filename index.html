@@ -249,7 +249,7 @@ main {
 
 .portal-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
 }
 
 .portal-welcome {
@@ -262,7 +262,7 @@ main {
 
 .portal-name {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 48px;
+  font-size: 36px;
   color: white;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -276,7 +276,7 @@ main {
 
 .portal-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
 }
 
@@ -286,12 +286,12 @@ main {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,0.35);
   border-radius: 20px;
-  padding: 24px 20px;
+  padding: 22px 20px;
   cursor: pointer;
   text-decoration: none;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   transition: all .25s;
   box-shadow:
     0 12px 40px rgba(40,100,5,0.2),
@@ -400,13 +400,16 @@ footer {
 }
 
 /* ── RESPONSIVE ── */
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   header { padding: 24px 20px 0; }
   .logo-grupo, .logo-ubesol { font-size: 30px; }
   .header-tag { display: none; }
   .login-card { padding: 32px 24px; }
-  .portal-grid { grid-template-columns: 1fr; }
+  .portal-grid { grid-template-columns: 1fr 1fr; }
   footer { padding: 20px 24px; }
+}
+@media (max-width: 480px) {
+  .portal-grid { grid-template-columns: 1fr; }
 }
 
 /* Badge pendientes en card EPI */
@@ -500,16 +503,6 @@ footer {
           <div class="card-badge" id="epi-badge" style="display:none">0</div>
         </a>
 
-        <a class="portal-card" id="card-trabajadores" href="trabajadores.html">
-          <div class="card-icon">👥</div>
-          <div>
-            <div class="card-label">Personal</div>
-            <div class="card-name">Trabajadores</div>
-          </div>
-          <div class="card-desc">Gestiona el listado de trabajadores y su acceso a la app.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
         <a class="portal-card" id="card-extras" href="horas_extras.html">
           <div class="card-icon">⏱</div>
           <div>
@@ -527,6 +520,16 @@ footer {
             <div class="card-name">Dashboard Extras</div>
           </div>
           <div class="card-desc">Consulta las horas extras acumuladas por trabajador y departamento.</div>
+          <div class="card-arrow">›</div>
+        </a>
+
+        <a class="portal-card" id="card-trabajadores" href="trabajadores.html" style="display:none">
+          <div class="card-icon">👥</div>
+          <div>
+            <div class="card-label">Personal</div>
+            <div class="card-name">Trabajadores</div>
+          </div>
+          <div class="card-desc">Gestiona el listado de trabajadores y su acceso a la app.</div>
           <div class="card-arrow">›</div>
         </a>
 
@@ -598,7 +601,6 @@ function doLogin() {
 
   err.classList.remove('show');
   localStorage.setItem(LS_KEY, JSON.stringify(responsable));
-  updatePortalActivity();
   showPortal(responsable);
 }
 
@@ -650,9 +652,10 @@ function showPortal(responsable) {
   document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
   document.getElementById('card-extras').href = 'horas_extras.html?dept=' + dept;
   document.getElementById('card-dashboard-extras').href = 'dashboard_extras.html?dept=' + dept;
-  // Config solo visible para admin
-  const cardConfig = document.getElementById('card-config');
-  if (cardConfig) cardConfig.style.display = dept === 'admin' ? '' : 'none';
+  // Mostrar tarjetas solo para admin
+  const isAdmin = (dept === 'admin' || responsable.user === 'admin');
+  document.getElementById('card-trabajadores').style.display = '';
+  document.getElementById('card-config').style.display = isAdmin ? '' : 'none';
   contarEpisPendientes(responsable);
   document.getElementById('portal-section').classList.add('active');
 }
