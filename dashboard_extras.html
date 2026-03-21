@@ -138,6 +138,7 @@ const db = firebase.firestore();
   </select>
   <button class="btn" onclick="cargarDatos()" style="margin-left:4px">↻ Actualizar</button>
   <button class="btn" onclick="exportarExcel()" style="background:#1b5e20;color:white;border-color:#1b5e20;margin-left:4px">⬇ Exportar Excel</button>
+  <input id="search-trabajador" placeholder="🔍 Buscar trabajador..." oninput="renderDashboard()" style="margin-left:12px;font-family:'Inter',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:4px;padding:4px 10px;width:200px;outline:none;">
   <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="total-docs"></span>
 </div>
 
@@ -280,6 +281,13 @@ function calcularResumen(docs) {
   return Object.values(resumen).sort((a, b) => b.pagar - a.pagar);
 }
 
+// ─── FILTRO BÚSQUEDA ──────────────────────────────────────────────────────────
+function filtrarPorBusqueda(workers) {
+  const q = (document.getElementById('search-trabajador')?.value || '').trim().toLowerCase();
+  if (!q) return workers;
+  return workers.filter(w => (w.nombre || '').toLowerCase().includes(q));
+}
+
 // ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────────
 function renderDashboard() {
   const main = document.getElementById('main-content');
@@ -310,7 +318,7 @@ function renderAdmin(container) {
 
   // Sección por departamento
   DEPTS_CONFIG.forEach(dept => {
-    const deptWorkers = workers.filter(w => w.dept === dept.id);
+    const deptWorkers = filtrarPorBusqueda(workers.filter(w => w.dept === dept.id));
     if (!deptWorkers.length) return;
     const dPagar  = deptWorkers.reduce((s, w) => s + w.pagar, 0);
     const dComp   = deptWorkers.reduce((s, w) => s + w.compensar, 0);
@@ -349,7 +357,7 @@ function renderEncargado(container) {
   </div>
   <div class="section-title" style="margin-top:20px">Detalle por trabajador</div>
   <div style="display:flex;flex-direction:column;gap:8px">
-    ${workers.length ? workers.map(w => workerCardHTML(w, false)).join('') : '<div class="empty">No hay datos para este departamento</div>'}
+    ${filtrarPorBusqueda(workers).length ? filtrarPorBusqueda(workers).map(w => workerCardHTML(w, false)).join('') : '<div class="empty">No hay datos para este departamento</div>'}
   </div>`;
 
   container.innerHTML = html;
