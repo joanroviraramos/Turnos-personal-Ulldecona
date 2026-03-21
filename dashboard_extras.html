@@ -283,9 +283,12 @@ function calcularResumen(docs) {
 
 // ─── FILTRO BÚSQUEDA ──────────────────────────────────────────────────────────
 function filtrarPorBusqueda(workers) {
-  const q = (document.getElementById('search-trabajador')?.value || '').trim().toLowerCase();
+  const q = (document.getElementById('search-trabajador')?.value || '')
+    .trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   if (!q) return workers;
-  return workers.filter(w => (w.nombre || '').toLowerCase().includes(q));
+  return workers.filter(w =>
+    (w.nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)
+  );
 }
 
 // ─── RENDER PRINCIPAL ─────────────────────────────────────────────────────────
