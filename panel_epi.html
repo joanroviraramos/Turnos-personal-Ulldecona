@@ -3,828 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GrupoUbesol — Portal de Gestión</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Panel EPIs — GrupoUbesol</title>
 <style>
-:root {
-  --green:       #7cc93a;
-  --green-dark:  #4a7c2f;
-  --green-deep:  #2d5a1a;
-  --green-light: #a8e063;
-  --green-pale:  #d4f0a8;
-  --white:       #ffffff;
-  --glass:       rgba(255,255,255,0.12);
-  --glass-border:rgba(255,255,255,0.25);
-  --text-dark:   #1a2a0a;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  min-height: 100vh;
-  background: #8fd43a;
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* ── FONDO BURBUJAS ── */
-.bubbles-bg {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, #9de04a 0%, #7cc93a 40%, #5aaa1a 100%);
-  z-index: 0;
-  overflow: hidden;
-}
-
-.bubble {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%,
-    rgba(255,255,255,0.35) 0%,
-    rgba(255,255,255,0.08) 40%,
-    rgba(100,180,30,0.15) 70%,
-    rgba(60,140,10,0.3) 100%);
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow:
-    inset -8px -8px 20px rgba(60,120,10,0.3),
-    inset 4px 4px 12px rgba(255,255,255,0.2),
-    0 8px 32px rgba(40,100,5,0.2);
-  animation: float linear infinite;
-}
-
-.bubble::after {
-  content: '';
-  position: absolute;
-  top: 18%; left: 22%;
-  width: 28%; height: 20%;
-  background: radial-gradient(ellipse, rgba(255,255,255,0.55) 0%, transparent 70%);
-  border-radius: 50%;
-  transform: rotate(-30deg);
-}
-
-@keyframes float {
-  0%   { transform: translateY(0) rotate(0deg); }
-  33%  { transform: translateY(-18px) rotate(2deg); }
-  66%  { transform: translateY(8px) rotate(-1deg); }
-  100% { transform: translateY(0) rotate(0deg); }
-}
-
-/* Burbujas individuales */
-.b1  { width:320px; height:320px; top:-80px;  left:-60px;  animation-duration:9s;  animation-delay:0s;   opacity:.85; }
-.b2  { width:480px; height:480px; top:10%;    left:18%;    animation-duration:12s; animation-delay:-3s;  opacity:.9; }
-.b3  { width:200px; height:200px; top:5%;     left:50%;    animation-duration:8s;  animation-delay:-1s;  opacity:.7; }
-.b4  { width:560px; height:560px; top:20%;    right:-80px; animation-duration:14s; animation-delay:-5s;  opacity:.85; }
-.b5  { width:160px; height:160px; top:45%;    left:5%;     animation-duration:7s;  animation-delay:-2s;  opacity:.65; }
-.b6  { width:380px; height:380px; bottom:-60px; left:30%;  animation-duration:11s; animation-delay:-4s;  opacity:.8; }
-.b7  { width:140px; height:140px; bottom:15%; right:10%;   animation-duration:6s;  animation-delay:-1.5s;opacity:.6; }
-.b8  { width:80px;  height:80px;  top:38%;    left:42%;    animation-duration:5s;  animation-delay:-0.5s;opacity:.5; }
-.b9  { width:260px; height:260px; bottom:5%;  right:25%;   animation-duration:10s; animation-delay:-6s;  opacity:.75; }
-.b10 { width:100px; height:100px; top:70%;    left:15%;    animation-duration:7s;  animation-delay:-3.5s;opacity:.55; }
-
-/* ── LAYOUT ── */
-.page {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── HEADER ── */
-header {
-  padding: 32px 48px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-}
-
-.logo-grupo {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 42px;
-  color: rgba(255,255,255,0.7);
-  letter-spacing: 0.04em;
-}
-
-.logo-ubesol {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 42px;
-  color: white;
-  letter-spacing: 0.04em;
-}
-
-.header-tag {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-  border: 1px solid rgba(255,255,255,0.3);
-  padding: 5px 14px;
-  border-radius: 20px;
-  backdrop-filter: blur(8px);
-}
-
-/* ── MAIN ── */
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 24px 60px;
-}
-
-/* ── LOGIN CARD ── */
-.login-card {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 28px;
-  padding: 48px 44px;
-  width: 100%;
-  max-width: 440px;
-  box-shadow:
-    0 24px 64px rgba(40,100,5,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.4);
-}
-
-.card-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.65);
-  margin-bottom: 8px;
-}
-
-.card-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
-  color: white;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  margin-bottom: 32px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.form-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.75);
-}
-
-.form-input {
-  background: rgba(255,255,255,0.18);
-  border: 1.5px solid rgba(255,255,255,0.3);
-  border-radius: 12px;
-  padding: 13px 16px;
-  font-size: 15px;
-  font-family: 'DM Sans', sans-serif;
-  color: white;
-  outline: none;
-  transition: all .2s;
-  backdrop-filter: blur(8px);
-}
-
-.form-input::placeholder { color: rgba(255,255,255,0.4); }
-
-.form-input:focus {
-  border-color: rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.25);
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
-}
-
-.login-error {
-  background: rgba(220,50,50,0.2);
-  border: 1px solid rgba(255,100,100,0.4);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #ffcccc;
-  display: none;
-  margin-bottom: 16px;
-}
-.login-error.show { display: block; }
-
-.btn-login {
-  width: 100%;
-  background: white;
-  color: var(--green-deep);
-  border: none;
-  border-radius: 12px;
-  padding: 15px;
-  font-size: 15px;
-  font-weight: 700;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  transition: all .2s;
-  letter-spacing: 0.02em;
-  margin-top: 8px;
-  box-shadow: 0 4px 20px rgba(40,100,5,0.2);
-}
-
-.btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(40,100,5,0.3); }
-.btn-login:active { transform: translateY(0); }
-
-/* ── PORTAL (tras login) ── */
-.portal { display: none; width: 100%; max-width: 1000px; }
-.portal.active { display: block; }
-
-.portal-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.portal-welcome {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.7);
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-}
-
-.portal-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
-  color: white;
-  letter-spacing: 0.04em;
-  line-height: 1;
-}
-
-.portal-dept {
-  font-size: 13px;
-  color: rgba(255,255,255,0.6);
-  margin-top: 4px;
-}
-
-.portal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-}
-
-.portal-card {
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: 24px;
-  padding: 22px 20px;
-  cursor: pointer;
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  transition: all .25s;
-  box-shadow:
-    0 12px 40px rgba(40,100,5,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.4);
-  position: relative;
-  overflow: hidden;
-}
-
-.portal-card::before {
-  content: '';
-  position: absolute;
-  top: -40px; right: -40px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-  transition: transform .3s;
-}
-
-.portal-card:hover { transform: translateY(-4px); box-shadow: 0 20px 56px rgba(40,100,5,0.3), inset 0 1px 0 rgba(255,255,255,0.5); }
-.portal-card:hover::before { transform: scale(1.4); }
-.portal-card:active { transform: translateY(-1px); }
-
-.card-icon {
-  font-size: 36px;
-  line-height: 1;
-}
-
-.card-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-}
-
-.card-name {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  color: white;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
-}
-
-.card-desc {
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
-  line-height: 1.5;
-}
-
-.card-arrow {
-  align-self: flex-end;
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  color: white;
-  margin-top: auto;
-  transition: all .2s;
-}
-
-.portal-card:hover .card-arrow {
-  background: white;
-  color: var(--green-deep);
-}
-
-.btn-logout {
-  display: block;
-  margin: 32px auto 0;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 10px;
-  padding: 10px 24px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.7);
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  transition: all .2s;
-  backdrop-filter: blur(8px);
-}
-
-.btn-logout:hover { background: rgba(255,255,255,0.2); color: white; }
-
-/* ── FOOTER ── */
-footer {
-  padding: 24px 48px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-.footer-copy {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.05em;
-}
-
-.footer-version {
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  color: rgba(255,255,255,0.3);
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width: 600px) {
-  header { padding: 24px 20px 0; }
-  .logo-grupo, .logo-ubesol { font-size: 30px; }
-  .header-tag { display: none; }
-  .login-card { padding: 32px 24px; }
-  .portal-grid { grid-template-columns: 1fr; }
-  footer { padding: 20px 24px; }
-}
-
-/* Badge pendientes en card EPI */
-.card-badge {
-  position: absolute;
-  top: 14px; right: 14px;
-  background: #c62828;
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  min-width: 22px;
-  height: 22px;
-  border-radius: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 6px;
-  box-shadow: 0 2px 6px rgba(198,40,40,.4);
-}
-.portal-card { position: relative; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f4f0;color:#1a1a1a;font-size:13px;min-height:100vh;}
+.top-header{background:#2d5a1a;color:white;padding:16px 24px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;}
+.top-header h1{font-size:16px;font-weight:700;}
+.top-header .sub{font-size:12px;opacity:.75;}
+.btn-portal{position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;}
+.btn-portal:hover{background:rgba(255,255,255,0.25);}
+.counters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:20px 24px;}
+.counter-card{background:white;border-radius:10px;padding:20px 24px;border:1px solid #e0e8e0;}
+.counter-num{font-size:32px;font-weight:700;line-height:1;}
+.counter-num.orange{color:#e65100;}.counter-num.green{color:#1b5e20;}.counter-num.blue{color:#1565c0;}
+.counter-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:6px;}
+.panel{background:white;margin:0 24px 24px;border-radius:10px;border:1px solid #e0e8e0;overflow:hidden;}
+.toolbar{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid #eee;flex-wrap:wrap;}
+.tab-btn{padding:7px 18px;border-radius:20px;border:1.5px solid #ddd;background:white;color:#666;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.tab-btn.active{background:#1b5e20;color:white;border-color:#1b5e20;}
+.tab-btn:hover:not(.active){background:#f5f5f5;}
+.search-input{margin-left:auto;padding:7px 12px;border:1.5px solid #ddd;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;width:220px;outline:none;}
+.search-input:focus{border-color:#1b5e20;}
+table{width:100%;border-collapse:collapse;}
+thead th{background:#f8faf8;border-bottom:2px solid #e0e8e0;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+tbody tr{border-bottom:1px solid #f0f0f0;transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#f8fdf8;}
+tbody td{padding:10px 14px;vertical-align:middle;}
+.empty-row td{text-align:center;color:#aaa;padding:40px;}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+.tag-pend{background:#fff8e1;color:#e65100;border:1px solid #ffcc80;}
+.tag-ok{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;}
+.tag-rech{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a;}
+.btn-aprobar{background:#1b5e20;color:white;border:none;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-aprobar:hover{background:#145214;}
+.btn-rechazar{background:#b71c1c;color:white;border:none;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-left:4px;}
+.btn-rechazar:hover{background:#7f0000;}
+.btn-reabrir{background:white;color:#555;border:1px solid #ccc;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-reabrir:hover{background:#f5f5f5;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1b5e20;color:white;font-size:13px;font-weight:500;padding:10px 20px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;}
+.toast.show{opacity:1;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f4f0;}
+.login-card{background:white;border-radius:12px;border:1px solid #d0d8d0;padding:32px;max-width:360px;width:100%;}
+.login-card .logo{font-size:11px;font-weight:700;color:#1b5e20;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+.login-card h2{font-size:18px;font-weight:700;margin-bottom:4px;}
+.login-card .sub{font-size:12px;color:#888;margin-bottom:20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.form-group input{width:100%;padding:9px 12px;border:1.5px solid #d0d0d0;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;outline:none;}
+.form-group input:focus{border-color:#1b5e20;}
+.btn-login{width:100%;padding:10px;background:#1b5e20;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;margin-top:4px;}
+.btn-login:hover{background:#145214;}
+.login-err{color:#b71c1c;font-size:12px;margin-top:8px;display:none;}
+.login-err.show{display:block;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
-  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
-  projectId: "maverick-turnos-81d4a",
-  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
-  messagingSenderId: "170123467344",
-  appId: "1:170123467344:web:142eee4473940ebd924f55"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const firebaseConfig={apiKey:"AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",authDomain:"maverick-turnos-81d4a.firebaseapp.com",projectId:"maverick-turnos-81d4a",storageBucket:"maverick-turnos-81d4a.firebasestorage.app",messagingSenderId:"170123467344",appId:"1:170123467344:web:142eee4473940ebd924f55"};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
 </script>
 </head>
 <body>
 
-<div class="bubbles-bg">
-  <div class="bubble b1"></div>
-  <div class="bubble b2"></div>
-  <div class="bubble b3"></div>
-  <div class="bubble b4"></div>
-  <div class="bubble b5"></div>
-  <div class="bubble b6"></div>
-  <div class="bubble b7"></div>
-  <div class="bubble b8"></div>
-  <div class="bubble b9"></div>
-  <div class="bubble b10"></div>
+<div class="login-wrap" id="login-section">
+  <div class="login-card">
+    <div class="logo">GrupoUbesol</div>
+    <h2>Panel de EPIs</h2>
+    <p class="sub">Acceso para responsables</p>
+    <div class="form-group"><label>Usuario</label><input type="text" id="inp-user" placeholder="Tu usuario" autocomplete="username"></div>
+    <div class="form-group"><label>Contraseña</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+  </div>
 </div>
 
-<div class="page">
-  <header>
-    <div class="logo">
-      <span class="logo-grupo">GRUPO</span><span class="logo-ubesol">UBESOL</span>
+<div id="panel-section" style="display:none;">
+  <div class="top-header">
+    <a class="btn-portal" href="index.html">‹ Portal</a>
+    <h1>Panel de Aprobación de EPIs</h1>
+    <div class="sub" id="panel-dept-label">—</div>
+  </div>
+  <div class="counters">
+    <div class="counter-card"><div class="counter-num orange" id="cnt-pendientes">0</div><div class="counter-label">Pendientes</div></div>
+    <div class="counter-card"><div class="counter-num green"  id="cnt-aprobadas">0</div><div class="counter-label">Aprobadas</div></div>
+    <div class="counter-card"><div class="counter-num blue"   id="cnt-total">0</div><div class="counter-label">Total solicitudes</div></div>
+  </div>
+  <div class="panel">
+    <div class="toolbar">
+      <button class="tab-btn active" id="tab-todas"     onclick="setTab('todas')">Todas</button>
+      <button class="tab-btn"        id="tab-pendiente" onclick="setTab('pendiente')">Pendientes</button>
+      <button class="tab-btn"        id="tab-aprobado"  onclick="setTab('aprobado')">Aprobadas</button>
+      <button class="tab-btn"        id="tab-rechazado" onclick="setTab('rechazado')">Rechazadas</button>
+      <input class="search-input" id="search-input" placeholder="Buscar trabajador o EPI..." oninput="renderTabla()">
     </div>
-    <span class="header-tag">Portal de Gestión</span>
-  </header>
-
-  <main>
-    <!-- LOGIN -->
-    <div class="login-card" id="login-section">
-      <div class="card-eyebrow">Acceso restringido</div>
-      <div class="card-title">Identifícate para continuar</div>
-
-      <div class="form-group">
-        <label class="form-label">Usuario</label>
-        <input class="form-input" type="text" id="inp-user" placeholder="Tu usuario" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Contraseña</label>
-        <input class="form-input" type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div class="login-error" id="login-err">Usuario o contraseña incorrectos</div>
-      <button class="btn-login" onclick="doLogin()">Entrar</button>
-    </div>
-
-    <!-- PORTAL -->
-    <div class="portal" id="portal-section">
-      <div class="portal-header">
-        <div class="portal-welcome">Bienvenido/a,</div>
-        <div class="portal-name" id="portal-name">—</div>
-        <div class="portal-dept" id="portal-dept">—</div>
-      </div>
-
-      <div class="portal-grid">
-        <a class="portal-card" id="card-cuadrante" href="ubesol_envasado.html">
-          <div class="card-icon">📋</div>
-          <div>
-            <div class="card-label">Planificación</div>
-            <div class="card-name">Cuadrante de Turnos</div>
-          </div>
-          <div class="card-desc">Gestiona y publica los turnos semanales de tu departamento.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-epi" href="panel_epi.html">
-          <div class="card-icon">🦺</div>
-          <div>
-            <div class="card-label">Seguridad</div>
-            <div class="card-name">Aprobación de EPIs</div>
-          </div>
-          <div class="card-desc">Revisa y aprueba las solicitudes de equipos de protección individual.</div>
-          <div class="card-arrow">›</div>
-          <div class="card-badge" id="epi-badge" style="display:none">0</div>
-        </a>
-
-        <a class="portal-card" id="card-extras" href="horas_extras.html">
-          <div class="card-icon">⏱</div>
-          <div>
-            <div class="card-label">Planificación</div>
-            <div class="card-name">Horas Extras</div>
-          </div>
-          <div class="card-desc">Gestiona y publica los turnos de horas extras por día especial.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-dashboard-extras" href="dashboard_extras.html">
-          <div class="card-icon">📊</div>
-          <div>
-            <div class="card-label">Seguimiento</div>
-            <div class="card-name">Dashboard Extras</div>
-          </div>
-          <div class="card-desc">Consulta las horas extras acumuladas por trabajador y departamento.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-trabajadores" href="trabajadores.html" style="display:none">
-          <div class="card-icon">👥</div>
-          <div>
-            <div class="card-label">Personal</div>
-            <div class="card-name">Trabajadores</div>
-          </div>
-          <div class="card-desc">Gestiona el listado de trabajadores y su acceso a la app.</div>
-          <div class="card-arrow">›</div>
-        </a>
-
-        <a class="portal-card" id="card-config" href="config_estructura.html" style="display:none">
-          <div class="card-icon">⚙️</div>
-          <div>
-            <div class="card-label">Administración</div>
-            <div class="card-name">Configuración</div>
-          </div>
-          <div class="card-desc">Gestiona líneas, puestos y departamentos del cuadrante.</div>
-          <div class="card-arrow">›</div>
-        </a>
-      </div>
-
-      <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
-    </div>
-
-    <!-- ── PANEL EPIs ── -->
-    <div id="epi-panel-section" style="display:none; width:100%; max-width:900px; margin:0 auto; padding: 0 24px 40px;">
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-        <button onclick="window.location.href='index.html'" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; padding:8px 16px; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;">‹ Portal</button>
-        <div>
-          <div style="font-size:11px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:.06em;">Seguridad</div>
-          <div style="font-family:'Bebas Neue',sans-serif; font-size:28px; color:white; letter-spacing:.04em;">Aprobación de EPIs</div>
-        </div>
-        <div style="margin-left:auto; font-size:12px; color:rgba(255,255,255,0.7)" id="epi-panel-dept"></div>
-      </div>
-
-      <!-- Filtros -->
-      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
-        <select id="epi-filtro-estado" onchange="renderEpis()" style="font-family:'DM Sans',sans-serif; font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); color:white;">
-          <option value="">Todos los estados</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="aprobado">Aprobado</option>
-          <option value="rechazado">Rechazado</option>
-        </select>
-        <span id="epi-count" style="font-size:12px; color:rgba(255,255,255,0.8); background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:12px;"></span>
-      </div>
-
-      <!-- Lista solicitudes -->
-      <div id="epi-lista" style="display:flex; flex-direction:column; gap:10px;"></div>
-    </div>
-
-  </main>
-
-  <footer>
-    <span class="footer-copy">© 2026 GrupoUbesol — Todos los derechos reservados</span>
-    <span class="footer-version">v1.0.0</span>
-  </footer>
+    <table>
+      <thead><tr>
+        <th>Trabajador</th><th>EPI solicitado</th><th>Comentario</th><th>Fecha</th><th>Estado</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-// ── VARIABLES GLOBALES ────────────────────────────────────────────────────
-let _epiResponsable = null;
-let _epiUnsubscribe  = null;
+let _responsable=null, _unsubscribe=null, _tabActual='todas', _allData={};
 
-// ── RESPONSABLES ─────────────────────────────────────────────────────────
-// Añadir aquí los responsables: { user, pass, nombre, departamento }
-const RESPONSABLES = [
-  { user: 'admin',        pass: 'ubesol2026',  nombre: 'Administrador',              departamento: 'Administración',  dept: 'admin' },
-  { user: 'envasado',     pass: 'env2026',     nombre: 'Responsable Envasado',       departamento: 'Envasado',        dept: 'envasado' },
-  { user: 'elaboracion',  pass: 'elab2026',    nombre: 'Responsable Elaboración',    departamento: 'Elaboración',     dept: 'elaboracion' },
-  { user: 'almacen',      pass: 'alm2026',     nombre: 'Responsable Almacén',        departamento: 'Almacén',         dept: 'almacen' },
-  { user: 'mto',          pass: 'mto2026',     nombre: 'Responsable Mantenimiento',  departamento: 'Mantenimiento',   dept: 'mantenimiento' },
-  { user: 'callineas',    pass: 'cal2026',     nombre: 'Responsable Calidad Líneas', departamento: 'Calidad Líneas',  dept: 'calidadlineas' },
-  { user: 'calfq',        pass: 'calfq2026',   nombre: 'Responsable Calidad FQ',     departamento: 'Calidad FQ',      dept: 'calidadfq' },
-  { user: 'calmicro',     pass: 'micro2026',   nombre: 'Responsable Calidad Micro',  departamento: 'Calidad Micro',   dept: 'calidadmicro' },
-  { user: 'calmat',       pass: 'calmat2026',  nombre: 'Responsable Calidad Mat.',   departamento: 'Calidad Mat.',    dept: 'calidadmat' },
-  { user: 'mejora',       pass: 'mc2026',      nombre: 'Responsable Mejora Cont.',   departamento: 'Mejora Continua', dept: 'mejoracontinua' },
-  { user: 'soplado',      pass: 'sopl2026',    nombre: 'Responsable Soplado',        departamento: 'Soplado',         dept: 'soplado' },
+const RESPONSABLES=[
+  {user:'admin',       pass:'ubesol2026', nombre:'Administrador',             departamento:'Administración', dept:'admin'},
+  {user:'envasado',    pass:'env2026',    nombre:'Responsable Envasado',      departamento:'Envasado',       dept:'envasado'},
+  {user:'elaboracion', pass:'elab2026',   nombre:'Responsable Elaboración',   departamento:'Elaboración',    dept:'elaboracion'},
+  {user:'almacen',     pass:'alm2026',    nombre:'Responsable Almacén',       departamento:'Almacén',        dept:'almacen'},
+  {user:'mto',         pass:'mto2026',    nombre:'Responsable Mantenimiento', departamento:'Mantenimiento',  dept:'mantenimiento'},
+  {user:'callineas',   pass:'cal2026',    nombre:'Responsable Calidad Líneas',departamento:'Calidad Líneas', dept:'calidadlineas'},
+  {user:'calfq',       pass:'calfq2026',  nombre:'Responsable Calidad FQ',    departamento:'Calidad FQ',     dept:'calidadfq'},
+  {user:'calmicro',    pass:'micro2026',  nombre:'Responsable Calidad Micro', departamento:'Calidad Micro',  dept:'calidadmicro'},
+  {user:'calmat',      pass:'calmat2026', nombre:'Responsable Calidad Mat.',  departamento:'Calidad Mat.',   dept:'calidadmat'},
+  {user:'mejora',      pass:'mc2026',     nombre:'Responsable Mejora Cont.',  departamento:'Mejora Continua',dept:'mejoracontinua'},
+  {user:'soplado',     pass:'sopl2026',   nombre:'Responsable Soplado',       departamento:'Soplado',        dept:'soplado'},
 ];
 
-const LS_KEY = 'ubesol_portal_session';
+const LS_KEY='ubesol_portal_session';
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-(function() {
-  const sess = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-  if (sess) showEpiPanel(sess);
-})();
-
-// ── LOGIN ─────────────────────────────────────────────────────────────────
-function doLogin() {
-  const user = document.getElementById('inp-user').value.trim().toLowerCase();
-  const pass = document.getElementById('inp-pass').value;
-  const err  = document.getElementById('login-err');
-
-  if (!user || !pass) {
-    err.textContent = 'Introduce usuario y contraseña';
-    err.classList.add('show');
-    return;
-  }
-
-  const responsable = RESPONSABLES.find(r => r.user === user && r.pass === pass);
-
-  if (!responsable) {
-    err.classList.add('show');
-    document.getElementById('inp-pass').value = '';
-    return;
-  }
-
-  err.classList.remove('show');
-  localStorage.setItem(LS_KEY, JSON.stringify(responsable));
-  showEpiPanel(responsable);
-}
-
-function doLogout() {
-  if (_epiUnsubscribe) { _epiUnsubscribe(); _epiUnsubscribe = null; }
-  localStorage.removeItem(LS_KEY);
-  document.getElementById('portal-section').classList.remove('active');
-  document.getElementById('login-section').style.display = '';
-  document.getElementById('inp-user').value = '';
-  document.getElementById('inp-pass').value = '';
-}
-
-function contarEpisPendientes(responsable) {
-  try {
-    const WORKERS_DEPT = {
-      'Envasado':['12345678A','23456789B','34567890C','45678901D','56789012E','67890123F','78901234G','89012345H','90123456I','01234567J','11223344K','22334455L','33445566M','44556677N','55667788O','66778899P','77889900Q','88990011R','99001122S','00112233T'],
-      'Elaboración':['67867867Z','78978978A','89089089B','90190190C'],
-      'Almacén':['89089089L','90190190M','01201201N','12312344O'],
-      'Mantenimiento':['11122233Y','22233344Z'],
-      'Calidad Líneas':['11122233I','22233344J'],
-      'Calidad FQ':['77788899O','88899900P'],
-      'Calidad Micro':['11122244S','22233355T'],
-      'Calidad Mat.':['55566688W','66677799X'],
-      'Mejora Continua':['99900022A','00011133B'],
-      'Soplado':['33344466E','44455577F'],
-    };
-    const all = JSON.parse(localStorage.getItem('ubesol_app_epis') || '{}');
-    const miDept = responsable.departamento;
-    const dnis = responsable.user === 'admin'
-      ? Object.keys(all)
-      : (WORKERS_DEPT[miDept] || []);
-    let count = 0;
-    dnis.forEach(dni => {
-      (all[dni] || []).forEach(e => { if (e.estado === 'pendiente') count++; });
-    });
-    const badge = document.getElementById('epi-badge');
-    if (badge) {
-      if (count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
-      else { badge.style.display = 'none'; }
-    }
-  } catch(e) {}
-}
-
-function showPortal(responsable) {
-  document.getElementById('login-section').style.display = 'none';
-  document.getElementById('portal-name').textContent = responsable.nombre;
-  document.getElementById('portal-dept').textContent = responsable.departamento;
-  // Actualizar enlace al cuadrante con el dept del responsable
-  const dept = responsable.dept || 'envasado';
-  document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
-  document.getElementById('card-extras').href = 'horas_extras.html?dept=' + dept;
-  document.getElementById('card-dashboard-extras').href = 'dashboard_extras.html?dept=' + dept;
-  // Trabajadores visible para todos, Config solo para admin
-  const isAdmin = (dept === 'admin' || responsable.user === 'admin');
-  document.getElementById('card-trabajadores').style.display = '';
-  const cardConfig = document.getElementById('card-config');
-  if (cardConfig) cardConfig.style.display = isAdmin ? '' : 'none';
-  contarEpisPendientes(responsable);
-  document.getElementById('portal-section').classList.add('active');
-}
-
-// Enter para login
-document.getElementById('inp-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-document.getElementById('inp-user').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('inp-pass').focus();
-});
-
-// ── PANEL EPIs ────────────────────────────────────────────────────────────
-
-function showEpiPanel(responsable) {
-  _epiResponsable = responsable;
-  document.getElementById('login-section').style.display = 'none';
-  document.getElementById('portal-section').classList.remove('active');
-  document.getElementById('epi-panel-section').style.display = '';
-  document.getElementById('epi-panel-dept').textContent = responsable.nombre + ' — ' + responsable.departamento;
-
-  // Escuchar en tiempo real igual que la app del trabajador
-  if (_epiUnsubscribe) _epiUnsubscribe();
-  _epiUnsubscribe = db.collection('epis').doc('solicitudes').onSnapshot(function(docSnap) {
-    const all = docSnap.exists ? docSnap.data() : {};
-    renderEpis(all);
-  }, function(err) {
-    document.getElementById('epi-lista').innerHTML = '<div style="color:#ef4444;padding:20px;">Error Firebase: ' + err.message + '</div>';
-  });
-}
-
-function renderEpis(all) {
-  const lista = document.getElementById('epi-lista');
-  const isAdmin = _epiResponsable.user === 'admin';
-  const miDept  = _epiResponsable.departamento;
-
-  // Construir lista plana con referencia dni+idx para poder actualizar
-  let solicitudes = [];
-  Object.entries(all).forEach(([dni, epis]) => {
-    // Filtrar por departamento si no es admin — buscamos el trabajador en la lista de la app
-    if (!isAdmin) {
-      const trabajador = TODOS_TRABAJADORES.find(t => t.dni === dni);
-      if (!trabajador) return;
-      const deptTrab = (trabajador.departamento || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      const deptResp = miDept.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      if (!deptTrab.includes(deptResp) && !deptResp.includes(deptTrab)) return;
-    }
-    (epis || []).forEach((e, idx) => {
-      // Buscar nombre del trabajador
-      const trabajador = TODOS_TRABAJADORES.find(t => t.dni === dni);
-      solicitudes.push({ dni, idx, nombreTrabajador: trabajador ? trabajador.nombre : dni, ...e });
-    });
-  });
-
-  // Filtrar por estado
-  const filtroEstado = document.getElementById('epi-filtro-estado').value;
-  if (filtroEstado) solicitudes = solicitudes.filter(s => s.estado === filtroEstado);
-
-  // Ordenar: pendientes primero, luego por fecha desc
-  solicitudes.sort((a, b) => {
-    const orden = { pendiente: 0, aprobado: 1, rechazado: 2 };
-    const diff = (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3);
-    if (diff !== 0) return diff;
-    return (b.fecha || 0) - (a.fecha || 0);
-  });
-
-  const total = solicitudes.length;
-  const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
-  document.getElementById('epi-count').textContent =
-    total + ' solicitud' + (total !== 1 ? 'es' : '') +
-    (pendientes > 0 ? ' · ' + pendientes + ' pendiente' + (pendientes !== 1 ? 's' : '') : '');
-
-  if (!total) {
-    lista.innerHTML = '<div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:40px;text-align:center;color:rgba(255,255,255,0.6);font-size:14px;">No hay solicitudes' + (filtroEstado ? ' con estado "' + filtroEstado + '"' : '') + '</div>';
-    return;
-  }
-
-  lista.innerHTML = solicitudes.map(s => {
-    const estadoColor = s.estado === 'pendiente' ? '#f59e0b' : s.estado === 'aprobado' ? '#22c55e' : '#ef4444';
-    const estadoLabel = s.estado === 'pendiente' ? '⏳ Pendiente' : s.estado === 'aprobado' ? '✅ Aprobado' : '❌ Rechazado';
-    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
-    return `
-      <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.3);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <div style="font-size:14px;font-weight:700;color:white;">${esc2(s.tipo || 'EPI')}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">${esc2(s.nombreTrabajador)} · DNI: ${s.dni}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">${fecha}${s.talla ? ' · Talla: ' + esc2(s.talla) : ''}${s.pedidoId ? ' · Pedido: ' + esc2(s.pedidoId) : ''}</div>
-          ${s.nota ? `<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:3px;font-style:italic;">"${esc2(s.nota)}"</div>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:11px;font-weight:700;color:${estadoColor};background:rgba(255,255,255,0.1);padding:4px 12px;border-radius:20px;border:1px solid ${estadoColor};">${estadoLabel}</span>
-          ${s.estado === 'pendiente' ? `
-            <button onclick="cambiarEstadoEpi('${s.dni}',${s.idx},'aprobado')" style="background:#22c55e;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✓ Aprobar</button>
-            <button onclick="cambiarEstadoEpi('${s.dni}',${s.idx},'rechazado')" style="background:#ef4444;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">✗ Rechazar</button>
-          ` : `
-            <button onclick="cambiarEstadoEpi('${s.dni}',${s.idx},'pendiente')" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">↺ Reabrir</button>
-          `}
-        </div>
-      </div>`;
-  }).join('');
-}
-
-async function cambiarEstadoEpi(dni, idx, nuevoEstado) {
-  try {
-    // Leer documento actual de Firebase
-    const docRef = db.collection('epis').doc('solicitudes');
-    const docSnap = await docRef.get();
-    const all = docSnap.exists ? docSnap.data() : {};
-
-    if (!all[dni] || all[dni][idx] === undefined) return;
-
-    // Actualizar solo el campo estado de esa solicitud
-    all[dni][idx].estado = nuevoEstado;
-
-    // Guardar en Firebase — el onSnapshot notificará a la app automáticamente
-    await docRef.set(all);
-  } catch(e) {
-    alert('Error al guardar: ' + e.message);
-  }
-}
-
-function esc2(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// Lista completa de trabajadores para resolver nombres por DNI
-const TODOS_TRABAJADORES = [
+const TRABAJADORES=[
   {nombre:"CARLOS MARTINEZ LOPEZ",dni:"12345678A",departamento:"Envasado"},
   {nombre:"MARIA GARCIA FERNANDEZ",dni:"23456789B",departamento:"Envasado"},
   {nombre:"JOSE RODRIGUEZ SANCHEZ",dni:"34567890C",departamento:"Envasado"},
@@ -855,6 +160,111 @@ const TODOS_TRABAJADORES = [
   {nombre:"RAFAEL CAMPOS PARDO",dni:"12312344O",departamento:"Almacén"},
 ];
 
+(function(){
+  const sess=JSON.parse(localStorage.getItem(LS_KEY)||'null');
+  if(sess) mostrarPanel(sess);
+})();
+
+function doLogin(){
+  const user=document.getElementById('inp-user').value.trim().toLowerCase();
+  const pass=document.getElementById('inp-pass').value;
+  const err=document.getElementById('login-err');
+  if(!user||!pass){err.textContent='Introduce usuario y contraseña';err.classList.add('show');return;}
+  const r=RESPONSABLES.find(r=>r.user===user&&r.pass===pass);
+  if(!r){err.classList.add('show');document.getElementById('inp-pass').value='';return;}
+  err.classList.remove('show');
+  localStorage.setItem(LS_KEY,JSON.stringify(r));
+  mostrarPanel(r);
+}
+
+function mostrarPanel(r){
+  _responsable=r;
+  document.getElementById('login-section').style.display='none';
+  document.getElementById('panel-section').style.display='';
+  document.getElementById('panel-dept-label').textContent=r.departamento;
+  if(_unsubscribe)_unsubscribe();
+  _unsubscribe=db.collection('epis').doc('solicitudes').onSnapshot(function(snap){
+    _allData=snap.exists?snap.data():{};
+    actualizarContadores();
+    renderTabla();
+  },function(e){toast('⚠️ Error: '+e.message);});
+}
+
+function getSolicitudes(){
+  const isAdmin=_responsable.user==='admin';
+  const miDept=(_responsable.departamento||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  let lista=[];
+  Object.entries(_allData).forEach(([dni,epis])=>{
+    if(!isAdmin){
+      const t=TRABAJADORES.find(t=>t.dni===dni);
+      if(!t)return;
+      const deptT=(t.departamento||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(!deptT.includes(miDept)&&!miDept.includes(deptT))return;
+    }
+    const nombre=(TRABAJADORES.find(t=>t.dni===dni)||{}).nombre||dni;
+    (epis||[]).forEach((e,idx)=>lista.push({dni,idx,nombre,...e}));
+  });
+  return lista;
+}
+
+function actualizarContadores(){
+  const l=getSolicitudes();
+  document.getElementById('cnt-pendientes').textContent=l.filter(s=>s.estado==='pendiente').length;
+  document.getElementById('cnt-aprobadas').textContent=l.filter(s=>s.estado==='aprobado').length;
+  document.getElementById('cnt-total').textContent=l.length;
+}
+
+function setTab(tab){
+  _tabActual=tab;
+  ['todas','pendiente','aprobado','rechazado'].forEach(t=>
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab));
+  renderTabla();
+}
+
+function renderTabla(){
+  let lista=getSolicitudes();
+  if(_tabActual!=='todas')lista=lista.filter(s=>s.estado===_tabActual);
+  const q=(document.getElementById('search-input').value||'').trim().toLowerCase();
+  if(q)lista=lista.filter(s=>(s.nombre||'').toLowerCase().includes(q)||(s.tipo||'').toLowerCase().includes(q)||(s.dni||'').toLowerCase().includes(q));
+  lista.sort((a,b)=>{const o={pendiente:0,aprobado:1,rechazado:2};const d=(o[a.estado]??3)-(o[b.estado]??3);return d!==0?d:(b.fecha||0)-(a.fecha||0);});
+  const tbody=document.getElementById('tabla-body');
+  if(!lista.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No hay solicitudes</td></tr>';return;}
+  tbody.innerHTML=lista.map(s=>{
+    const fecha=s.fecha?new Date(s.fecha).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+    const tagCls=s.estado==='pendiente'?'tag-pend':s.estado==='aprobado'?'tag-ok':'tag-rech';
+    const tagLabel=s.estado==='pendiente'?'Pendiente':s.estado==='aprobado'?'Aprobada':'Rechazada';
+    const acc=s.estado==='pendiente'
+      ?`<button class="btn-aprobar" onclick="cambiarEstado('${s.dni}',${s.idx},'aprobado')">✓ Aprobar</button><button class="btn-rechazar" onclick="cambiarEstado('${s.dni}',${s.idx},'rechazado')">✗ Rechazar</button>`
+      :`<button class="btn-reabrir" onclick="cambiarEstado('${s.dni}',${s.idx},'pendiente')">↺ Reabrir</button>`;
+    return`<tr>
+      <td><strong>${esc(s.nombre)}</strong><br><span style="color:#999;font-size:11px">${s.dni}</span></td>
+      <td>${esc(s.tipo||'—')}${s.talla?'<br><span style="color:#999;font-size:11px">Talla: '+esc(s.talla)+'</span>':''}</td>
+      <td style="color:#666;max-width:180px">${esc(s.nota||'—')}</td>
+      <td style="white-space:nowrap">${fecha}</td>
+      <td><span class="tag ${tagCls}">${tagLabel}</span></td>
+      <td style="white-space:nowrap">${acc}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function cambiarEstado(dni,idx,nuevoEstado){
+  try{
+    const docRef=db.collection('epis').doc('solicitudes');
+    const snap=await docRef.get();
+    const all=snap.exists?snap.data():{};
+    if(!all[dni]||all[dni][idx]===undefined)return;
+    all[dni][idx].estado=nuevoEstado;
+    await docRef.set(all);
+    const msg=nuevoEstado==='aprobado'?'✅ Solicitud aprobada':nuevoEstado==='rechazado'?'❌ Solicitud rechazada':'↺ Solicitud reabierta';
+    toast(msg);
+  }catch(e){toast('⚠️ Error: '+e.message);}
+}
+
+function esc(s){return(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+document.getElementById('inp-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('inp-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('inp-pass').focus();});
 </script>
 </body>
 </html>
