@@ -857,6 +857,8 @@ let workersLoaded = false;
 
 // ─── INIT ────────────────────────────────────────────
 async function init() {
+  // Cargar trabajadores desde Firebase al arrancar
+  loadWorkers();
   // Restaurar sesión si existe y no ha expirado
   try {
     const sess = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
