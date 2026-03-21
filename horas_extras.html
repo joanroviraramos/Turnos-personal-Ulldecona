@@ -946,15 +946,18 @@ function makeAcInput(currentVal, deptId, onSelect) {
       });
     }
     list.classList.add('open');
-    // Detectar si hay espacio abajo, si no abrir hacia arriba
-    const rect = inp.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    if (spaceBelow < 220 && spaceAbove > spaceBelow) {
-      list.classList.add('open-up');
-    } else {
-      list.classList.remove('open-up');
-    }
+    // Detectar si hay espacio abajo para el dropdown
+    requestAnimationFrame(function() {
+      const rect = inp.getBoundingClientRect();
+      const listHeight = list.offsetHeight || 200;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow < listHeight + 10 && spaceAbove > spaceBelow) {
+        list.classList.add('open-up');
+      } else {
+        list.classList.remove('open-up');
+      }
+    });
   }
 
   inp.addEventListener('focus', () => showList(inp.value));

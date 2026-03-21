@@ -887,15 +887,18 @@ function makeAcInput(currentVal, dept, onSelect, blockDuplicates = true) {
       });
     }
     list.classList.add('open');
-    // Detectar si hay espacio abajo, si no abrir hacia arriba
-    const rect = inp.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    if (spaceBelow < 240 && spaceAbove > spaceBelow) {
-      list.classList.add('open-up');
-    } else {
-      list.classList.remove('open-up');
-    }
+    // Detectar si hay espacio abajo para el dropdown
+    requestAnimationFrame(function() {
+      const rect = inp.getBoundingClientRect();
+      const listHeight = list.offsetHeight || 220;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      if (spaceBelow < listHeight + 10 && spaceAbove > spaceBelow) {
+        list.classList.add('open-up');
+      } else {
+        list.classList.remove('open-up');
+      }
+    });
   }
 
   let selectedFromList = false;
