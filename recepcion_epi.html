@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Recepción EPIs — GrupoUbesol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f4f0;color:#1a1a1a;font-size:13px;min-height:100vh;}
+
+/* ── HEADER ── */
+.top-header{background:#1a3a2a;color:white;padding:14px 24px;display:flex;align-items:center;gap:12px;position:relative;}
+.top-header h1{font-size:15px;font-weight:700;flex:1;text-align:center;}
+.top-header .sub{font-size:11px;opacity:.7;text-align:center;}
+.header-inner{flex:1;text-align:center;}
+.btn-portal{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;white-space:nowrap;}
+.btn-portal:hover{background:rgba(255,255,255,0.25);}
+.header-right{display:flex;align-items:center;gap:8px;min-width:100px;justify-content:flex-end;}
+.btn-logout{background:none;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.8);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-logout:hover{background:rgba(255,255,255,0.1);}
+
+/* ── CONTADORES ── */
+.counters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:20px 24px 0;}
+.counter-card{background:white;border-radius:10px;padding:16px 20px;border:1px solid #e0e8e0;}
+.counter-num{font-size:28px;font-weight:700;line-height:1;}
+.counter-num.orange{color:#e65100;}
+.counter-num.green{color:#1b5e20;}
+.counter-num.blue{color:#1565c0;}
+.counter-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;}
+
+/* ── PANEL ── */
+.panel{background:white;margin:16px 24px 24px;border-radius:10px;border:1px solid #e0e8e0;overflow:hidden;}
+.toolbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #eee;flex-wrap:wrap;}
+.tab-btn{padding:6px 16px;border-radius:20px;border:1.5px solid #ddd;background:white;color:#666;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.tab-btn.active{background:#1a3a2a;color:white;border-color:#1a3a2a;}
+.tab-btn:hover:not(.active){background:#f5f5f5;}
+.filter-dept{font-family:'Inter',sans-serif;font-size:12px;padding:6px 10px;border:1.5px solid #ddd;border-radius:6px;outline:none;margin-left:auto;}
+.filter-dept:focus{border-color:#1a3a2a;}
+.search-input{padding:6px 12px;border:1.5px solid #ddd;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;width:200px;outline:none;}
+.search-input:focus{border-color:#1a3a2a;}
+
+/* ── TABLA ── */
+table{width:100%;border-collapse:collapse;}
+thead th{background:#f8faf8;border-bottom:2px solid #e0e8e0;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+tbody tr{border-bottom:1px solid #f0f0f0;transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#f8fdf8;}
+tbody td{padding:10px 14px;vertical-align:middle;}
+.empty-row td{text-align:center;color:#aaa;padding:40px;}
+
+/* ── TAGS ── */
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+.tag-aprobado{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;}
+.tag-entregado{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}
+
+/* ── BOTONES ── */
+.btn-entregar{background:#1a3a2a;color:white;border:none;border-radius:5px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-entregar:hover{background:#0d2418;}
+.btn-ver-firma{background:white;color:#1565c0;border:1px solid #90caf9;border-radius:5px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-ver-firma:hover{background:#e3f2fd;}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f0f4f0;}
+.login-card{background:white;border-radius:12px;border:1px solid #d0d8d0;padding:32px;max-width:360px;width:100%;}
+.login-logo{font-size:11px;font-weight:700;color:#1a3a2a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.login-card h2{font-size:18px;font-weight:700;margin-bottom:4px;}
+.login-card .sub{font-size:12px;color:#888;margin-bottom:20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.form-group input{width:100%;padding:9px 12px;border:1.5px solid #d0d0d0;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;outline:none;}
+.form-group input:focus{border-color:#1a3a2a;}
+.btn-login{width:100%;padding:10px;background:#1a3a2a;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;margin-top:4px;}
+.btn-login:hover{background:#0d2418;}
+.login-err{color:#b71c1c;font-size:12px;margin-top:8px;display:none;}
+.login-err.show{display:block;}
+
+/* ── MODAL FIRMA ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:white;border-radius:12px;padding:24px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:#666;margin-bottom:16px;}
+.modal-epi-info{background:#f8faf8;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;border:1px solid #e0e8e0;}
+.modal-epi-info strong{display:block;font-size:13px;margin-bottom:4px;}
+.firma-label{font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.firma-canvas-wrap{border:2px solid #e0e8e0;border-radius:8px;overflow:hidden;position:relative;touch-action:none;}
+#firma-canvas{display:block;background:white;cursor:crosshair;width:100%;height:160px;}
+.firma-actions{display:flex;gap:8px;margin-top:8px;}
+.btn-clear-firma{background:white;color:#555;border:1px solid #ccc;border-radius:5px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-clear-firma:hover{background:#f5f5f5;}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.btn-cancel{background:white;color:#555;border:1px solid #ccc;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-cancel:hover{background:#f5f5f5;}
+.btn-confirmar{background:#1a3a2a;color:white;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-confirmar:hover{background:#0d2418;}
+.btn-confirmar:disabled{background:#ccc;cursor:not-allowed;}
+
+/* ── MODAL VER FIRMA ── */
+.modal-firma-img{border:1px solid #e0e8e0;border-radius:8px;width:100%;max-height:200px;object-fit:contain;background:white;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a3a2a;color:white;font-size:13px;font-weight:500;padding:10px 20px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;}
+.toast.show{opacity:1;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",authDomain:"maverick-turnos-81d4a.firebaseapp.com",projectId:"maverick-turnos-81d4a",storageBucket:"maverick-turnos-81d4a.firebasestorage.app",messagingSenderId:"170123467344",appId:"1:170123467344:web:142eee4473940ebd924f55"};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+</script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-section">
+  <div class="login-card">
+    <div class="login-logo">GrupoUbesol</div>
+    <h2>Recepción EPIs</h2>
+    <p class="sub">Gestión de entregas de equipos de protección</p>
+    <div class="form-group"><label>Usuario</label><input type="text" id="inp-user" placeholder="Tu usuario" autocomplete="username"></div>
+    <div class="form-group"><label>Contraseña</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- PANEL PRINCIPAL -->
+<div id="panel-section" style="display:none;">
+  <div class="top-header">
+    <a class="btn-portal" href="index.html">‹ Portal</a>
+    <div class="header-inner">
+      <div style="font-size:15px;font-weight:700;">Recepción — Entrega de EPIs</div>
+      <div style="font-size:11px;opacity:.7;" id="panel-user-label">—</div>
+    </div>
+    <div class="header-right">
+      <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="counters">
+    <div class="counter-card"><div class="counter-num orange" id="cnt-pendientes">0</div><div class="counter-label">Por entregar</div></div>
+    <div class="counter-card"><div class="counter-num green"  id="cnt-entregados">0</div><div class="counter-label">Entregados hoy</div></div>
+    <div class="counter-card"><div class="counter-num blue"   id="cnt-total">0</div><div class="counter-label">Total aprobados</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <button class="tab-btn active" id="tab-aprobado"  onclick="setTab('aprobado')">Por entregar</button>
+      <button class="tab-btn"        id="tab-entregado" onclick="setTab('entregado')">Entregados</button>
+      <button class="tab-btn"        id="tab-todos"     onclick="setTab('todos')">Todos</button>
+      <select class="filter-dept" id="filter-dept" onchange="renderTabla()">
+        <option value="">Todos los depts.</option>
+        <option value="Envasado">Envasado</option>
+        <option value="Elaboración">Elaboración</option>
+        <option value="Almacén">Almacén</option>
+        <option value="Mantenimiento">Mantenimiento</option>
+        <option value="Calidad Líneas">Calidad Líneas</option>
+        <option value="Calidad FQ">Calidad FQ</option>
+        <option value="Calidad Micro">Calidad Micro</option>
+        <option value="Calidad Mat">Calidad Mat</option>
+        <option value="Mejora Continua">Mejora Continua</option>
+        <option value="Soplado">Soplado</option>
+      </select>
+      <input class="search-input" id="search-input" placeholder="🔍 Buscar trabajador o EPI..." oninput="renderTabla()">
+    </div>
+    <table>
+      <thead><tr>
+        <th>Trabajador</th>
+        <th>Departamento</th>
+        <th>EPI solicitado</th>
+        <th>Comentario</th>
+        <th>Aprobado</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr></thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL FIRMA -->
+<div class="modal-overlay" id="modal-firma">
+  <div class="modal-box">
+    <div class="modal-title">✍️ Firma de recepción</div>
+    <div class="modal-sub">El trabajador debe firmar para confirmar la recepción del EPI</div>
+    <div class="modal-epi-info" id="modal-epi-info"></div>
+    <div class="firma-label">Firma del trabajador</div>
+    <div class="firma-canvas-wrap">
+      <canvas id="firma-canvas"></canvas>
+    </div>
+    <div class="firma-actions">
+      <button class="btn-clear-firma" onclick="limpiarFirma()">🗑 Borrar firma</button>
+      <span style="font-size:11px;color:#999;align-self:center;margin-left:4px;">Firma con el dedo o el ratón</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalFirma()">Cancelar</button>
+      <button class="btn-confirmar" id="btn-confirmar-entrega" onclick="confirmarEntrega()">✓ Confirmar entrega</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER FIRMA -->
+<div class="modal-overlay" id="modal-ver-firma">
+  <div class="modal-box">
+    <div class="modal-title">Firma registrada</div>
+    <div class="modal-sub" id="ver-firma-info"></div>
+    <img id="ver-firma-img" class="modal-firma-img" src="" alt="Firma">
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-ver-firma').classList.remove('show')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── USUARIOS ──────────────────────────────────────────────────────────────────
+const USUARIOS = [
+  { user: 'recepcion',  pass: 'rec2026',    nombre: 'Recepción',    rol: 'recepcion' },
+  { user: 'admin',      pass: 'ubesol2026', nombre: 'Administrador',rol: 'admin' },
+];
+
+const LS_KEY = 'ubesol_recepcion_session';
+let _usuario = null;
+let _unsubscribe = null;
+let _allData = {};
+let _trabajadores = [];
+let _tabActual = 'aprobado';
+let _pendingEntrega = null; // { dni, idx }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(function(){
+  const sess = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+  if (sess) mostrarPanel(sess);
+})();
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function doLogin() {
+  const user = document.getElementById('inp-user').value.trim().toLowerCase();
+  const pass = document.getElementById('inp-pass').value;
+  const err  = document.getElementById('login-err');
+  if (!user || !pass) { err.textContent = 'Introduce usuario y contraseña'; err.classList.add('show'); return; }
+  const u = USUARIOS.find(u => u.user === user && u.pass === pass);
+  if (!u) { err.classList.add('show'); document.getElementById('inp-pass').value = ''; return; }
+  err.classList.remove('show');
+  localStorage.setItem(LS_KEY, JSON.stringify(u));
+  mostrarPanel(u);
+}
+
+function doLogout() {
+  if (_unsubscribe) _unsubscribe();
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+async function mostrarPanel(u) {
+  _usuario = u;
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('panel-section').style.display = '';
+  document.getElementById('panel-user-label').textContent = u.nombre;
+
+  // Cargar trabajadores
+  const snap = await db.collection('trabajadores').get();
+  _trabajadores = [];
+  snap.forEach(doc => _trabajadores.push(doc.data()));
+
+  // Escuchar EPIs en tiempo real
+  if (_unsubscribe) _unsubscribe();
+  _unsubscribe = db.collection('epis').doc('solicitudes').onSnapshot(function(docSnap) {
+    _allData = docSnap.exists ? docSnap.data() : {};
+    actualizarContadores();
+    renderTabla();
+  }, function(e) { toast('⚠️ Error: ' + e.message); });
+}
+
+// ── DATOS ─────────────────────────────────────────────────────────────────────
+function getSolicitudes() {
+  const lista = [];
+  Object.entries(_allData).forEach(([dni, epis]) => {
+    const t = _trabajadores.find(t => t.dni === dni);
+    const nombre = t ? t.nombre : dni;
+    const departamento = t ? t.departamento : '—';
+    (epis || []).forEach((e, idx) => {
+      if (e.estado !== 'aprobado' && e.estado !== 'entregado') return;
+      lista.push({ dni, idx, nombre, departamento, ...e });
+    });
+  });
+  return lista;
+}
+
+function actualizarContadores() {
+  const lista = getSolicitudes();
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('cnt-pendientes').textContent = lista.filter(s => s.estado === 'aprobado').length;
+  document.getElementById('cnt-entregados').textContent = lista.filter(s => s.estado === 'entregado' && (s.fechaEntrega||'').startsWith(hoy)).length;
+  document.getElementById('cnt-total').textContent = lista.length;
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function setTab(tab) {
+  _tabActual = tab;
+  ['aprobado','entregado','todos'].forEach(t =>
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab));
+  renderTabla();
+}
+
+// ── TABLA ─────────────────────────────────────────────────────────────────────
+function renderTabla() {
+  let lista = getSolicitudes();
+  if (_tabActual !== 'todos') lista = lista.filter(s => s.estado === _tabActual);
+
+  // Filtro departamento
+  const dept = document.getElementById('filter-dept').value;
+  if (dept) lista = lista.filter(s => s.departamento === dept);
+
+  // Filtro búsqueda
+  const q = (document.getElementById('search-input').value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (q) lista = lista.filter(s =>
+    (s.nombre||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q) ||
+    (s.tipo||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)
+  );
+
+  // Ordenar: aprobados primero, luego fecha
+  lista.sort((a,b) => {
+    if (a.estado === 'aprobado' && b.estado !== 'aprobado') return -1;
+    if (b.estado === 'aprobado' && a.estado !== 'aprobado') return 1;
+    return (b.fechaEntrega||b.fecha||'') > (a.fechaEntrega||a.fecha||'') ? 1 : -1;
+  });
+
+  const tbody = document.getElementById('tabla-body');
+  if (!lista.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay EPIs ' + (_tabActual === 'aprobado' ? 'pendientes de entregar' : _tabActual === 'entregado' ? 'entregados' : '') + '</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(s => {
+    const fechaAprobacion = formatFecha(s.fecha);
+    const tagCls = s.estado === 'aprobado' ? 'tag-aprobado' : 'tag-entregado';
+    const tagLabel = s.estado === 'aprobado' ? 'Por entregar' : '✓ Entregado';
+    const acciones = s.estado === 'aprobado'
+      ? `<button class="btn-entregar" onclick="abrirModalFirma('${s.dni}',${s.idx})">✍️ Entregar</button>`
+      : `<button class="btn-ver-firma" onclick="verFirma('${s.dni}',${s.idx})">👁 Ver firma</button>`;
+    return `<tr>
+      <td><strong>${esc(s.nombre)}</strong><br><span style="color:#999;font-size:11px">${s.dni}</span></td>
+      <td style="font-size:12px">${esc(s.departamento)}</td>
+      <td>${esc(s.tipo||'—')}${s.talla?'<br><span style="color:#999;font-size:11px">Talla: '+esc(s.talla)+'</span>':''}</td>
+      <td style="color:#666;max-width:160px;font-size:12px">${esc(s.nota||'—')}</td>
+      <td style="white-space:nowrap;font-size:12px">${fechaAprobacion}</td>
+      <td><span class="tag ${tagCls}">${tagLabel}</span>${s.fechaEntrega?'<br><span style="color:#999;font-size:10px">'+formatFecha(s.fechaEntrega)+'</span>':''}</td>
+      <td style="white-space:nowrap">${acciones}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── FIRMA ─────────────────────────────────────────────────────────────────────
+let _canvas, _ctx, _drawing = false;
+
+function abrirModalFirma(dni, idx) {
+  const s = (_allData[dni]||[])[idx];
+  if (!s) return;
+  const t = _trabajadores.find(t => t.dni === dni);
+  const nombre = t ? t.nombre : dni;
+
+  _pendingEntrega = { dni, idx };
+
+  document.getElementById('modal-epi-info').innerHTML = `
+    <strong>${esc(nombre)} · ${dni}</strong>
+    ${esc(s.tipo||'')}${s.talla ? ' — Talla: ' + esc(s.talla) : ''}
+    ${s.nota ? '<br><span style="color:#666">' + esc(s.nota) + '</span>' : ''}
+  `;
+
+  document.getElementById('modal-firma').classList.add('show');
+
+  // Inicializar canvas
+  _canvas = document.getElementById('firma-canvas');
+  _ctx = _canvas.getContext('2d');
+  // Ajustar resolución
+  const rect = _canvas.getBoundingClientRect();
+  _canvas.width = rect.width * window.devicePixelRatio || 460;
+  _canvas.height = 160 * window.devicePixelRatio || 160;
+  _canvas.style.height = '160px';
+  _ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  _ctx.strokeStyle = '#1a1a1a';
+  _ctx.lineWidth = 2;
+  _ctx.lineCap = 'round';
+  _ctx.lineJoin = 'round';
+  limpiarFirma();
+  initFirmaEvents();
+  document.getElementById('btn-confirmar-entrega').disabled = true;
+}
+
+function cerrarModalFirma() {
+  document.getElementById('modal-firma').classList.remove('show');
+  _pendingEntrega = null;
+}
+
+function limpiarFirma() {
+  if (!_ctx || !_canvas) return;
+  _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
+  _ctx.fillStyle = '#fff';
+  _ctx.fillRect(0, 0, _canvas.width, _canvas.height);
+  // Línea guía
+  _ctx.strokeStyle = '#e0e0e0';
+  _ctx.lineWidth = 1;
+  _ctx.setLineDash([4,4]);
+  _ctx.beginPath();
+  const y = (_canvas.height / (window.devicePixelRatio||1)) * 0.7;
+  _ctx.moveTo(20, y);
+  _ctx.lineTo((_canvas.width / (window.devicePixelRatio||1)) - 20, y);
+  _ctx.stroke();
+  _ctx.setLineDash([]);
+  _ctx.strokeStyle = '#1a1a1a';
+  _ctx.lineWidth = 2;
+  _firmaVacia = true;
+  document.getElementById('btn-confirmar-entrega').disabled = true;
+}
+
+let _firmaVacia = true;
+
+function initFirmaEvents() {
+  _canvas.onmousedown  = e => { _drawing = true; startDraw(e); };
+  _canvas.onmousemove  = e => { if (_drawing) draw(e); };
+  _canvas.onmouseup    = () => { _drawing = false; _ctx.beginPath(); };
+  _canvas.onmouseleave = () => { _drawing = false; _ctx.beginPath(); };
+  _canvas.ontouchstart = e => { e.preventDefault(); _drawing = true; startDraw(e.touches[0]); };
+  _canvas.ontouchmove  = e => { e.preventDefault(); if (_drawing) draw(e.touches[0]); };
+  _canvas.ontouchend   = () => { _drawing = false; _ctx.beginPath(); };
+}
+
+function getPos(e) {
+  const rect = _canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function startDraw(e) {
+  const p = getPos(e);
+  _ctx.beginPath();
+  _ctx.moveTo(p.x, p.y);
+}
+
+function draw(e) {
+  const p = getPos(e);
+  _ctx.lineTo(p.x, p.y);
+  _ctx.stroke();
+  if (_firmaVacia) {
+    _firmaVacia = false;
+    document.getElementById('btn-confirmar-entrega').disabled = false;
+  }
+}
+
+async function confirmarEntrega() {
+  if (!_pendingEntrega || _firmaVacia) return;
+  const { dni, idx } = _pendingEntrega;
+  const firmaDataURL = _canvas.toDataURL('image/png');
+
+  try {
+    const docRef = db.collection('epis').doc('solicitudes');
+    const snap = await docRef.get();
+    const all = snap.exists ? snap.data() : {};
+    if (!all[dni] || all[dni][idx] === undefined) return;
+
+    all[dni][idx].estado = 'entregado';
+    all[dni][idx].firma = firmaDataURL;
+    all[dni][idx].fechaEntrega = new Date().toISOString().slice(0,10);
+    all[dni][idx].entregadoPor = _usuario.nombre;
+
+    await docRef.set(all);
+    cerrarModalFirma();
+    toast('✅ EPI entregado y firma registrada');
+  } catch(e) {
+    toast('⚠️ Error: ' + e.message);
+  }
+}
+
+function verFirma(dni, idx) {
+  const s = (_allData[dni]||[])[idx];
+  if (!s || !s.firma) { toast('No hay firma registrada'); return; }
+  const t = _trabajadores.find(t => t.dni === dni);
+  const nombre = t ? t.nombre : dni;
+  document.getElementById('ver-firma-info').textContent =
+    nombre + ' · ' + esc(s.tipo||'') + (s.fechaEntrega ? ' · Entregado: ' + formatFecha(s.fechaEntrega) : '');
+  document.getElementById('ver-firma-img').src = s.firma;
+  document.getElementById('modal-ver-firma').classList.add('show');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function formatFecha(f) {
+  if (!f) return '—';
+  if (f.includes('-')) return new Date(f).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return f;
+}
+function esc(s){ return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+document.getElementById('inp-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('inp-user').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('inp-pass').focus(); });
+</script>
+</body>
+</html>

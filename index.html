@@ -556,6 +556,16 @@ const db = firebase.firestore();
           <div class="card-desc">Gestiona líneas, puestos y departamentos del cuadrante.</div>
           <div class="card-arrow">›</div>
         </a>
+
+        <a class="portal-card" id="card-recepcion" href="recepcion_epi.html" style="display:none">
+          <div class="card-icon">📦</div>
+          <div>
+            <div class="card-label">Logística</div>
+            <div class="card-name">Recepción EPIs</div>
+          </div>
+          <div class="card-desc">Gestiona la entrega de EPIs aprobados y registra firmas.</div>
+          <div class="card-arrow">›</div>
+        </a>
       </div>
 
       <button class="btn-logout" onclick="doLogout()">Cerrar sesión</button>
@@ -573,6 +583,7 @@ const db = firebase.firestore();
 // Añadir aquí los responsables: { user, pass, nombre, departamento }
 const RESPONSABLES = [
   { user: 'admin',        pass: 'ubesol2026',  nombre: 'Administrador',              departamento: 'Administración',  dept: 'admin' },
+  { user: 'recepcion',    pass: 'rec2026',     nombre: 'Recepción',                  departamento: 'Recepción',       dept: 'recepcion' },
   { user: 'envasado',     pass: 'env2026',     nombre: 'Responsable Envasado',       departamento: 'Envasado',        dept: 'envasado' },
   { user: 'elaboracion',  pass: 'elab2026',    nombre: 'Responsable Elaboración',    departamento: 'Elaboración',     dept: 'elaboracion' },
   { user: 'almacen',      pass: 'alm2026',     nombre: 'Responsable Almacén',        departamento: 'Almacén',         dept: 'almacen' },
@@ -662,18 +673,22 @@ async function contarEpisPendientes(responsable) {
 }
 
 function showPortal(responsable) {
+  // Si es recepción, redirigir directamente
+  if (responsable.dept === 'recepcion') {
+    window.location.href = 'recepcion_epi.html';
+    return;
+  }
   document.getElementById('login-section').style.display = 'none';
   document.getElementById('portal-name').textContent = responsable.nombre;
   document.getElementById('portal-dept').textContent = responsable.departamento;
-  // Actualizar enlace al cuadrante con el dept del responsable
   const dept = responsable.dept || 'envasado';
   document.getElementById('card-cuadrante').href = 'ubesol_envasado.html?dept=' + dept;
   document.getElementById('card-extras').href = 'horas_extras.html?dept=' + dept;
   document.getElementById('card-dashboard-extras').href = 'dashboard_extras.html?dept=' + dept;
-  // Mostrar tarjetas solo para admin
   const isAdmin = (dept === 'admin' || responsable.user === 'admin');
   document.getElementById('card-trabajadores').style.display = '';
   document.getElementById('card-config').style.display = isAdmin ? '' : 'none';
+  document.getElementById('card-recepcion').style.display = isAdmin ? '' : 'none';
   contarEpisPendientes(responsable);
   document.getElementById('portal-section').classList.add('active');
 }

@@ -766,16 +766,10 @@ calWorkers = {}, calfqWorkers = {}, calmicroWorkers = {};
 calmatWorkers = {}, mcWorkers = {}, soplWorkers = {};
 
 function getWorkersForDept(dept) {
-  // Normalizar: todas las variantes de Calidad van juntas
   const normDeptLocal = (d) => (d||'').toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
   const dNorm = normDeptLocal(dept);
-  const isCalidadTab = dNorm.startsWith('calidad');
-  return allWorkers.filter(w => {
-    const wNorm = normDeptLocal(w.departamento);
-    if (isCalidadTab) return wNorm.startsWith('calidad');
-    return wNorm === dNorm;
-  });
+  return allWorkers.filter(w => normDeptLocal(w.departamento) === dNorm);
 }
 
 function rebuildUsedNames() {
