@@ -54,6 +54,33 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .tag-aprobado{background:#e8f5e9;color:#1b5e20;border:1px solid #a5d6a7;}
 .tag-entregado{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}
 
+/* ── CHECKBOXES ── */
+.cb-row { width:36px; text-align:center; }
+input[type=checkbox].cb-epi { width:16px; height:16px; cursor:pointer; accent-color:#1a3a2a; }
+tbody tr.selected { background:#f0faf4 !important; }
+
+/* ── BARRA SELECCIÓN ── */
+.sel-bar {
+  display:none; align-items:center; gap:12px;
+  background:#1a3a2a; color:white;
+  padding:10px 16px; border-bottom:1px solid #0d2418;
+  font-size:13px; font-weight:600;
+}
+.sel-bar.show { display:flex; }
+.sel-bar-info { flex:1; }
+.btn-entregar-sel {
+  background:white; color:#1a3a2a; border:none;
+  border-radius:6px; padding:7px 16px; font-size:12px;
+  font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;
+}
+.btn-entregar-sel:hover { background:#e8f5e9; }
+.btn-deselect {
+  background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.3);
+  border-radius:6px; padding:7px 12px; font-size:12px;
+  font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+}
+.btn-deselect:hover { background:rgba(255,255,255,0.25); }
+
 /* ── BOTONES ── */
 .btn-entregar{background:#1a3a2a;color:white;border:none;border-radius:5px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
 .btn-entregar:hover{background:#0d2418;}
@@ -165,8 +192,17 @@ const db=firebase.firestore();
       </select>
       <input class="search-input" id="search-input" placeholder="🔍 Buscar trabajador o EPI..." oninput="renderTabla()">
     </div>
+
+    <!-- Barra de selección múltiple -->
+    <div class="sel-bar" id="sel-bar">
+      <div class="sel-bar-info" id="sel-bar-info">0 EPIs seleccionados</div>
+      <button class="btn-deselect" onclick="limpiarSeleccion()">✕ Cancelar</button>
+      <button class="btn-entregar-sel" onclick="abrirModalFirmaMulti()">✍️ Entregar seleccionados</button>
+    </div>
+
     <table>
       <thead><tr>
+        <th class="cb-row"></th>
         <th>Trabajador</th>
         <th>Departamento</th>
         <th>EPI solicitado</th>
@@ -228,7 +264,8 @@ let _unsubscribe = null;
 let _allData = {};
 let _trabajadores = [];
 let _tabActual = 'aprobado';
-let _pendingEntrega = null; // { dni, idx }
+let _pendingEntrega = null; // { items:[{dni,idx}], dni, nombre }
+let _seleccion = []; // [{dni, idx}] EPIs seleccionados
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 (function(){
@@ -340,10 +377,15 @@ function renderTabla() {
     const fechaAprobacion = formatFecha(s.fecha);
     const tagCls = s.estado === 'aprobado' ? 'tag-aprobado' : 'tag-entregado';
     const tagLabel = s.estado === 'aprobado' ? 'Por entregar' : '✓ Entregado';
+    const isSelected = _seleccion.some(x => x.dni === s.dni && x.idx === s.idx);
+    const cbHtml = s.estado === 'aprobado'
+      ? `<input type="checkbox" class="cb-epi" ${isSelected?'checked':''} onchange="toggleSeleccion('${s.dni}',${s.idx},'${esc(s.nombre)}',this)">`
+      : '';
     const acciones = s.estado === 'aprobado'
-      ? `<button class="btn-entregar" onclick="abrirModalFirma('${s.dni}',${s.idx})">✍️ Entregar</button>`
+      ? `<button class="btn-entregar" onclick="abrirModalFirmaUno('${s.dni}',${s.idx})">✍️ Entregar</button>`
       : `<button class="btn-ver-firma" onclick="verFirma('${s.dni}',${s.idx})">👁 Ver firma</button>`;
-    return `<tr>
+    return `<tr class="${isSelected?'selected':''}">
+      <td class="cb-row">${cbHtml}</td>
       <td><strong>${esc(s.nombre)}</strong><br><span style="color:#999;font-size:11px">${s.dni}</span></td>
       <td style="font-size:12px">${esc(s.departamento)}</td>
       <td>${esc(s.tipo||'—')}${s.talla?'<br><span style="color:#999;font-size:11px">Talla: '+esc(s.talla)+'</span>':''}</td>
@@ -355,34 +397,94 @@ function renderTabla() {
   }).join('');
 }
 
-// ── FIRMA ─────────────────────────────────────────────────────────────────────
-let _canvas, _ctx, _drawing = false;
+// ── SELECCIÓN MÚLTIPLE ────────────────────────────────────────────────────────
+let _canvas, _ctx, _drawing = false, _firmaVacia = true;
+function toggleSeleccion(dni, idx, nombre, cb) {
+  const existe = _seleccion.findIndex(x => x.dni === dni && x.idx === idx);
 
-function abrirModalFirma(dni, idx) {
+  if (cb.checked) {
+    // Comprobar que no mezcle trabajadores distintos
+    if (_seleccion.length > 0 && _seleccion[0].dni !== dni) {
+      cb.checked = false;
+      const nombreActual = (_trabajadores.find(t => t.dni === _seleccion[0].dni)||{}).nombre || _seleccion[0].dni;
+      toast('⚠️ Solo puedes seleccionar EPIs del mismo trabajador. Selección actual: ' + nombreActual);
+      return;
+    }
+    if (existe === -1) _seleccion.push({ dni, idx, nombre });
+  } else {
+    if (existe !== -1) _seleccion.splice(existe, 1);
+  }
+  actualizarBarraSeleccion();
+  // Actualizar clase selected en la fila sin re-renderizar toda la tabla
+  const rows = document.querySelectorAll('#tabla-body tr');
+  rows.forEach(tr => {
+    const cbEl = tr.querySelector('.cb-epi');
+    if (cbEl) tr.classList.toggle('selected', cbEl.checked);
+  });
+}
+
+function actualizarBarraSeleccion() {
+  const bar = document.getElementById('sel-bar');
+  const info = document.getElementById('sel-bar-info');
+  if (_seleccion.length > 0) {
+    bar.classList.add('show');
+    const nombre = _seleccion[0].nombre || _seleccion[0].dni;
+    info.textContent = _seleccion.length + ' EPI' + (_seleccion.length > 1 ? 's' : '') + ' seleccionado' + (_seleccion.length > 1 ? 's' : '') + ' — ' + nombre;
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+function limpiarSeleccion() {
+  _seleccion = [];
+  actualizarBarraSeleccion();
+  renderTabla();
+}
+
+// ── FIRMA — UN SOLO EPI ───────────────────────────────────────────────────────
+function abrirModalFirmaUno(dni, idx) {
   const s = (_allData[dni]||[])[idx];
   if (!s) return;
   const t = _trabajadores.find(t => t.dni === dni);
   const nombre = t ? t.nombre : dni;
+  _pendingEntrega = { items: [{ dni, idx }], nombre };
+  _abrirModalFirma(nombre, [s]);
+}
 
-  _pendingEntrega = { dni, idx };
+// ── FIRMA — MÚLTIPLES EPIs ────────────────────────────────────────────────────
+function abrirModalFirmaMulti() {
+  if (!_seleccion.length) return;
+  const dni = _seleccion[0].dni;
+  const t = _trabajadores.find(t => t.dni === dni);
+  const nombre = t ? t.nombre : dni;
+  const items = _seleccion.map(x => ({ ...((_allData[x.dni]||[])[x.idx] || {}), dni: x.dni, idx: x.idx }));
+  _pendingEntrega = { items: _seleccion.map(x => ({ dni: x.dni, idx: x.idx })), nombre };
+  _abrirModalFirma(nombre, items);
+}
+
+// ── MODAL FIRMA COMÚN ─────────────────────────────────────────────────────────
+function _abrirModalFirma(nombre, items) {
+  const listaHtml = items.map(e =>
+    `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #f0f0f0">
+      <span style="font-size:16px">🦺</span>
+      <span><strong>${esc(e.tipo||'EPI')}</strong>${e.talla?' <span style="color:#999">— '+esc(e.talla)+'</span>':''}</span>
+    </div>`
+  ).join('');
 
   document.getElementById('modal-epi-info').innerHTML = `
-    <strong>${esc(nombre)} · ${dni}</strong>
-    ${esc(s.tipo||'')}${s.talla ? ' — Talla: ' + esc(s.talla) : ''}
-    ${s.nota ? '<br><span style="color:#666">' + esc(s.nota) + '</span>' : ''}
+    <strong style="font-size:13px;display:block;margin-bottom:8px">${esc(nombre)}</strong>
+    ${listaHtml}
   `;
-
   document.getElementById('modal-firma').classList.add('show');
 
-  // Inicializar canvas
   _canvas = document.getElementById('firma-canvas');
   _ctx = _canvas.getContext('2d');
-  // Ajustar resolución
-  const rect = _canvas.getBoundingClientRect();
-  _canvas.width = rect.width * window.devicePixelRatio || 460;
-  _canvas.height = 160 * window.devicePixelRatio || 160;
+  const dpr = window.devicePixelRatio || 1;
+  const w = _canvas.offsetWidth || 460;
+  _canvas.width = w * dpr;
+  _canvas.height = 160 * dpr;
   _canvas.style.height = '160px';
-  _ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  _ctx.scale(dpr, dpr);
   _ctx.strokeStyle = '#1a1a1a';
   _ctx.lineWidth = 2;
   _ctx.lineCap = 'round';
@@ -418,8 +520,6 @@ function limpiarFirma() {
   document.getElementById('btn-confirmar-entrega').disabled = true;
 }
 
-let _firmaVacia = true;
-
 function initFirmaEvents() {
   _canvas.onmousedown  = e => { _drawing = true; startDraw(e); };
   _canvas.onmousemove  = e => { if (_drawing) draw(e); };
@@ -453,23 +553,29 @@ function draw(e) {
 
 async function confirmarEntrega() {
   if (!_pendingEntrega || _firmaVacia) return;
-  const { dni, idx } = _pendingEntrega;
   const firmaDataURL = _canvas.toDataURL('image/png');
+  const fechaEntrega = new Date().toISOString().slice(0,10);
 
   try {
     const docRef = db.collection('epis').doc('solicitudes');
     const snap = await docRef.get();
     const all = snap.exists ? snap.data() : {};
-    if (!all[dni] || all[dni][idx] === undefined) return;
 
-    all[dni][idx].estado = 'entregado';
-    all[dni][idx].firma = firmaDataURL;
-    all[dni][idx].fechaEntrega = new Date().toISOString().slice(0,10);
-    all[dni][idx].entregadoPor = _usuario.nombre;
+    // Marcar todos los items como entregados
+    for (const { dni, idx } of _pendingEntrega.items) {
+      if (all[dni] && all[dni][idx] !== undefined) {
+        all[dni][idx].estado = 'entregado';
+        all[dni][idx].firma = firmaDataURL;
+        all[dni][idx].fechaEntrega = fechaEntrega;
+        all[dni][idx].entregadoPor = _usuario.nombre;
+      }
+    }
 
     await docRef.set(all);
+    const n = _pendingEntrega.items.length;
     cerrarModalFirma();
-    toast('✅ EPI entregado y firma registrada');
+    limpiarSeleccion();
+    toast('✅ ' + n + ' EPI' + (n > 1 ? 's entregados' : ' entregado') + ' — firma registrada');
   } catch(e) {
     toast('⚠️ Error: ' + e.message);
   }

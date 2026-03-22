@@ -1006,7 +1006,17 @@ async function doLogin() {
   }
 
   // Buscar en workers cargados
-  const worker = allWorkers.find(w => w.dni === dni);
+  let worker = allWorkers.find(w => (w.dni||'').trim().toUpperCase() === dni);
+
+  // Si no encuentra, reintentar cargando desde Firebase por si el trabajador es nuevo
+  if (!worker) {
+    btn.textContent = 'Verificando...';
+    btn.disabled = true;
+    await loadWorkers();
+    btn.textContent = 'Entrar';
+    btn.disabled = false;
+    worker = allWorkers.find(w => (w.dni||'').trim().toUpperCase() === dni);
+  }
 
   // Si no hay workers cargados (sin conexión), intentar con sesión guardada
   if (!allWorkers.length) {
