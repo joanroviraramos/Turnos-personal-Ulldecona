@@ -95,8 +95,8 @@ const db=firebase.firestore();
   </div>
   <div class="panel">
     <div class="toolbar">
-      <button class="tab-btn active" id="tab-todas"     onclick="setTab('todas')">Todas</button>
-      <button class="tab-btn"        id="tab-pendiente" onclick="setTab('pendiente')">Pendientes</button>
+      <button class="tab-btn active" id="tab-pendiente" onclick="setTab('pendiente')">Pendientes</button>
+      <button class="tab-btn"        id="tab-todas"     onclick="setTab('todas')">Todas</button>
       <button class="tab-btn"        id="tab-aprobado"  onclick="setTab('aprobado')">Aprobadas</button>
       <button class="tab-btn"        id="tab-rechazado" onclick="setTab('rechazado')">Rechazadas</button>
       <input class="search-input" id="search-input" placeholder="Buscar trabajador o EPI..." oninput="renderTabla()">
@@ -113,7 +113,7 @@ const db=firebase.firestore();
 <div class="toast" id="toast"></div>
 
 <script>
-let _responsable=null, _unsubscribe=null, _tabActual='todas', _allData={}, _trabajadores=[];
+let _responsable=null, _unsubscribe=null, _tabActual='pendiente', _allData={}, _trabajadores=[];
 
 const RESPONSABLES=[
   {user:'admin',       pass:'ubesol2026', nombre:'Administrador',             departamento:'Administración', dept:'admin'},
@@ -208,7 +208,16 @@ function renderTabla(){
   const tbody=document.getElementById('tabla-body');
   if(!lista.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No hay solicitudes</td></tr>';return;}
   tbody.innerHTML=lista.map(s=>{
-    const fecha=s.fecha?new Date(s.fecha).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+    const fecha = s.fecha ? (() => {
+      // Soportar formato ISO (2026-03-22) y formato antiguo (22/03)
+      if (s.fecha.includes('-')) {
+        return new Date(s.fecha).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+      } else if (s.fecha.includes('/')) {
+        const parts = s.fecha.split('/');
+        return parts[0] + '/' + parts[1] + (parts[2] ? '/' + parts[2] : '');
+      }
+      return s.fecha;
+    })() : '—';
     const tagCls=s.estado==='pendiente'?'tag-pend':s.estado==='aprobado'?'tag-ok':'tag-rech';
     const tagLabel=s.estado==='pendiente'?'Pendiente':s.estado==='aprobado'?'Aprobada':'Rechazada';
     const acc=s.estado==='pendiente'

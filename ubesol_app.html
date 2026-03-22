@@ -1686,7 +1686,7 @@ function renderEpi() {
       return `<div class="epi-item" style="border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px">
         <div class="epi-ico" style="font-size:16px">🦺</div>
         <div class="epi-info">
-          <div class="epi-name">${e.tipo}${e.talla ? ' <span style="color:var(--text-3);font-weight:400">— ${e.talla}</span>' : ''}</div>
+          <div class="epi-name">${e.tipo}${e.talla ? ` <span style="color:var(--text-3);font-weight:400">— ${e.talla}</span>` : ''}</div>
           ${e.nota ? `<div class="epi-meta">${e.nota}</div>` : ''}
           <span class="tag ${cfg.cls}">${cfg.label}${extra}</span>
         </div>
@@ -1755,7 +1755,8 @@ function deletePedidoLinea(i) {
 function enviarPedido() {
   const validas = pedidoLineas.filter(l => l.tipo && (l.tipo !== 'Otros' || l.tipoCustom));
   if (!validas.length) { showToast('Añade al menos un EPI y especifica cuál si es "Otros"'); return; }
-  const fecha = fmtDateShort(new Date());
+  const hoy = new Date();
+  const fecha = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
   const pedidoId = Date.now().toString();
   const epis = getEpis();
   validas.forEach(l => {
