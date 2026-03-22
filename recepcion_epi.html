@@ -157,7 +157,7 @@ const db=firebase.firestore();
 <!-- PANEL PRINCIPAL -->
 <div id="panel-section" style="display:none;">
   <div class="top-header">
-    <a class="btn-portal" href="index.html">‹ Portal</a>
+    <div style="min-width:100px"></div>
     <div class="header-inner">
       <div style="font-size:15px;font-weight:700;">Recepción — Entrega de EPIs</div>
       <div style="font-size:11px;opacity:.7;" id="panel-user-label">—</div>
@@ -380,7 +380,7 @@ function renderTabla() {
     const tagLabel = s.estado === 'aprobado' ? 'Por entregar' : '✓ Entregado';
     const isSelected = _seleccion.some(x => x.dni === s.dni && x.idx === s.idx);
     const cbHtml = s.estado === 'aprobado'
-      ? `<input type="checkbox" class="cb-epi" ${isSelected?'checked':''} onchange="toggleSeleccion('${s.dni}',${s.idx},'${esc(s.nombre)}',this)">`
+      ? `<input type="checkbox" class="cb-epi" ${isSelected?'checked':''} data-dni="${s.dni}" data-idx="${s.idx}" onchange="toggleSeleccion(this)">`
       : '';
     const acciones = s.estado === 'aprobado'
       ? `<button class="btn-entregar" onclick="abrirModalFirmaUno('${s.dni}',${s.idx})">✍️ Entregar</button>`
@@ -400,11 +400,14 @@ function renderTabla() {
 
 // ── SELECCIÓN MÚLTIPLE ────────────────────────────────────────────────────────
 let _canvas, _ctx, _drawing = false, _firmaVacia = true;
-function toggleSeleccion(dni, idx, nombre, cb) {
+function toggleSeleccion(cb) {
+  const dni = cb.dataset.dni;
+  const idx = parseInt(cb.dataset.idx);
+  const t = _trabajadores.find(t => t.dni === dni);
+  const nombre = t ? t.nombre : dni;
   const existe = _seleccion.findIndex(x => x.dni === dni && x.idx === idx);
 
   if (cb.checked) {
-    // Comprobar que no mezcle trabajadores distintos
     if (_seleccion.length > 0 && _seleccion[0].dni !== dni) {
       cb.checked = false;
       const nombreActual = (_trabajadores.find(t => t.dni === _seleccion[0].dni)||{}).nombre || _seleccion[0].dni;
@@ -416,7 +419,6 @@ function toggleSeleccion(dni, idx, nombre, cb) {
     if (existe !== -1) _seleccion.splice(existe, 1);
   }
   actualizarBarraSeleccion();
-  // Actualizar clase selected en la fila sin re-renderizar toda la tabla
   const rows = document.querySelectorAll('#tabla-body tr');
   rows.forEach(tr => {
     const cbEl = tr.querySelector('.cb-epi');
