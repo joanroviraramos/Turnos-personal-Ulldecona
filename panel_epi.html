@@ -62,12 +62,8 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 .login-err{color:#b71c1c;font-size:12px;margin-top:8px;display:none;}
 .login-err.show{display:block;}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig={apiKey:"AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",authDomain:"maverick-turnos-81d4a.firebaseapp.com",projectId:"maverick-turnos-81d4a",storageBucket:"maverick-turnos-81d4a.firebasestorage.app",messagingSenderId:"170123467344",appId:"1:170123467344:web:142eee4473940ebd924f55"};
-if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -159,18 +155,26 @@ function mostrarPanel(r){
   document.getElementById('panel-section').style.display='';
   document.getElementById('panel-dept-label').textContent=r.departamento;
 
-  // Cargar trabajadores desde Firebase primero
-  db.collection('trabajadores').get().then(snap=>{
-    _trabajadores=[];
-    snap.forEach(doc=>_trabajadores.push(doc.data()));
-    // Luego escuchar EPIs en tiempo real
-    if(_unsubscribe)_unsubscribe();
-    _unsubscribe=db.collection('epis').doc('solicitudes').onSnapshot(function(snap){
-      _allData=snap.exists?snap.data():{};
-      actualizarContadores();
-      renderTabla();
-    },function(e){toast('⚠️ Error: '+e.message);});
-  }).catch(e=>toast('⚠️ Error cargando trabajadores: '+e.message));
+  // Cargar trabajadores y EPIs desde API
+  cargarDatos();
+  // Polling cada 30 segundos para simular tiempo real
+  if(_unsubscribe) clearInterval(_unsubscribe);
+  _unsubscribe = setInterval(cargarDatos, 30000);
+}
+
+async function cargarDatos(){
+  try {
+    // Cargar trabajadores
+    const respT = await fetch(API_BASE + '/trabajadores');
+    _trabajadores = await respT.json();
+    // Cargar EPIs
+    const respE = await fetch(API_BASE + '/epis');
+    _allData = await respE.json();
+    actualizarContadores();
+    renderTabla();
+  } catch(e) {
+    toast('⚠️ Error cargando datos: ' + e.message);
+  }
 }
 
 function getSolicitudes(){
@@ -244,28 +248,27 @@ function renderTabla(){
 
 async function cambiarEstado(dni,idx,nuevoEstado){
   try{
-    const docRef=db.collection('epis').doc('solicitudes');
-    const snap=await docRef.get();
-    const all=snap.exists?snap.data():{};
-    if(!all[dni]||all[dni][idx]===undefined)return;
-    all[dni][idx].estado=nuevoEstado;
-    await docRef.set(all);
+    const resp = await fetch(API_BASE + '/epis/estado', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({dni, idx, estado: nuevoEstado})
+    });
+    if(!resp.ok) throw new Error('Error HTTP ' + resp.status);
     const msg=nuevoEstado==='aprobado'?'✅ Solicitud aprobada':nuevoEstado==='rechazado'?'❌ Solicitud rechazada':'↺ Solicitud reabierta';
     toast(msg);
+    await cargarDatos();
   }catch(e){toast('⚠️ Error: '+e.message);}
 }
 
 async function eliminarSolicitud(dni,idx){
   if(!confirm('¿Eliminar esta solicitud? Desaparecerá también de la app del trabajador.'))return;
   try{
-    const docRef=db.collection('epis').doc('solicitudes');
-    const snap=await docRef.get();
-    const all=snap.exists?snap.data():{};
-    if(!all[dni])return;
-    all[dni].splice(idx,1);
-    if(all[dni].length===0)delete all[dni];
-    await docRef.set(all);
+    const resp = await fetch(API_BASE + '/epis/' + encodeURIComponent(dni) + '/' + idx, {
+      method: 'DELETE'
+    });
+    if(!resp.ok) throw new Error('Error HTTP ' + resp.status);
     toast('🗑 Solicitud eliminada');
+    await cargarDatos();
   }catch(e){toast('⚠️ Error: '+e.message);}
 }
 
