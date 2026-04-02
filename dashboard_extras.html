@@ -106,19 +106,8 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
-  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
-  projectId: "maverick-turnos-81d4a",
-  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
-  messagingSenderId: "170123467344",
-  appId: "1:170123467344:web:142eee4473940ebd924f55"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -235,17 +224,17 @@ function cargarDatos() {
   const anio = document.getElementById('sel-anio').value;
   document.getElementById('main-content').innerHTML = '<div class="loading">Cargando datos...</div>';
 
-  db.collection('horas_extras').get().then(snap => {
+  fetch(API_BASE + '/horas_extras').then(r => r.json()).then(rows => {
     allDocs = [];
-    snap.forEach(doc => {
-      const d = doc.data();
+    (rows || []).forEach(row => {
+      const d = row.datos || row;
       if (d && d.fecha && d.fecha.startsWith(anio)) allDocs.push(d);
     });
     document.getElementById('total-docs').textContent = allDocs.length + ' días publicados en ' + anio;
     document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
     renderDashboard();
   }).catch(e => {
-    document.getElementById('main-content').innerHTML = '<div class="empty">Error al cargar datos de Firebase</div>';
+    document.getElementById('main-content').innerHTML = '<div class="empty">Error al cargar datos del servidor</div>';
   });
 }
 
