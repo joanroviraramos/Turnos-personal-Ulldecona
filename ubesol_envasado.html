@@ -502,20 +502,8 @@ td.name-cell { overflow: visible !important; }
 
 </style>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
-  authDomain: "maverick-turnos-81d4a-81d4a.firebaseapp.com",
-  projectId: "maverick-turnos-81d4a",
-  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
-  messagingSenderId: "170123467344",
-  appId: "1:170123467344:web:c783702e586c2c071a12a1"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -789,13 +777,10 @@ function rebuildUsedNames() {
 
 async function loadWorkers() {
   try {
-    const snap = await db.collection('trabajadores').get();
-    if (!snap.empty) {
-      allWorkers = [];
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.nombre && d.dni) allWorkers.push({nombre:d.nombre, dni:d.dni, departamento:d.departamento||''});
-      });
+    const resp = await fetch(API_BASE + '/trabajadores');
+    const rows = await resp.json();
+    if (rows.length) {
+      allWorkers = rows.filter(d => d.nombre && d.dni).map(d => ({nombre:d.nombre, dni:d.dni, departamento:d.departamento||''}));
       localStorage.setItem('ubesol_workers_cache', JSON.stringify(allWorkers));
     } else {
       const cache = localStorage.getItem('ubesol_workers_cache');
@@ -917,16 +902,19 @@ let isAdminMode = false; // se actualiza al leer el param dept // se carga de Fi
 
 async function loadConfig() {
   try {
-    const doc = await db.collection('config').doc('estructura').get();
-    if (doc.exists) {
-      _cfg = doc.data();
-      const nLineas = (_cfg.envasado && _cfg.envasado.lineas) ? _cfg.envasado.lineas.length : 0;
-      console.log('[CONFIG] OK - Líneas en Firebase:', nLineas, '| IDs:', (_cfg.envasado&&_cfg.envasado.lineas||[]).map(l=>l.id).join(','));
-    } else {
-      console.log('[CONFIG] No existe doc en Firebase — usando defaults hardcoded');
+    const resp = await fetch(API_BASE + '/config_estructura');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data) {
+        _cfg = data;
+        const nLineas = (_cfg.envasado && _cfg.envasado.lineas) ? _cfg.envasado.lineas.length : 0;
+        console.log('[CONFIG] OK - Líneas cargadas:', nLineas);
+      } else {
+        console.log('[CONFIG] No existe config — usando defaults hardcoded');
+      }
     }
   } catch(e) {
-    console.error('[CONFIG] Error Firebase:', e.message);
+    console.error('[CONFIG] Error cargando config:', e.message);
   }
   applyConfig();
 }
@@ -1341,28 +1329,24 @@ function guardarManual() {
     console.error('guardarManual error:', e);
   }
 
-  // 2. Sincronizar Firebase: borrar TODO lo que no está en local, subir lo que sí
+  // 2. Sincronizar con API: subir todos los cuadrantes locales
   const count = Object.keys(semanasLocales).length;
 
-  db.collection('cuadrantes').get().then(function(snap) {
-    // Borrar uno a uno (más fiable que batch para colecciones pequeñas)
-    const promesas = [];
-    snap.forEach(function(doc) {
-      if (!semanasLocales[doc.id]) {
-        promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
-      }
+  const promesas = Object.entries(semanasLocales).map(function([docId, payload]) {
+    return fetch(API_BASE + '/cuadrantes/' + encodeURIComponent(docId), {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
     });
-    // Subir/actualizar los documentos locales
-    Object.entries(semanasLocales).forEach(function([docId, payload]) {
-      promesas.push(db.collection('cuadrantes').doc(docId).set(payload));
-    });
-    return Promise.all(promesas);
-  }).then(function() {
-    toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' sincronizada' + (count !== 1 ? 's' : '') + ' con Firebase ✓');
-  }).catch(function(e) {
-    console.warn('Firebase sync error:', e);
-    toast('⚠️ Error al sincronizar: ' + e.message);
   });
+  Promise.all(promesas)
+    .then(function() {
+      toast('💾 ' + count + ' semana' + (count !== 1 ? 's' : '') + ' sincronizada' + (count !== 1 ? 's' : '') + ' con servidor ✓');
+    })
+    .catch(function(e) {
+      console.warn('API sync error:', e);
+      toast('⚠️ Error al sincronizar: ' + e.message);
+    });
 
   toast(count === 0
     ? '💾 Limpiando Firebase...'
@@ -1738,16 +1722,20 @@ function publicar() {
     const historicoKey = 'ubesol_historico_' + payload.ano + '_s' + String(payload.semana).padStart(2,'0');
     localStorage.setItem(historicoKey, json);
 
-    // Guardar en Firebase para sincronización entre dispositivos
+    // Guardar en servidor para sincronización entre dispositivos
     try {
       const deptKey = (payload.dept || currentTab || 'Envasado').toLowerCase()
         .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
         .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
       const semKey = payload.ano + '_s' + String(payload.semana).padStart(2,'0');
-      db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(payload)
-        .then(function(){ console.log('Publicado en Firebase: ' + deptKey + '_' + semKey); })
-        .catch(function(e){ console.warn('Firebase error:', e); });
-    } catch(e) { console.warn('Firebase sync error:', e); }
+      const docId = deptKey + '_' + semKey;
+      fetch(API_BASE + '/cuadrantes/' + encodeURIComponent(docId), {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      }).then(function(){ console.log('Publicado en servidor: ' + docId); })
+        .catch(function(e){ console.warn('API error:', e); });
+    } catch(e) { console.warn('API sync error:', e); }
 
     toast(duplicados.length > 0
       ? `⚠️ Cuadrante semana ${payload.semana} publicado con ${duplicados.length} duplicado(s)`
@@ -2209,32 +2197,42 @@ function clearStorage() {
       if (match) semKeysBorrados.push(match[1] + '_s' + match[2]);
     });
 
-    db.collection('cuadrantes').get().then(function(snap) {
-      const promesas = [];
-      snap.forEach(function(doc) {
-        const debeBorar = semKeysBorrados.some(semKey => doc.id.includes(semKey));
-        if (debeBorar) promesas.push(db.collection('cuadrantes').doc(doc.id).delete());
-      });
-      // Si quedan semanas en local, subirlas también
-      if (!estaActiva) {
-        autoSaveToKey(savedKey);
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
-          try {
-            const d = JSON.parse(localStorage.getItem(k));
-            if (!d || !d._version || !d.ano || !d.semana) continue;
-            const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
-              .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
-              .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
-            const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
-            promesas.push(db.collection('cuadrantes').doc(deptKey + '_' + semKey).set(d));
-          } catch(e) {}
-        }
+    // Borrar semanas del servidor
+    const promesasBorrar = semKeysBorrados.map(function(semKey) {
+      // Buscar el docId que contenga este semKey en cualquier dept
+      return fetch(API_BASE + '/cuadrantes?semKey=' + encodeURIComponent(semKey))
+        .then(r => r.json())
+        .then(function(docs) {
+          return Promise.all((docs||[]).map(function(doc) {
+            return fetch(API_BASE + '/cuadrantes/' + encodeURIComponent(doc.id), {method:'DELETE'});
+          }));
+        });
+    });
+    // Si quedan semanas en local, subirlas también
+    const promesasSubir = [];
+    if (!estaActiva) {
+      autoSaveToKey(savedKey);
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('ubesol_') || k.startsWith('ubesol_historico_') || k === 'ubesol_publicado') continue;
+        try {
+          const d = JSON.parse(localStorage.getItem(k));
+          if (!d || !d._version || !d.ano || !d.semana) continue;
+          const deptKey = (d.dept || currentTab || 'Envasado').toLowerCase()
+            .replace(/\s+/g,'').replace(/á/g,'a').replace(/é/g,'e')
+            .replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ñ/g,'n');
+          const semKey = d.ano + '_s' + String(d.semana).padStart(2,'0');
+          const docId = deptKey + '_' + semKey;
+          promesasSubir.push(fetch(API_BASE + '/cuadrantes/' + encodeURIComponent(docId), {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(d)
+          }));
+        } catch(e) {}
       }
-      return Promise.all(promesas);
-    }).then(function() {
-      console.log('Firebase: semanas borradas correctamente');
+    }
+    Promise.all([...promesasBorrar, ...promesasSubir]).then(function() {
+      console.log('Servidor: semanas borradas correctamente');
       setTimeout(function() {
         _autoSaveBlocked = false;
         if (estaActiva) loadWeekFromStorage(weekKey());
