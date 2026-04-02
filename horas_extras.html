@@ -143,19 +143,8 @@ input.nombre-input:focus { outline:none; border-color:#e65100; }
 
 </style>
 
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
-  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
-  projectId: "maverick-turnos-81d4a",
-  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
-  messagingSenderId: "170123467344",
-  appId: "1:170123467344:web:142eee4473940ebd924f55"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -614,7 +603,12 @@ function publicar() {
 
 function _doPublicar(p) {
   localStorage.setItem('ubesol_extras_'+p.fecha, JSON.stringify(p));
-  db.collection('horas_extras').doc('extras_'+p.fecha).set(p)
+  fetch(API_BASE + '/horas_extras', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({fecha: p.fecha, responsable: p.responsable, datos: p})
+  })
+    .then(r => r.json())
     .then(()=>{ toast('✅ Publicado: '+formatFecha(p.fecha)); cargarHistorial(); })
     .catch(e=>toast('⚠️ Error: '+e.message));
 }
@@ -633,9 +627,10 @@ function cargarFecha(fecha) {
     try { applyPayload(JSON.parse(raw)); document.getElementById('estado-txt').textContent='📂 Cargado local'; return; }
     catch(e){}
   }
-  db.collection('horas_extras').doc('extras_'+fecha).get()
-    .then(doc => {
-      if (doc.exists) { applyPayload(doc.data()); document.getElementById('estado-txt').textContent='☁️ Cargado Firebase'; }
+  fetch(API_BASE + '/horas_extras/' + fecha)
+    .then(r => r.json())
+    .then(data => {
+      if (data) { applyPayload(data); document.getElementById('estado-txt').textContent='☁️ Cargado servidor'; }
       else { initState(); renderAll(); document.getElementById('estado-txt').textContent='Sin datos para este día'; }
     })
     .catch(()=>{ initState(); renderAll(); });
@@ -731,16 +726,16 @@ function contarPersonasDept(d) {
 function cargarHistorial() {
   const list = document.getElementById('historial-list');
   list.innerHTML = '<div style="padding:16px;color:var(--faint);text-align:center">Cargando...</div>';
-  db.collection('horas_extras').orderBy('fecha','desc').limit(60).get()
-    .then(snap => {
-      if (snap.empty) { list.innerHTML='<div style="padding:16px;color:var(--faint);text-align:center">No hay días publicados aún</div>'; return; }
+  fetch(API_BASE + '/horas_extras')
+    .then(r => r.json())
+    .then(rows => {
+      if (!rows.length) { list.innerHTML='<div style="padding:16px;color:var(--faint);text-align:center">No hay días publicados aún</div>'; return; }
       let html='';
-      snap.forEach(doc => {
-        const d=doc.data(); const fecha=d.fecha||'';
-        // Filtrar por departamento
+      rows.forEach(row => {
+        const d = row.datos || {}; const fecha = row.fecha || '';
         if (!deptTienePersonas(d)) return;
         const total = contarPersonasDept(d);
-        if (total === 0) return; // no mostrar si no hay personas de este dept
+        if (total === 0) return;
         const dow=fecha?new Date(fecha+'T12:00:00').getDay():-1;
         const esFest=FESTIVOS_2026.has(fecha); const esSabL=SABADOS_LABORABLES.has(fecha);
         const tlabel=esFest?'🔴 Festivo':esSabL?'🟢 Sáb.lab.':dow===0?'🟣 Domingo':'🟠 Sábado';
@@ -750,7 +745,7 @@ function cargarHistorial() {
           <span class="fecha">${formatFecha(fecha)}</span>
           <span class="tipo-badge" style="background:${tbg};color:${tcol}">${tlabel}</span>
           <span style="color:var(--muted);font-size:11px">${total} persona${total!==1?'s':''}</span>
-          <span style="margin-left:auto;font-size:11px;color:#999">${d.responsable||''}</span>
+          <span style="margin-left:auto;font-size:11px;color:#999">${row.responsable||''}</span>
         </div>`;
       });
       list.innerHTML = html || '<div style="padding:16px;color:var(--faint);text-align:center">No hay días publicados para este departamento</div>';
@@ -784,10 +779,9 @@ let workersLoaded = false;
 
 async function loadWorkers() {
   try {
-    const snap = await db.collection('trabajadores').get();
-    if (!snap.empty) {
-      WORKERS_DATA = [];
-      snap.forEach(doc => WORKERS_DATA.push(doc.data()));
+    const resp = await fetch(API_BASE + '/trabajadores');
+    if (resp.ok) {
+      WORKERS_DATA = await resp.json();
     }
   } catch(e) {
     console.warn('Error cargando trabajadores:', e);
@@ -909,7 +903,7 @@ function makeAcInput(currentVal, deptId, onSelect) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-loadWorkers(); // Cargar trabajadores desde Firebase
+loadWorkers(); // Cargar trabajadores desde API
 initState();
 renderAll();
 const hoy=new Date();
