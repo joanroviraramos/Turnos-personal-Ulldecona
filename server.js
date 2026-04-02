@@ -114,96 +114,75 @@ app.post('/api/horas_extras', async (req, res) => {
   }
 });
 
-// ─── EPIS ─────────────────────────────────────────────────────────────────────
-
-// GET /api/epis — devuelve { "12345678A": [{tipo, talla, nota, estado, fecha, id}, ...] }
-app.get('/api/epis', async (req, res) => {
+// ─── CONFIG ESTRUCTURA ────────────────────────────────────────────────────────
+app.get('/api/config_estructura', async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM epis ORDER BY fecha DESC');
-    const resultado = {};
-    r.rows.forEach(row => {
-      const { dni, ...resto } = row;
-      if (!resultado[dni]) resultado[dni] = [];
-      resultado[dni].push(resto);
-    });
-    res.json(resultado);
+    const r = await pool.query("SELECT datos FROM config_estructura WHERE id = 'estructura'");
+    if (!r.rows.length) return res.json(null);
+    res.json(r.rows[0].datos);
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST /api/epis — crear nueva solicitud
-app.post('/api/epis', async (req, res) => {
-  const { dni, tipo, talla, nota, estado, fecha } = req.body;
-  if (!dni || !tipo) return res.status(400).json({ error: 'Faltan datos' });
+app.put('/api/config_estructura', async (req, res) => {
   try {
-    const r = await pool.query(`
-      INSERT INTO epis (dni, tipo, talla, nota, estado, fecha)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `, [dni, tipo, talla || '', nota || '', estado || 'pendiente', fecha || new Date().toISOString().split('T')[0]]);
-    res.status(201).json(r.rows[0]);
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// POST /api/epis/estado — cambiar estado de una solicitud por DNI e índice
-app.post('/api/epis/estado', async (req, res) => {
-  const { dni, idx, estado } = req.body;
-  if (!dni || idx === undefined || !estado) return res.status(400).json({ error: 'Faltan campos' });
-  const client = await pool.connect();
-  try {
-    const r = await client.query(
-      'SELECT id FROM epis WHERE dni = $1 ORDER BY fecha DESC',
-      [dni]
-    );
-    if (idx >= r.rows.length) return res.status(404).json({ error: 'Índice fuera de rango' });
-    const eid = r.rows[idx].id;
-    const updated = await client.query(
-      'UPDATE epis SET estado = $1 WHERE id = $2 RETURNING *',
-      [estado, eid]
-    );
-    res.json(updated.rows[0]);
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  } finally {
-    client.release();
-  }
-});
-
-// DELETE /api/epis/:dni/:idx — eliminar solicitud por DNI e índice
-app.delete('/api/epis/:dni/:idx', async (req, res) => {
-  const { dni, idx } = req.params;
-  const client = await pool.connect();
-  try {
-    const r = await client.query(
-      'SELECT id FROM epis WHERE dni = $1 ORDER BY fecha DESC',
-      [dni]
-    );
-    const idxNum = parseInt(idx);
-    if (idxNum >= r.rows.length) return res.status(404).json({ error: 'Índice fuera de rango' });
-    const eid = r.rows[idxNum].id;
-    await client.query('DELETE FROM epis WHERE id = $1', [eid]);
+    await pool.query(`
+      INSERT INTO config_estructura (id, datos)
+      VALUES ('estructura', $1)
+      ON CONFLICT (id) DO UPDATE SET datos = EXCLUDED.datos
+    `, [JSON.stringify(req.body)]);
     res.json({ ok: true });
   } catch(e) {
     res.status(500).json({ error: e.message });
-  } finally {
-    client.release();
   }
 });
 
-// PUT /api/epis/:id — actualizar EPI por ID (para recepcion_epi)
-app.put('/api/epis/:id', async (req, res) => {
-  const { estado, firma, fechaEntrega, entregadoPor } = req.body;
+// ─── CUADRANTES ───────────────────────────────────────────────────────────────
+app.get('/api/cuadrantes', async (req, res) => {
   try {
-    const r = await pool.query(`
-      UPDATE epis
-      SET estado = $1, firma = $2, fecha_entrega = $3, entregado_por = $4
-      WHERE id = $5 RETURNING *
-    `, [estado, firma || null, fechaEntrega || null, entregadoPor || null, req.params.id]);
-    if (!r.rows.length) return res.status(404).json({ ok: false });
-    res.json(r.rows[0]);
+    const { semKey } = req.query;
+    let r;
+    if (semKey) {
+      r = await pool.query("SELECT id, semana, ano, dept, datos FROM cuadrantes WHERE id LIKE $1", ['%' + semKey + '%']);
+    } else {
+      r = await pool.query("SELECT id, semana, ano, dept, datos FROM cuadrantes ORDER BY ano DESC, semana DESC");
+    }
+    res.json(r.rows);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/cuadrantes/:id', async (req, res) => {
+  const { id } = req.params;
+  const payload = req.body;
+  try {
+    await pool.query(`
+      INSERT INTO cuadrantes (id, semana, ano, dept, datos)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (id) DO UPDATE
+        SET semana = EXCLUDED.semana,
+            ano    = EXCLUDED.ano,
+            dept   = EXCLUDED.dept,
+            datos  = EXCLUDED.datos
+    `, [
+      id,
+      String(payload.semana || ''),
+      String(payload.ano || ''),
+      payload.dept || '',
+      JSON.stringify(payload)
+    ]);
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/cuadrantes/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM cuadrantes WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
