@@ -188,6 +188,35 @@ app.delete('/api/cuadrantes/:id', async (req, res) => {
   }
 });
 
+// ─── BORRADO MASIVO (para limpiar.html) ──────────────────────────────────────
+app.delete('/api/cuadrantes/all', async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM cuadrantes RETURNING id');
+    res.json({ ok: true, deleted: r.rowCount });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/horas_extras/all', async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM horas_extras RETURNING id');
+    res.json({ ok: true, deleted: r.rowCount });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/epis/all', async (req, res) => {
+  try {
+    const r = await pool.query('DELETE FROM epis RETURNING id');
+    res.json({ ok: true, deleted: r.rowCount });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 // ─── INICIO ───────────────────────────────────────────────────────────────────
 const PORT = 5000;
 app.listen(PORT, () => console.log(`API Ubesol escuchando en puerto ${PORT}`));
