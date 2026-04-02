@@ -77,12 +77,8 @@ body{font-family:'Inter',sans-serif;background:#f0f0f0;color:#1a1a1a;font-size:1
 .drag-handle{color:var(--faint);font-size:14px;cursor:grab;padding:0 4px;flex-shrink:0;user-select:none}
 .drag-handle:hover{color:var(--muted)}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig={apiKey:"AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",authDomain:"maverick-turnos-81d4a.firebaseapp.com",projectId:"maverick-turnos-81d4a",storageBucket:"maverick-turnos-81d4a.firebasestorage.app",messagingSenderId:"170123467800",appId:"1:170123467344:web:142eee4473940ebd924f55"};
-if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -217,9 +213,10 @@ let currentDept = 'envasado';
 // ─── CARGAR ───────────────────────────────────────────────────────────────────
 async function cargarConfig() {
   try {
-    const doc = await db.collection('config').doc('estructura').get();
-    if (doc.exists) {
-      config = doc.data();
+    const resp = await fetch(API_BASE + '/config_estructura');
+    const data = await resp.json();
+    if (data) {
+      config = data;
       // Migrar formato antiguo de calidad (puestos planos -> sub-secciones)
       if (config.calidad && config.calidad.puestos && !config.calidad.puestos_lineas) {
         const todos = config.calidad.puestos;
@@ -231,30 +228,28 @@ async function cargarConfig() {
         config.calidad.puestos_fq    = todos.filter(p => fqIds.includes(p.id));
         config.calidad.puestos_micro = todos.filter(p => microIds.includes(p.id));
         config.calidad.puestos_mat   = todos.filter(p => matIds.includes(p.id));
-        // Si puestos_lineas quedó vacío, usar los defaults
         if (!config.calidad.puestos_lineas.length) {
           config.calidad.puestos_lineas = CONFIG_DEFAULT.calidad.puestos_lineas;
         }
         if (!config.calidad.puestos_fq.length)    config.calidad.puestos_fq    = CONFIG_DEFAULT.calidad.puestos_fq;
         if (!config.calidad.puestos_micro.length)  config.calidad.puestos_micro = CONFIG_DEFAULT.calidad.puestos_micro;
         if (!config.calidad.puestos_mat.length)    config.calidad.puestos_mat   = CONFIG_DEFAULT.calidad.puestos_mat;
-        delete config.calidad.puestos; // limpiar formato antiguo
+        delete config.calidad.puestos;
         console.log('[CONFIG] Migrado formato calidad a sub-secciones');
       }
-      // Si no existe calidad en Firebase, usar defaults
       if (!config.calidad) config.calidad = JSON.parse(JSON.stringify(CONFIG_DEFAULT.calidad));
       if (!config.calidad.puestos_lineas) config.calidad.puestos_lineas = CONFIG_DEFAULT.calidad.puestos_lineas;
       if (!config.calidad.puestos_fq)     config.calidad.puestos_fq     = CONFIG_DEFAULT.calidad.puestos_fq;
       if (!config.calidad.puestos_micro)  config.calidad.puestos_micro  = CONFIG_DEFAULT.calidad.puestos_micro;
       if (!config.calidad.puestos_mat)    config.calidad.puestos_mat    = CONFIG_DEFAULT.calidad.puestos_mat;
-      toast('✅ Configuración cargada de Firebase');
+      toast('✅ Configuración cargada del servidor');
     } else {
       config = JSON.parse(JSON.stringify(CONFIG_DEFAULT));
       toast('📋 Usando configuración por defecto');
     }
   } catch(e) {
     config = JSON.parse(JSON.stringify(CONFIG_DEFAULT));
-    toast('⚠️ Error Firebase, usando config por defecto');
+    toast('⚠️ Error al cargar config, usando valores por defecto');
   }
   renderTabs();
   renderDept(currentDept);
@@ -264,9 +259,14 @@ async function cargarConfig() {
 async function guardarConfig() {
   document.getElementById('estado-txt').textContent = 'Guardando...';
   try {
-    await db.collection('config').doc('estructura').set(config);
+    const resp = await fetch(API_BASE + '/config_estructura', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(config)
+    });
+    if (!resp.ok) throw new Error('Error HTTP ' + resp.status);
     document.getElementById('estado-txt').textContent = 'Guardado ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-    toast('✅ Configuración guardada en Firebase');
+    toast('✅ Configuración guardada en servidor');
   } catch(e) {
     toast('⚠️ Error al guardar: ' + e.message);
     document.getElementById('estado-txt').textContent = 'Error al guardar';
