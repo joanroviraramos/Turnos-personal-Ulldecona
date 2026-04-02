@@ -114,6 +114,101 @@ app.post('/api/horas_extras', async (req, res) => {
   }
 });
 
+// ─── EPIS ─────────────────────────────────────────────────────────────────────
+
+// GET /api/epis — devuelve { "12345678A": [{tipo, talla, nota, estado, fecha, id}, ...] }
+app.get('/api/epis', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM epis ORDER BY fecha DESC');
+    const resultado = {};
+    r.rows.forEach(row => {
+      const { dni, ...resto } = row;
+      if (!resultado[dni]) resultado[dni] = [];
+      resultado[dni].push(resto);
+    });
+    res.json(resultado);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/epis — crear nueva solicitud
+app.post('/api/epis', async (req, res) => {
+  const { dni, tipo, talla, nota, estado, fecha } = req.body;
+  if (!dni || !tipo) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(`
+      INSERT INTO epis (dni, tipo, talla, nota, estado, fecha)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [dni, tipo, talla || '', nota || '', estado || 'pendiente', fecha || new Date().toISOString().split('T')[0]]);
+    res.status(201).json(r.rows[0]);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/epis/estado — cambiar estado de una solicitud por DNI e índice
+app.post('/api/epis/estado', async (req, res) => {
+  const { dni, idx, estado } = req.body;
+  if (!dni || idx === undefined || !estado) return res.status(400).json({ error: 'Faltan campos' });
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      'SELECT id FROM epis WHERE dni = $1 ORDER BY fecha DESC',
+      [dni]
+    );
+    if (idx >= r.rows.length) return res.status(404).json({ error: 'Índice fuera de rango' });
+    const eid = r.rows[idx].id;
+    const updated = await client.query(
+      'UPDATE epis SET estado = $1 WHERE id = $2 RETURNING *',
+      [estado, eid]
+    );
+    res.json(updated.rows[0]);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
+// DELETE /api/epis/:dni/:idx — eliminar solicitud por DNI e índice
+app.delete('/api/epis/:dni/:idx', async (req, res) => {
+  const { dni, idx } = req.params;
+  const client = await pool.connect();
+  try {
+    const r = await client.query(
+      'SELECT id FROM epis WHERE dni = $1 ORDER BY fecha DESC',
+      [dni]
+    );
+    const idxNum = parseInt(idx);
+    if (idxNum >= r.rows.length) return res.status(404).json({ error: 'Índice fuera de rango' });
+    const eid = r.rows[idxNum].id;
+    await client.query('DELETE FROM epis WHERE id = $1', [eid]);
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  } finally {
+    client.release();
+  }
+});
+
+// PUT /api/epis/:id — actualizar EPI por ID (para recepcion_epi)
+app.put('/api/epis/:id', async (req, res) => {
+  const { estado, firma, fechaEntrega, entregadoPor } = req.body;
+  try {
+    const r = await pool.query(`
+      UPDATE epis
+      SET estado = $1, firma = $2, fecha_entrega = $3, entregado_por = $4
+      WHERE id = $5 RETURNING *
+    `, [estado, firma || null, fechaEntrega || null, entregadoPor || null, req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ ok: false });
+    res.json(r.rows[0]);
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ─── INICIO ───────────────────────────────────────────────────────────────────
 const PORT = 5000;
 app.listen(PORT, () => console.log(`API Ubesol escuchando en puerto ${PORT}`));
