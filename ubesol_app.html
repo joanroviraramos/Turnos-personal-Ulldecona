@@ -553,19 +553,8 @@ body {
 <div id="landscape-warn">📱 Gira el móvil a vertical para mejor experiencia</div>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
-  authDomain: "maverick-turnos-81d4a-81d4a.firebaseapp.com",
-  projectId: "maverick-turnos-81d4a",
-  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
-  messagingSenderId: "170123467344",
-  appId: "1:170123467344:web:c783702e586c2c071a12a1"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -919,12 +908,9 @@ function startInactivityWatcher() {
 
 async function loadWorkers() {
   try {
-    const snap = await db.collection('trabajadores').get();
-    if (!snap.empty) {
-      const fromFirebase = [];
-      snap.forEach(doc => fromFirebase.push(doc.data()));
-      allWorkers = fromFirebase;
-    }
+    const resp = await fetch(API_BASE + '/trabajadores');
+    const rows = await resp.json();
+    if (rows && rows.length) allWorkers = rows;
     if (!allWorkers.length) allWorkers = WORKERS_EMBEDDED;
   } catch(e) {
     allWorkers = WORKERS_EMBEDDED;
@@ -933,9 +919,8 @@ async function loadWorkers() {
 }
 
 function loadCuadrante() {
-  // Cargar todos los cuadrantes desde Firebase en tiempo real
-  try {
-    db.collection('cuadrantes').onSnapshot(function(snap) {
+  // Cargar todos los cuadrantes desde la API
+  fetch(API_BASE + '/cuadrantes').then(function(r){ return r.json(); }).then(function(rows) {
       const keysBorrar = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -943,8 +928,8 @@ function loadCuadrante() {
       }
       keysBorrar.forEach(k => localStorage.removeItem(k));
       cuadrante = null;
-      snap.forEach(function(docSnap) {
-        const data = docSnap.data();
+      (rows||[]).forEach(function(row) {
+        const data = row.datos || row;
         if (!data || !data.semana || !data.ano) return;
         const hKey = 'ubesol_historico_' + data.ano + '_s' + String(data.semana).padStart(2,'0');
         localStorage.setItem(hKey, JSON.stringify(data));
@@ -955,18 +940,18 @@ function loadCuadrante() {
         }
       });
       if (currentUser) { updateHomeInfo(); updateBadges(); }
-    });
+  }).catch(function(){});
 
-    // Cargar horas extras en tiempo real
-    db.collection('horas_extras').onSnapshot(function(snap) {
+  // Cargar horas extras desde la API
+  fetch(API_BASE + '/horas_extras').then(function(r){ return r.json(); }).then(function(rows) {
       const keysBorrar = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k && k.startsWith('ubesol_extras_firebase_')) keysBorrar.push(k);
       }
       keysBorrar.forEach(k => localStorage.removeItem(k));
-      snap.forEach(function(docSnap) {
-        const data = docSnap.data();
+      (rows||[]).forEach(function(row) {
+        const data = row.datos || row;
         if (!data || !data.fecha) return;
         localStorage.setItem('ubesol_extras_firebase_' + data.fecha, JSON.stringify(data));
       });
@@ -1087,15 +1072,10 @@ function showHome() {
   document.getElementById('home-name').textContent = 'Hola, ' + currentUser.nombre;
   document.getElementById('home-dept').textContent = currentUser.departamento;
   loadCuadrante();
-  // Sincronizar EPIs desde Firebase en tiempo real
-  try {
-    db.collection('epis').doc('solicitudes').onSnapshot(function(docSnap) {
-      if (docSnap.exists) {
-        localStorage.setItem(LS_EPIS, JSON.stringify(docSnap.data()));
-        updateBadges();
-      }
-    });
-  } catch(e) {}
+  // Cargar EPIs desde la API
+  fetch(API_BASE + '/epis').then(function(r){ return r.json(); }).then(function(data) {
+    if (data) { localStorage.setItem(LS_EPIS, JSON.stringify(data)); updateBadges(); }
+  }).catch(function(){});
   updateHomeInfo();
   updateBadges();
 }
@@ -1648,10 +1628,26 @@ function saveEpis(epis) {
   const all = JSON.parse(localStorage.getItem(LS_EPIS) || '{}');
   all[currentUser.dni] = epis;
   localStorage.setItem(LS_EPIS, JSON.stringify(all));
-  // Sincronizar con Firebase
+  // Sincronizar con la API: guardar cada solicitud individualmente
   try {
-    db.collection('epis').doc('solicitudes').set(all);
-  } catch(e) { console.warn('Firebase EPI sync error:', e); }
+    epis.forEach(function(epi) {
+      if (!epi.id) {
+        // Nueva solicitud
+        fetch(API_BASE + '/epis', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            dni: currentUser.dni,
+            tipo: epi.tipo,
+            talla: epi.talla || '',
+            nota: epi.nota || '',
+            estado: epi.estado || 'pendiente',
+            fecha: epi.fecha || new Date().toISOString().split('T')[0]
+          })
+        }).catch(function(e){ console.warn('API EPI sync error:', e); });
+      }
+    });
+  } catch(e) { console.warn('API EPI sync error:', e); }
 }
 
 function showEpi() {
@@ -1948,17 +1944,16 @@ function showExtras() {
   const c = document.getElementById('extras-content');
   c.innerHTML = '<div class="no-turno" style="text-align:center">⏳ Cargando...</div>';
 
-  // Cargar directamente desde Firebase
-  db.collection('horas_extras').get().then(function(snap) {
-    // Limpiar y recargar localStorage de extras
+  // Cargar desde la API
+  fetch(API_BASE + '/horas_extras').then(function(r){ return r.json(); }).then(function(rows) {
     const keysBorrar = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (k && k.startsWith('ubesol_extras_firebase_')) keysBorrar.push(k);
     }
     keysBorrar.forEach(function(k){ localStorage.removeItem(k); });
-    snap.forEach(function(docSnap) {
-      const data = docSnap.data();
+    (rows||[]).forEach(function(row) {
+      const data = row.datos || row;
       if (!data || !data.fecha) return;
       localStorage.setItem('ubesol_extras_firebase_' + data.fecha, JSON.stringify(data));
     });
