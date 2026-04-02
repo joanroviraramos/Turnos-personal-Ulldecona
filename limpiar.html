@@ -35,19 +35,8 @@ h1 { font-size: 20px; font-weight: 700; color: #b71c1c; margin-bottom: 6px; }
 .log-err  { color: #b71c1c; }
 .log-info { color: #555; }
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBnrOQqP83lotv-EozHuql704DU20m-wWU",
-  authDomain: "maverick-turnos-81d4a.firebaseapp.com",
-  projectId: "maverick-turnos-81d4a",
-  storageBucket: "maverick-turnos-81d4a.firebasestorage.app",
-  messagingSenderId: "170123467344",
-  appId: "1:170123467344:web:142eee4473940ebd924f55"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const API_BASE = '/api';
 </script>
 </head>
 <body>
@@ -57,26 +46,26 @@ const db = firebase.firestore();
   <p class="sub">Selecciona qué quieres borrar. Esta acción no se puede deshacer.</p>
 
   <div class="section">
-    <div class="section-title">Firebase (datos en la nube)</div>
+    <div class="section-title">Base de datos del servidor (PostgreSQL)</div>
     <div class="check-row">
       <input type="checkbox" id="ch-cuadrantes" checked>
       <label for="ch-cuadrantes">
         <div>Cuadrantes de turnos</div>
-        <div class="desc">Colección <code>cuadrantes</code></div>
+        <div class="desc">Tabla <code>cuadrantes</code></div>
       </label>
     </div>
     <div class="check-row">
       <input type="checkbox" id="ch-extras" checked>
       <label for="ch-extras">
         <div>Horas extras</div>
-        <div class="desc">Colección <code>horas_extras</code></div>
+        <div class="desc">Tabla <code>horas_extras</code></div>
       </label>
     </div>
     <div class="check-row">
       <input type="checkbox" id="ch-epis" checked>
       <label for="ch-epis">
         <div>Solicitudes de EPIs</div>
-        <div class="desc">Colección <code>epis</code></div>
+        <div class="desc">Tabla <code>epis</code></div>
       </label>
     </div>
   </div>
@@ -111,12 +100,25 @@ function addLog(msg, tipo) {
 
 async function borrarColeccion(nombre) {
   addLog('Borrando ' + nombre + '...', 'info');
-  const snap = await db.collection(nombre).get();
-  if (snap.empty) { addLog('  → ' + nombre + ': vacío', 'info'); return; }
-  const batch = db.batch();
-  snap.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  addLog('  ✓ ' + nombre + ': ' + snap.size + ' documento(s) borrados', 'ok');
+  // Mapeo nombre coleccion -> endpoint API
+  const endpointMap = {
+    'cuadrantes': '/api/cuadrantes',
+    'horas_extras': '/api/horas_extras',
+    'epis': '/api/epis'
+  };
+  const endpoint = endpointMap[nombre];
+  if (!endpoint) { addLog('  → ' + nombre + ': endpoint no reconocido', 'err'); return; }
+  try {
+    const resp = await fetch(API_BASE + endpoint + '/all', { method: 'DELETE' });
+    if (resp.ok) {
+      const data = await resp.json();
+      addLog('  ✓ ' + nombre + ': ' + (data.deleted || 0) + ' registro(s) borrados', 'ok');
+    } else {
+      addLog('  ⚠ ' + nombre + ': error ' + resp.status, 'err');
+    }
+  } catch(e) {
+    addLog('  ⚠ ' + nombre + ': ' + e.message, 'err');
+  }
 }
 
 async function limpiar() {
